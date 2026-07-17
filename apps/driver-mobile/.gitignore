@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.wrangler/
+*.log
+android/.gradle/
+android/app/build/
+android/local.properties
+ios/App/DerivedData/
+ios/App/Pods/
+icons/

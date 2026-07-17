@@ -1,0 +1,11 @@
+packages:
+  - apps/dev-console
+  - apps/driver-mobile
+  - packages/sdk-typescript
+onlyBuiltDependencies:
+  - esbuild
+confirmModulesPurge: false
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true

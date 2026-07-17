@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "suha-ai-core"
+version = "0.1.0"
+description = "Local-first camera gesture recognition core"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = {text = "Apache-2.0"}
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "numpy>=1.26,<3",
+  "onnx>=1.17,<2",
+  "onnxruntime>=1.22,<2",
+  "opencv-python>=4.10,<5",
+  "prometheus-client>=0.21,<1",
+  "pydantic>=2.9,<3",
+  "PyYAML>=6.0,<7",
+  "structlog>=24.4,<26",
+  "uvicorn[standard]>=0.32,<1",
+  "websockets>=13,<16",
+]
+
+[project.optional-dependencies]
+vision = ["mediapipe>=0.10.18,<0.11"]
+training = ["torch>=2.7,<3", "scikit-learn>=1.7,<2"]
+dev = ["mypy>=1.13,<2", "pytest>=8.3,<9", "pytest-asyncio>=0.24,<1", "ruff>=0.8,<1"]
+
+[project.scripts]
+suha-core = "suha_server.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["packages/suha-core/src", "apps/core-server/src", "packages/sdk-python/src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["hardware: requires a physical camera"]
+
+[tool.ruff]
+line-length = 180
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = ["packages/suha-core/src", "apps/core-server/src", "packages/sdk-python/src"]
+exclude = ["tests"]
+
+[[tool.mypy.overrides]]
+module = ["yaml", "mediapipe", "mediapipe.*", "onnxruntime", "sklearn", "sklearn.*"]
+ignore_missing_imports = true

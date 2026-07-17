@@ -1,0 +1,9 @@
+privacy:
+  save_raw_video: false
+  save_snapshots: false
+  save_landmarks: false
+  diagnostics_retention_days: 0
+  training_capture_requires_consent: true
+  anonymize_subject_ids: true
+  face_identity_features: disabled
+

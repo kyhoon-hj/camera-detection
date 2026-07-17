@@ -1,0 +1,32 @@
+app:
+  name: suha-ai-core
+  version: 0.1.0
+  timezone: Asia/Seoul
+  log_level: INFO
+server:
+  host: 127.0.0.1
+  port: 8200
+  cors_origins: [http://127.0.0.1:5173, http://localhost:5173]
+camera:
+  default_id: laptop-front
+pipeline:
+  analysis_width: 640
+  analysis_height: 480
+  inference_fps: 15
+  queue_size: 2
+  drop_policy: DROP_OLDEST
+recognition:
+  active_mode: GENERIC_GESTURE
+privacy:
+  save_raw_video: false
+  save_snapshots: false
+  save_landmarks: false
+  training_capture_requires_consent: true
+events:
+  buffer_size: 1000
+  persist: false
+features:
+  ksl:
+    enabled: false
+    model_id: null
+    activation_mode: EXPLICIT

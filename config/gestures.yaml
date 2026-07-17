@@ -1,0 +1,5 @@
+stabilization:
+  static_gesture: {min_confidence: 0.80, min_hold_ms: 450, majority_window_ms: 650, cooldown_ms: 900}
+  dynamic_gesture: {min_confidence: 0.75, cooldown_ms: 1200}
+  head_motion: {min_confidence: 0.72, cooldown_ms: 1000}
+

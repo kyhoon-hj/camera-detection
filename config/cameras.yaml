@@ -1,0 +1,4 @@
+cameras:
+  laptop-front: {type: opencv, source: 0, width: 1280, height: 720, mirror: true}
+  synthetic-front: {type: synthetic, width: 640, height: 480}
+

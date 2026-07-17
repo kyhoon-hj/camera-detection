@@ -1,0 +1,19 @@
+version: "1.0"
+profiles:
+  default:
+    mode: GENERIC_GESTURE
+    mappings:
+      THUMB_UP: {intent: CONFIRM, min_confidence: 0.85}
+      THUMB_DOWN: {intent: REJECT, min_confidence: 0.85}
+      CLOSED_FIST: {intent: CANCEL, min_confidence: 0.86}
+      SWIPE_LEFT: {intent: NEXT, min_confidence: 0.78}
+      SWIPE_RIGHT: {intent: PREVIOUS, min_confidence: 0.78}
+      HAND_WAVE: {intent: WAKE_UP, min_confidence: 0.76}
+      HEAD_NOD: {intent: YES, min_confidence: 0.75}
+      HEAD_SHAKE: {intent: NO, min_confidence: 0.75}
+  gallery:
+    inherits: default
+    mappings:
+      SWIPE_LEFT: {intent: GALLERY_NEXT, min_confidence: 0.78}
+      SWIPE_RIGHT: {intent: GALLERY_PREVIOUS, min_confidence: 0.78}
+
