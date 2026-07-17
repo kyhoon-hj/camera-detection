@@ -2,6 +2,7 @@ node_modules/
 dist/
 .wrangler/
 *.log
+*.tsbuildinfo
 android/.gradle/
 android/app/build/
 android/local.properties

@@ -3,7 +3,14 @@ import { StrictMode, useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { DriverMonitor, type MonitorSnapshot } from "./monitor";
 import { getKoreanSpeechStatus, speakKorean, stopKoreanSpeech } from "./speech";
-import { MobileVisionEngine, drawLandmarks } from "./vision";
+import {
+  MobileVisionEngine,
+  VisionFrameUnavailableError,
+  drawLandmarks,
+  isRecoverableVisionError,
+  isUsableVideoFrame,
+  visionErrorMessage,
+} from "./vision";
 import "./styles.css";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -55,6 +62,9 @@ function App() {
   const monitorRef = useRef(new DriverMonitor());
   const animationRef = useRef<number | null>(null);
   const lastInferenceRef = useRef(0);
+  const lastVideoTimeRef = useRef(-1);
+  const recoveryRef = useRef(false);
+  const cpuRecoveryUsedRef = useRef(false);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const lastAlertRef = useRef(0);
@@ -77,7 +87,7 @@ function App() {
     }
   }, []);
 
-  const stop = useCallback(() => {
+  const stopResources = useCallback(() => {
     if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
     animationRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -85,13 +95,24 @@ function App() {
     if (videoRef.current) videoRef.current.srcObject = null;
     engineRef.current?.close();
     engineRef.current = null;
-    monitorRef.current.stop();
+    const canvas = canvasRef.current;
+    canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
     wakeLockRef.current?.release().catch(() => undefined);
     wakeLockRef.current = null;
     void stopKoreanSpeech();
-    setSnapshot(initialSnapshot);
-    setRunState("READY");
+    lastInferenceRef.current = 0;
+    lastVideoTimeRef.current = -1;
+    recoveryRef.current = false;
+    cpuRecoveryUsedRef.current = false;
   }, []);
+
+  const stop = useCallback(() => {
+    stopResources();
+    monitorRef.current.stop();
+    setSnapshot(initialSnapshot);
+    setError("");
+    setRunState("READY");
+  }, [stopResources]);
 
   const runDetection = useCallback(() => {
     if (!mountedRef.current || streamRef.current === null) return;
@@ -99,20 +120,62 @@ function App() {
     const canvas = canvasRef.current;
     const engine = engineRef.current;
     const now = performance.now();
-    if (video && canvas && engine && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && now - lastInferenceRef.current >= 80) {
+    const hasNewFrame = video !== null && video.currentTime !== lastVideoTimeRef.current;
+    if (video && canvas && engine && !recoveryRef.current && isUsableVideoFrame(video) && hasNewFrame && now - lastInferenceRef.current >= 80) {
       lastInferenceRef.current = now;
+      lastVideoTimeRef.current = video.currentTime;
       try {
         const frame = engine.detect(video, now);
         const next = monitorRef.current.process(frame);
         setSnapshot(next);
+        setError("");
         drawLandmarks(canvas, video, frame, next.status === "ALARM" || next.status === "WARNING");
       } catch (cause) {
-        const message = cause instanceof Error ? cause.message : "영상 분석 중 오류가 발생했습니다.";
-        setError(message);
+        if (cause instanceof VisionFrameUnavailableError) {
+          animationRef.current = requestAnimationFrame(runDetection);
+          return;
+        }
+        if (isRecoverableVisionError(cause) && engine.activeDelegate === "GPU" && !cpuRecoveryUsedRef.current) {
+          const activeStream = streamRef.current;
+          cpuRecoveryUsedRef.current = true;
+          recoveryRef.current = true;
+          engineRef.current = null;
+          engine.close();
+          setError("기기 호환 모드로 영상 분석을 다시 준비하고 있습니다…");
+          const replacement = new MobileVisionEngine();
+          void replacement.initialize("CPU").then(() => {
+            if (!mountedRef.current || streamRef.current !== activeStream) {
+              replacement.close();
+              return;
+            }
+            engineRef.current = replacement;
+            monitorRef.current.recalibrate();
+            lastInferenceRef.current = 0;
+            lastVideoTimeRef.current = -1;
+            setError("");
+          }).catch((recoveryCause) => {
+            replacement.close();
+            if (streamRef.current !== activeStream) return;
+            stopResources();
+            monitorRef.current.stop();
+            setSnapshot(initialSnapshot);
+            setError(visionErrorMessage(recoveryCause));
+            setRunState("ERROR");
+          }).finally(() => {
+            recoveryRef.current = false;
+          });
+        } else {
+          stopResources();
+          monitorRef.current.stop();
+          setSnapshot(initialSnapshot);
+          setError(visionErrorMessage(cause));
+          setRunState("ERROR");
+          return;
+        }
       }
     }
     animationRef.current = requestAnimationFrame(runDetection);
-  }, []);
+  }, [stopResources]);
 
   const start = useCallback(async () => {
     if (!window.isSecureContext) {
@@ -149,22 +212,24 @@ function App() {
       if (videoRef.current === null) throw new Error("카메라 화면을 준비하지 못했습니다.");
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
+      await waitForUsableVideoFrame(videoRef.current);
       const engine = new MobileVisionEngine();
       await engine.initialize();
       engineRef.current = engine;
+      cpuRecoveryUsedRef.current = engine.activeDelegate === "CPU";
       monitorRef.current.begin();
       lastInferenceRef.current = 0;
+      lastVideoTimeRef.current = -1;
       setRunState("RUNNING");
       animationRef.current = requestAnimationFrame(runDetection);
     } catch (cause) {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+      stopResources();
       const message = cameraErrorMessage(cause);
       setError(message);
       if (cause instanceof DOMException && cause.name === "NotAllowedError") setCameraPermission("DENIED");
       setRunState("ERROR");
     }
-  }, [requestWakeLock, runDetection, soundEnabled]);
+  }, [requestWakeLock, runDetection, soundEnabled, stopResources]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -206,12 +271,29 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const resumeWakeLock = () => {
-      if (document.visibilityState === "visible" && runState === "RUNNING") void requestWakeLock();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible" && runState === "RUNNING") {
+        stop();
+        setError("앱이 백그라운드로 전환되어 카메라를 안전하게 종료했습니다. 다시 시작해 주세요.");
+        return;
+      }
+      if (document.visibilityState === "visible" && runState === "RUNNING") {
+        void requestWakeLock();
+      }
     };
-    document.addEventListener("visibilitychange", resumeWakeLock);
-    return () => document.removeEventListener("visibilitychange", resumeWakeLock);
-  }, [requestWakeLock, runState]);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [requestWakeLock, runState, stop]);
+
+  useEffect(() => {
+    if (runState !== "RUNNING") return;
+    const handleOrientationChange = () => {
+      stop();
+      setError("화면 방향이 변경되어 카메라를 안전하게 종료했습니다. 휴대폰을 세로로 놓고 다시 시작해 주세요.");
+    };
+    window.addEventListener("orientationchange", handleOrientationChange);
+    return () => window.removeEventListener("orientationchange", handleOrientationChange);
+  }, [runState, stop]);
 
   useEffect(() => {
     if (!soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "AWAKE") return;
@@ -467,6 +549,37 @@ async function requestUserCamera(constraints: MediaStreamConstraints): Promise<M
     if (timedOut) stream.getTracks().forEach((track) => track.stop());
   }).catch(() => undefined);
   return Promise.race([request, timeout]);
+}
+
+async function waitForUsableVideoFrame(video: HTMLVideoElement, timeoutMs = 7_000): Promise<void> {
+  const startedAt = performance.now();
+  while (!isUsableVideoFrame(video)) {
+    if (performance.now() - startedAt >= timeoutMs) {
+      throw new Error("카메라 영상 크기를 확인하지 못했습니다. 앱을 다시 시작해 주세요.");
+    }
+    await nextVideoFrame(video);
+  }
+}
+
+function nextVideoFrame(video: HTMLVideoElement): Promise<void> {
+  if (typeof video.requestVideoFrameCallback === "function") {
+    return new Promise((resolve) => {
+      let settled = false;
+      let timeout = 0;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      const callbackId = video.requestVideoFrameCallback(finish);
+      timeout = window.setTimeout(() => {
+        video.cancelVideoFrameCallback(callbackId);
+        finish();
+      }, 250);
+    });
+  }
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
 createRoot(document.getElementById("root")!).render(

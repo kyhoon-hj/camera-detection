@@ -7,24 +7,57 @@ import {
 } from "@mediapipe/tasks-vision";
 import type { Landmark, VisionFrame } from "./monitor";
 
+export type VisionDelegate = "GPU" | "CPU";
+
+export interface VideoFrameState {
+  readyState: number;
+  videoWidth: number;
+  videoHeight: number;
+  paused: boolean;
+  ended: boolean;
+}
+
 export interface DetectionFrame extends VisionFrame {
   faceResult: FaceLandmarkerResult;
   poseResult: PoseLandmarkerResult;
 }
 
+export class VisionFrameUnavailableError extends Error {
+  constructor() {
+    super("카메라 영상 프레임이 아직 준비되지 않았습니다.");
+    this.name = "VisionFrameUnavailableError";
+  }
+}
+
 export class MobileVisionEngine {
   private faceLandmarker: FaceLandmarker | null = null;
   private poseLandmarker: PoseLandmarker | null = null;
+  private delegate: VisionDelegate | null = null;
 
-  async initialize(): Promise<void> {
+  get activeDelegate(): VisionDelegate | null {
+    return this.delegate;
+  }
+
+  async initialize(preferredDelegate: VisionDelegate = "GPU"): Promise<void> {
+    this.close();
     const files = await FilesetResolver.forVisionTasks("/wasm");
-    this.faceLandmarker = await this.createFaceLandmarker(files, "GPU").catch(() => this.createFaceLandmarker(files, "CPU"));
-    this.poseLandmarker = await this.createPoseLandmarker(files, "GPU").catch(() => this.createPoseLandmarker(files, "CPU"));
+    if (preferredDelegate === "GPU") {
+      try {
+        await this.initializeWithDelegate(files, "GPU");
+        return;
+      } catch {
+        this.close();
+      }
+    }
+    await this.initializeWithDelegate(files, "CPU");
   }
 
   detect(video: HTMLVideoElement, timestampMs: number): DetectionFrame {
     if (this.faceLandmarker === null || this.poseLandmarker === null) {
       throw new Error("비전 엔진이 아직 준비되지 않았습니다.");
+    }
+    if (!isUsableVideoFrame(video) || !Number.isFinite(timestampMs)) {
+      throw new VisionFrameUnavailableError();
     }
     const faceResult = this.faceLandmarker.detectForVideo(video, timestampMs);
     const poseResult = this.poseLandmarker.detectForVideo(video, timestampMs);
@@ -42,9 +75,26 @@ export class MobileVisionEngine {
     this.poseLandmarker?.close();
     this.faceLandmarker = null;
     this.poseLandmarker = null;
+    this.delegate = null;
   }
 
-  private createFaceLandmarker(files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: "GPU" | "CPU") {
+  private async initializeWithDelegate(
+    files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>,
+    delegate: VisionDelegate,
+  ): Promise<void> {
+    const faceLandmarker = await this.createFaceLandmarker(files, delegate);
+    try {
+      const poseLandmarker = await this.createPoseLandmarker(files, delegate);
+      this.faceLandmarker = faceLandmarker;
+      this.poseLandmarker = poseLandmarker;
+      this.delegate = delegate;
+    } catch (cause) {
+      faceLandmarker.close();
+      throw cause;
+    }
+  }
+
+  private createFaceLandmarker(files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: VisionDelegate) {
     return FaceLandmarker.createFromOptions(files, {
       baseOptions: { modelAssetPath: "/models/face_landmarker.task", delegate },
       runningMode: "VIDEO",
@@ -57,7 +107,7 @@ export class MobileVisionEngine {
     });
   }
 
-  private createPoseLandmarker(files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: "GPU" | "CPU") {
+  private createPoseLandmarker(files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: VisionDelegate) {
     return PoseLandmarker.createFromOptions(files, {
       baseOptions: { modelAssetPath: "/models/pose_landmarker_lite.task", delegate },
       runningMode: "VIDEO",
@@ -67,6 +117,29 @@ export class MobileVisionEngine {
       minTrackingConfidence: 0.45,
     });
   }
+}
+
+export function isUsableVideoFrame(video: VideoFrameState): boolean {
+  return video.readyState >= 2
+    && Number.isFinite(video.videoWidth)
+    && Number.isFinite(video.videoHeight)
+    && video.videoWidth > 0
+    && video.videoHeight > 0
+    && !video.paused
+    && !video.ended;
+}
+
+export function isRecoverableVisionError(cause: unknown): boolean {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return /ROI contains NaN|NormalizedRect|CalculatorGraph::Run|Graph has errors|WaitUntilIdle failed/i.test(message);
+}
+
+export function visionErrorMessage(cause: unknown): string {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  if (/ROI contains NaN|NormalizedRect/i.test(message)) {
+    return "카메라 영상 크기가 일시적으로 변경되어 분석을 중지했습니다. 휴대폰을 세로로 고정한 뒤 다시 시작해 주세요.";
+  }
+  return "영상 분석 엔진에 오류가 발생해 카메라를 중지했습니다. 앱을 다시 시작해 주세요.";
 }
 
 const EYE_PATHS = [
