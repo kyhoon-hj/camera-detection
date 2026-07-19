@@ -22,6 +22,8 @@ export type SignFrameQuality = {
   guidance: string;
 };
 
+export type SignVisionFrame = { quality: SignFrameQuality; features: number[] | null };
+
 export function getSignFrameQuality(
   face: FaceLandmarkerResult,
   pose: PoseLandmarkerResult,
@@ -102,13 +104,13 @@ export class SignVisionEngine {
     }
   }
 
-  detect(video: HTMLVideoElement, timestampMs: number): SignFrameQuality {
+  detect(video: HTMLVideoElement, timestampMs: number): SignVisionFrame {
     if (!this.face || !this.pose || !this.hands) throw new Error("수어 입력 엔진이 준비되지 않았습니다.");
-    return getSignFrameQuality(
-      this.face.detectForVideo(video, timestampMs),
-      this.pose.detectForVideo(video, timestampMs),
-      this.hands.detectForVideo(video, timestampMs),
-    );
+    const face = this.face.detectForVideo(video, timestampMs);
+    const pose = this.pose.detectForVideo(video, timestampMs);
+    const hands = this.hands.detectForVideo(video, timestampMs);
+    const quality = getSignFrameQuality(face, pose, hands);
+    return { quality, features: quality.ready ? buildFeatureVector(face, pose, hands) : null };
   }
 
   close(): void {
@@ -119,4 +121,38 @@ export class SignVisionEngine {
     this.pose = null;
     this.hands = null;
   }
+}
+
+function buildFeatureVector(face: FaceLandmarkerResult, pose: PoseLandmarkerResult, hands: HandLandmarkerResult): number[] {
+  const byHand = new Map<string, typeof hands.landmarks[number]>();
+  hands.handedness.forEach((categories, index) => {
+    const name = categories[0]?.categoryName.toLowerCase();
+    if (name && hands.landmarks[index]) byHand.set(name, hands.landmarks[index]);
+  });
+  return [
+    ...normalizeLandmarks(byHand.get("left") ?? [], 0, 9),
+    ...normalizeLandmarks(byHand.get("right") ?? [], 0, 9),
+    ...normalizeSelected(pose.landmarks[0] ?? [], [0, 11, 12, 13, 14, 15, 16], 11, 12),
+    ...normalizeSelected(face.faceLandmarks[0] ?? [], [1, 33, 133, 263, 362, 61, 291, 13, 14], 33, 263),
+  ];
+}
+
+function normalizeLandmarks(points: Array<{ x: number; y: number; z: number }>, originIndex: number, scaleIndex: number): number[] {
+  if (!points.length) return [];
+  const origin = points[originIndex];
+  const scalePoint = points[scaleIndex] ?? points.at(-1)!;
+  const scale = Math.max(0.001, Math.hypot(scalePoint.x - origin.x, scalePoint.y - origin.y, scalePoint.z - origin.z));
+  return points.flatMap((point) => [(point.x - origin.x) / scale, (point.y - origin.y) / scale, (point.z - origin.z) / scale]);
+}
+
+function normalizeSelected(points: Array<{ x: number; y: number; z: number }>, indices: number[], leftIndex: number, rightIndex: number): number[] {
+  if (!points.length) return [];
+  const left = points[leftIndex];
+  const right = points[rightIndex];
+  const origin = { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2, z: (left.z + right.z) / 2 };
+  const scale = Math.max(0.001, Math.hypot(right.x - left.x, right.y - left.y, right.z - left.z));
+  return indices.flatMap((index) => {
+    const point = points[index];
+    return [(point.x - origin.x) / scale, (point.y - origin.y) / scale, (point.z - origin.z) / scale];
+  });
 }

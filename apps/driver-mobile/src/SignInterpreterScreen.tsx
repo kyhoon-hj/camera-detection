@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { speakKorean, stopKoreanSpeech } from "./speech";
 import { SignVisionEngine, type SignFrameQuality } from "./signVision";
+import { SIGN_PHRASES, addPersonalSample, rankPersonalSigns, type PersonalSignCandidate, type PersonalSignLibrary } from "./personalSign";
 import type { WidgetSettings } from "./widgetSettings";
 
 type Mode = "SIGN" | "VOICE" | "PHRASES";
@@ -22,16 +23,13 @@ type SpeechRecognitionEventLike = {
 };
 
 const EMPTY_QUALITY: SignFrameQuality = { face: false, upperBody: false, leftHand: false, rightHand: false, ready: false, guidance: "카메라를 시작해 주세요." };
-const PHRASES = [
-  { domain: "긴급", text: "도움이 필요합니다.", gloss: "도움 / 필요", emergency: true },
-  { domain: "긴급", text: "구급차를 불러주세요.", gloss: "구급차 / 부탁", emergency: true },
-  { domain: "일상", text: "안녕하세요.", gloss: "안녕", emergency: false },
-  { domain: "일상", text: "감사합니다.", gloss: "감사", emergency: false },
-  { domain: "병원", text: "병원이 어디에 있나요?", gloss: "병원 / 어디", emergency: false },
-  { domain: "병원", text: "배가 아프고 어지럽습니다.", gloss: "배 / 아프다 / 어지럽다", emergency: false },
-  { domain: "교통", text: "목적지에 가는 방법을 알려주세요.", gloss: "목적지 / 방법 / 부탁", emergency: false },
-  { domain: "결제", text: "결제 오류를 확인해주세요.", gloss: "결제 / 오류 / 확인", emergency: false },
-] as const;
+const PERSONAL_SIGN_KEY = "suha.personal-sign.v1";
+type CaptureJob = { kind: "TRAIN" | "RECOGNIZE"; phraseId?: string; startedAt: number; frames: number[][] };
+
+function loadPersonalLibrary(): PersonalSignLibrary {
+  try { return JSON.parse(localStorage.getItem(PERSONAL_SIGN_KEY) || "{}") as PersonalSignLibrary; }
+  catch { return {}; }
+}
 
 export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSettings: WidgetSettings; onWidget(): void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -39,6 +37,8 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
   const engineRef = useRef<SignVisionEngine | null>(null);
   const animationRef = useRef<number | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const captureRef = useRef<CaptureJob | null>(null);
+  const libraryRef = useRef<PersonalSignLibrary>(loadPersonalLibrary());
   const lastDetectRef = useRef(0);
   const [mode, setMode] = useState<Mode>("SIGN");
   const [cameraState, setCameraState] = useState<CameraState>("IDLE");
@@ -49,6 +49,11 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [library, setLibrary] = useState<PersonalSignLibrary>(libraryRef.current);
+  const [trainingPhraseId, setTrainingPhraseId] = useState(SIGN_PHRASES[0].id);
+  const [captureLabel, setCaptureLabel] = useState("");
+  const [captureProgress, setCaptureProgress] = useState(0);
+  const [candidates, setCandidates] = useState<PersonalSignCandidate[]>([]);
 
   function appendMessage(speaker: ConversationMessage["speaker"], text: string) {
     const trimmed = text.trim();
@@ -64,6 +69,9 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
     if (videoRef.current) videoRef.current.srcObject = null;
     engineRef.current?.close();
     engineRef.current = null;
+    captureRef.current = null;
+    setCaptureLabel("");
+    setCaptureProgress(0);
     setCameraState("IDLE");
     setQuality(EMPTY_QUALITY);
   }
@@ -75,7 +83,17 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
     const now = performance.now();
     if (video.readyState >= 2 && now - lastDetectRef.current >= 120) {
       lastDetectRef.current = now;
-      try { setQuality(engine.detect(video, now)); }
+      try {
+        const frame = engine.detect(video, now);
+        setQuality(frame.quality);
+        const capture = captureRef.current;
+        if (capture) {
+          if (frame.features) capture.frames.push(frame.features);
+          const elapsed = now - capture.startedAt;
+          setCaptureProgress(Math.min(1, elapsed / 2200));
+          if (elapsed >= 2200) finishCapture(capture);
+        }
+      }
       catch { setError("입력 분석이 잠시 중단되었습니다. 다시 시작해 주세요."); stopCamera(); return; }
     }
     animationRef.current = requestAnimationFrame(analyze);
@@ -112,6 +130,51 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
     setSelectedText(text);
     setSelectedGloss(gloss);
     appendMessage("수어 사용자", text);
+  }
+
+  function startCapture(kind: CaptureJob["kind"]) {
+    if (cameraState !== "RUNNING" || !quality.ready) { setError("얼굴·양손·상체가 모두 확인된 후 시작해 주세요."); return; }
+    if (kind === "RECOGNIZE" && !Object.values(libraryRef.current).some((items) => items.length >= 3)) {
+      setError("먼저 한 표현을 3회 학습해 주세요.");
+      return;
+    }
+    setCandidates([]);
+    setError("");
+    setCaptureProgress(0);
+    setCaptureLabel(kind === "TRAIN" ? "학습 동작 기록 중" : "수어 동작 인식 중");
+    captureRef.current = { kind, phraseId: kind === "TRAIN" ? trainingPhraseId : undefined, startedAt: performance.now(), frames: [] };
+  }
+
+  function finishCapture(job: CaptureJob) {
+    if (captureRef.current !== job) return;
+    captureRef.current = null;
+    setCaptureLabel("");
+    setCaptureProgress(0);
+    if (job.frames.length < 6) { setError("양손이 충분히 보이지 않았습니다. 천천히 다시 촬영해 주세요."); return; }
+    try {
+      if (job.kind === "TRAIN" && job.phraseId) {
+        const next = addPersonalSample(libraryRef.current, job.phraseId, job.frames);
+        libraryRef.current = next;
+        setLibrary(next);
+        localStorage.setItem(PERSONAL_SIGN_KEY, JSON.stringify(next));
+        const phrase = SIGN_PHRASES.find((item) => item.id === job.phraseId);
+        setError(`${phrase?.text ?? "표현"} 학습 ${next[job.phraseId].length}/3회를 저장했습니다.`);
+      } else {
+        const ranked = rankPersonalSigns(job.frames, libraryRef.current);
+        setCandidates(ranked);
+        setError(ranked.length ? "후보 문장을 확인하고 선택해 주세요." : "인식할 수 있는 학습 표현이 없습니다. 표현을 다시 학습해 주세요.");
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "동작 특징을 처리하지 못했습니다.");
+    }
+  }
+
+  function clearPersonalLibrary() {
+    libraryRef.current = {};
+    setLibrary({});
+    setCandidates([]);
+    localStorage.removeItem(PERSONAL_SIGN_KEY);
+    setError("기기에 저장된 개인 수어 학습 데이터를 삭제했습니다.");
   }
 
   async function speakSelected() {
@@ -190,7 +253,15 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
       </div>
       <p className="sign-guidance">{error || quality.guidance}</p>
       <button className={`sign-camera-button ${cameraState === "RUNNING" ? "stop" : ""}`} onClick={() => cameraState === "RUNNING" ? stopCamera() : void startCamera()} disabled={cameraState === "LOADING"}>{cameraState === "RUNNING" ? "카메라 종료" : cameraState === "LOADING" ? "준비 중…" : "수어 카메라 시작"}</button>
-      <div className="model-notice"><b>전문 MVP 입력 단계</b><span>현재는 얼굴·양손·상체 입력 품질을 확인합니다. 자동 KSL 문장 확정은 전문가 승인 학습 모델 연결 후 활성화됩니다.</span></div>
+      <section className="personal-sign-model" aria-label="개인 맞춤 수어 학습">
+        <div className="personal-model-title"><div><b>내 수어 학습</b><span>기기 안에서만 저장되는 개인 맞춤 실험 기능</span></div><em>{Object.values(library).filter((items) => items.length >= 3).length}개 준비</em></div>
+        <label><span>학습할 표현</span><select value={trainingPhraseId} onChange={(event) => setTrainingPhraseId(event.target.value)}>{SIGN_PHRASES.map((phrase) => <option key={phrase.id} value={phrase.id}>{phrase.domain} · {phrase.text} ({library[phrase.id]?.length ?? 0}/3)</option>)}</select></label>
+        {captureLabel && <div className="capture-progress"><span>{captureLabel}</span><i><b style={{ width: `${captureProgress * 100}%` }} /></i><small>시작부터 끝까지 한 번에 표현해 주세요.</small></div>}
+        <div className="personal-model-actions"><button onClick={() => startCapture("TRAIN")} disabled={Boolean(captureLabel) || !quality.ready}>이 표현 학습</button><button onClick={() => startCapture("RECOGNIZE")} disabled={Boolean(captureLabel) || !quality.ready}>수어 인식</button></div>
+        {candidates.length > 0 && <div className="sign-candidates"><small>인식 후보</small>{candidates.map((candidate, index) => <button key={candidate.id} onClick={() => selectPhrase(candidate.text, candidate.gloss)}><b>{index + 1}. {candidate.text}</b><span>{Math.round(candidate.confidence * 100)}% · 학습 {candidate.sampleCount}회</span></button>)}</div>}
+        {Object.keys(library).length > 0 && <button className="clear-personal-model" onClick={clearPersonalLibrary}>개인 학습 데이터 전체 삭제</button>}
+      </section>
+      <div className="model-notice"><b>개인 맞춤 실험 모델</b><span>본인이 학습한 동작만 비교 인식합니다. 전문 한국수어 통역 결과가 아니며, 의료·법률·긴급 상황에서는 반드시 사람의 확인이 필요합니다.</span></div>
       <PhraseStrip onSelect={selectPhrase} />
     </>}
 
@@ -201,7 +272,7 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
       {error && <small>{error}</small>}
     </div>}
 
-    {mode === "PHRASES" && <div className="phrase-board">{PHRASES.map((item) => <button key={item.text} className={item.emergency ? "emergency" : ""} onClick={() => selectPhrase(item.text, item.gloss)}><small>{item.domain}</small><b>{item.text}</b><span>{item.gloss}</span></button>)}</div>}
+    {mode === "PHRASES" && <div className="phrase-board">{SIGN_PHRASES.map((item) => <button key={item.text} className={item.emergency ? "emergency" : ""} onClick={() => selectPhrase(item.text, item.gloss)}><small>{item.domain}</small><b>{item.text}</b><span>{item.gloss}</span></button>)}</div>}
 
     {selectedText && <div className="translation-result" style={{ opacity: widgetSettings.opacity }}>{widgetSettings.showGloss && <small>{selectedGloss}</small>}<strong style={{ fontSize: Math.min(widgetSettings.fontSize, 32) }}>{selectedText}</strong><div><button onClick={() => void speakSelected()}>🔊 음성으로 전달</button><button onClick={() => { setSelectedText(""); setSelectedGloss(""); }}>지우기</button></div></div>}
 
@@ -210,5 +281,5 @@ export function SignInterpreterScreen({ widgetSettings, onWidget }: { widgetSett
 }
 
 function PhraseStrip({ onSelect }: { onSelect(text: string, gloss: string): void }) {
-  return <div className="phrase-strip"><div><b>빠른 표현</b><span>선택 후 음성으로 전달</span></div><div>{PHRASES.slice(0, 4).map((item) => <button key={item.text} className={item.emergency ? "emergency" : ""} onClick={() => onSelect(item.text, item.gloss)}>{item.text}</button>)}</div></div>;
+  return <div className="phrase-strip"><div><b>빠른 표현</b><span>선택 후 음성으로 전달</span></div><div>{SIGN_PHRASES.slice(0, 5).map((item) => <button key={item.text} className={item.emergency ? "emergency" : ""} onClick={() => onSelect(item.text, item.gloss)}>{item.text}</button>)}</div></div>;
 }
