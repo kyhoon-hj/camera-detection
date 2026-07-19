@@ -11,6 +11,12 @@ import {
   isUsableVideoFrame,
   visionErrorMessage,
 } from "./vision";
+import {
+  DEFAULT_WIDGET_SETTINGS,
+  normalizeWidgetSettings,
+  type WidgetPosition,
+  type WidgetSettings,
+} from "./widgetSettings";
 import "./styles.css";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -25,7 +31,17 @@ interface WakeLockSentinelLike extends EventTarget {
 type RunState = "READY" | "LOADING" | "RUNNING" | "ERROR";
 type CameraPermission = "CHECKING" | "PROMPT" | "GRANTED" | "DENIED" | "UNAVAILABLE";
 type MobileTab = "MONITOR" | "DETAILS" | "SETTINGS";
+type AppModule = "HOME" | "DROWSINESS" | "POSTURE" | "MEDITATION" | "SIGN" | "WIDGET";
 const isNativeApp = Capacitor.isNativePlatform();
+const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
+
+function loadWidgetSettings(): WidgetSettings {
+  try {
+    return normalizeWidgetSettings(JSON.parse(localStorage.getItem(WIDGET_STORAGE_KEY) || "{}") as Partial<WidgetSettings>);
+  } catch {
+    return DEFAULT_WIDGET_SETTINGS;
+  }
+}
 
 const initialSnapshot: MonitorSnapshot = {
   status: "IDLE",
@@ -79,7 +95,11 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState("");
-  const [activeTab,setActiveTab]=useState<MobileTab>("MONITOR");
+  const [activeTab, setActiveTab] = useState<MobileTab>("MONITOR");
+  const [activeModule, setActiveModule] = useState<AppModule>("HOME");
+  const [widgetSettings, setWidgetSettings] = useState(loadWidgetSettings);
+  const [meditationSeconds, setMeditationSeconds] = useState(300);
+  const [meditationRunning, setMeditationRunning] = useState(false);
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -332,6 +352,20 @@ function App() {
   }, [runState, snapshot.message, snapshot.status, soundEnabled]);
 
   useEffect(() => {
+    if (!meditationRunning) return;
+    const timer = window.setInterval(() => {
+      setMeditationSeconds((seconds) => {
+        if (seconds <= 1) {
+          setMeditationRunning(false);
+          return 0;
+        }
+        return seconds - 1;
+      });
+    }, 1_000);
+    return () => window.clearInterval(timer);
+  }, [meditationRunning]);
+
+  useEffect(() => {
     // React StrictMode intentionally runs effect setup/cleanup twice in development.
     // Reset the mounted flag on every setup so the detection loop remains active
     // after StrictMode's simulated unmount.
@@ -342,6 +376,27 @@ function App() {
       monitorRef.current.stop();
     };
   }, [stopResources]);
+
+  const openModule = useCallback((module: AppModule) => {
+    if (module !== "DROWSINESS" && module !== "POSTURE") stop();
+    setActiveModule(module);
+    if (module === "DROWSINESS") setActiveTab("MONITOR");
+    if (module === "POSTURE") setActiveTab("MONITOR");
+  }, [stop]);
+
+  const goHome = useCallback(() => {
+    stop();
+    setMeditationRunning(false);
+    setActiveModule("HOME");
+  }, [stop]);
+
+  const updateWidgetSettings = useCallback((next: Partial<WidgetSettings>) => {
+    setWidgetSettings((current) => {
+      const normalized = normalizeWidgetSettings({ ...current, ...next });
+      localStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(normalized));
+      return normalized;
+    });
+  }, []);
 
   const install = async () => {
     if (installPrompt) {
@@ -377,12 +432,27 @@ function App() {
     <main className={`app status-${snapshot.status.toLowerCase()}`}>
       <header className="topbar">
         <div className="brand"><span className="brand-mark" />SUHA <b>MOBILE</b></div>
-        {isNativeApp ? (
-          <span className="native-badge">설치형 앱</span>
-        ) : (
-          <button className="install-button" onClick={()=>setActiveTab("SETTINGS")}>설정</button>
-        )}
+        {activeModule === "HOME"
+          ? <button className="install-button" onClick={() => setActiveModule("WIDGET")}>위젯 설정</button>
+          : <button className="install-button" onClick={goHome}>홈</button>}
       </header>
+
+      {activeModule === "HOME" && <HomeScreen onOpen={openModule} widgetSettings={widgetSettings} />}
+      {activeModule === "MEDITATION" && (
+        <MeditationScreen
+          seconds={meditationSeconds}
+          running={meditationRunning}
+          onToggle={() => {
+            if (meditationSeconds === 0) setMeditationSeconds(300);
+            setMeditationRunning((value) => !value);
+          }}
+          onReset={() => { setMeditationRunning(false); setMeditationSeconds(300); }}
+        />
+      )}
+      {activeModule === "SIGN" && <SignScreen widgetSettings={widgetSettings} onWidget={() => setActiveModule("WIDGET")} />}
+      {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
+
+      {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
 
       {showInstallHelp && (
         <aside className="install-help">
@@ -390,13 +460,13 @@ function App() {
         </aside>
       )}
 
-      <section className={`camera-stage ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label="운전자 카메라">
+      <section className={`camera-stage ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label={activeModule === "POSTURE" ? "자세 교정 카메라" : "운전자 카메라"}>
         <video ref={videoRef} playsInline muted />
         <canvas ref={canvasRef} />
         {runState !== "RUNNING" && (
           <div className="camera-placeholder">
             <div className="face-guide"><span /><span /></div>
-            <strong>{runState === "LOADING" ? "카메라 허용을 기다리고 있습니다" : "운전자 감지 준비"}</strong>
+            <strong>{runState === "LOADING" ? "카메라 허용을 기다리고 있습니다" : activeModule === "POSTURE" ? "자세 교정 준비" : "운전자 감지 준비"}</strong>
             <p>{runState === "LOADING" && cameraPermission !== "GRANTED"
               ? "브라우저의 카메라 권한 창에서 ‘허용’을 선택해 주세요. 허용 후 자동으로 시작합니다."
               : "휴대폰을 고정하고 얼굴과 양쪽 어깨가 보이게 맞춰 주세요."}</p>
@@ -424,7 +494,7 @@ function App() {
       <section className={`status-panel ${activeTab==="SETTINGS"?"mobile-screen-hidden":""}`} aria-live="polite">
         <div className="status-heading">
           <div>
-            <span className="eyebrow">DRIVER STATUS</span>
+            <span className="eyebrow">{activeModule === "POSTURE" ? "POSTURE COACH" : "DRIVER STATUS"}</span>
             <h1>{calibrating ? "기준 측정 중" : statusLabel}</h1>
           </div>
           <div className="privacy-chip">기기 내 분석</div>
@@ -474,6 +544,7 @@ function App() {
         <button className="setting-row" onClick={()=>setSoundEnabled(value=>!value)} aria-pressed={soundEnabled}><span><b>경보음과 음성 안내</b><small>주의·위험 상태를 한국어로 알립니다.</small></span><i className={soundEnabled?"on":""}>{soundEnabled?"켜짐":"꺼짐"}</i></button>
         <button className="setting-row" onClick={()=>void testVoice()}><span><b>한국어 음성 테스트</b><small>기기의 TTS 음성이 들리는지 확인합니다.</small></span><i>실행</i></button>
         <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>얼굴과 자세 기준을 5초간 다시 측정합니다.</small></span><i>재측정</i></button>
+        <button className="setting-row" onClick={() => setActiveModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
         {!isNativeApp&&<button className="setting-row" onClick={()=>void install()} aria-expanded={showInstallHelp}><span><b>홈 화면에 앱 설치</b><small>전체 화면에서 빠르게 실행할 수 있습니다.</small></span><i>설치</i></button>}
         {voiceFeedback&&<p className="voice-feedback" role="status">{voiceFeedback}</p>}
         <div className="privacy-card"><b>기기 내 개인정보 처리</b><p>카메라 영상은 서버로 보내거나 저장하지 않습니다. 앱이 백그라운드로 가면 카메라를 즉시 종료합니다.</p></div>
@@ -484,12 +555,89 @@ function App() {
       </footer>}
 
       <nav className="bottom-nav" aria-label="주요 화면">
-        <button className={activeTab==="MONITOR"?"active":""} aria-current={activeTab==="MONITOR"?"page":undefined} onClick={()=>setActiveTab("MONITOR")}><span>◉</span>감지</button>
-        <button className={activeTab==="DETAILS"?"active":""} aria-current={activeTab==="DETAILS"?"page":undefined} onClick={()=>setActiveTab("DETAILS")}><span>▤</span>상세</button>
+        <button className={activeTab==="MONITOR"?"active":""} aria-current={activeTab==="MONITOR"?"page":undefined} onClick={()=>setActiveTab("MONITOR")}><span>◉</span>{activeModule === "POSTURE" ? "카메라" : "감지"}</button>
+        <button className={activeTab==="DETAILS"?"active":""} aria-current={activeTab==="DETAILS"?"page":undefined} onClick={()=>setActiveTab("DETAILS")}><span>▤</span>{activeModule === "POSTURE" ? "교정" : "상세"}</button>
         <button className={activeTab==="SETTINGS"?"active":""} aria-current={activeTab==="SETTINGS"?"page":undefined} onClick={()=>setActiveTab("SETTINGS")}><span>⚙</span>설정</button>
       </nav>
+      </>}
     </main>
   );
+}
+
+function HomeScreen({ onOpen, widgetSettings }: { onOpen(module: AppModule): void; widgetSettings: WidgetSettings }) {
+  return <section className="mobile-home" aria-label="SUHA 홈">
+    <div className="home-hero">
+      <span className="eyebrow">SUHA WELLNESS</span>
+      <h1>오늘 어떤 도움이<br />필요하세요?</h1>
+      <p>카메라 영상은 저장하지 않고 기기 안에서만 분석합니다.</p>
+    </div>
+    <div className="module-grid">
+      <button className="module-card drive" onClick={() => onOpen("DROWSINESS")}>
+        <span className="module-icon">◉</span><small>DRIVE SAFE</small><b>졸음운전 감지</b><p>눈 감김과 고개 숙임을 실시간으로 확인합니다.</p><i>시작하기 →</i>
+      </button>
+      <button className="module-card posture" onClick={() => onOpen("POSTURE")}>
+        <span className="module-icon">◇</span><small>POSTURE</small><b>자세 교정</b><p>어깨 수평과 머리 기울기를 3D로 분석합니다.</p><i>교정하기 →</i>
+      </button>
+      <button className="module-card meditation" onClick={() => onOpen("MEDITATION")}>
+        <span className="module-icon">◌</span><small>MINDFUL</small><b>호흡 명상</b><p>5분 동안 천천히 호흡하며 긴장을 낮춥니다.</p><i>쉬어가기 →</i>
+      </button>
+      <button className="module-card sign" onClick={() => onOpen("SIGN")}>
+        <span className="module-icon">⌁</span><small>KSL</small><b>수어 통역</b><p>한국수어 번역 기능과 자막 위젯을 준비합니다.</p><i>열어보기 →</i>
+      </button>
+    </div>
+    <button className="widget-shortcut" onClick={() => onOpen("WIDGET")}>
+      <span><b>번역 위젯 설정</b><small>{widgetSettings.enabled ? "표시 중" : "숨김"} · {widgetPositionLabel(widgetSettings.position)} · {widgetSettings.fontSize}px</small></span><i>⚙</i>
+    </button>
+  </section>;
+}
+
+function MeditationScreen({ seconds, running, onToggle, onReset }: { seconds: number; running: boolean; onToggle(): void; onReset(): void }) {
+  const phase = Math.floor(seconds / 4) % 2 === 0 ? "내쉬기" : "들이쉬기";
+  return <section className="meditation-screen" aria-label="호흡 명상">
+    <span className="eyebrow">5 MINUTE BREATH</span>
+    <h1>호흡 명상</h1>
+    <p>편안하게 앉아 코로 천천히 호흡해 보세요.</p>
+    <div className={`breath-orb ${running ? "running" : ""}`}><span>{running ? phase : "준비"}</span></div>
+    <strong className="meditation-time">{formatClock(seconds)}</strong>
+    <div className="meditation-actions"><button className="primary" onClick={onToggle}>{running ? "잠시 멈춤" : seconds === 0 ? "다시 시작" : "명상 시작"}</button><button onClick={onReset}>5분 초기화</button></div>
+    <small>운전 중에는 명상을 사용하지 마세요. 안전한 장소에서만 실행하세요.</small>
+  </section>;
+}
+
+function SignScreen({ widgetSettings, onWidget }: { widgetSettings: WidgetSettings; onWidget(): void }) {
+  return <section className="sign-screen" aria-label="수어 통역">
+    <span className="eyebrow">KOREAN SIGN LANGUAGE</span>
+    <h1>수어 통역</h1>
+    <p>전문 한국수어 번역 엔진은 검수용 PC 콘솔에 구현되어 있으며, 모바일 카메라 연결은 다음 단계입니다.</p>
+    <div className="sign-status-card"><span>현재 모바일 상태</span><b>통역 화면 준비 중</b><small>검증되지 않은 번역을 실제 통역처럼 표시하지 않습니다.</small></div>
+    <div className="widget-preview" style={{ opacity: widgetSettings.opacity }}>
+      <span>● LOCAL WIDGET</span>
+      {widgetSettings.showGloss && <small>GLOSS 대기</small>}
+      <strong style={{ fontSize: widgetSettings.fontSize }}>수어 번역 대기 중</strong>
+    </div>
+    <button className="secondary-primary" onClick={onWidget}>번역 위젯 설정</button>
+  </section>;
+}
+
+function WidgetSettingsScreen({ settings, onUpdate }: { settings: WidgetSettings; onUpdate(next: Partial<WidgetSettings>): void }) {
+  return <section className="widget-settings-screen" aria-label="번역 위젯 설정">
+    <span className="eyebrow">TRANSLATION WIDGET</span><h1>위젯 설정</h1><p>수어 통역 자막의 표시 방법을 기기에 저장합니다.</p>
+    <button className="setting-row" onClick={() => onUpdate({ enabled: !settings.enabled })} aria-pressed={settings.enabled}><span><b>번역 위젯 표시</b><small>수어 통역 화면 위에 번역 결과를 표시합니다.</small></span><i className={settings.enabled ? "on" : ""}>{settings.enabled ? "켜짐" : "꺼짐"}</i></button>
+    <label className="widget-control"><span><b>표시 위치</b><small>{widgetPositionLabel(settings.position)}</small></span><select value={settings.position} onChange={(event) => onUpdate({ position: event.target.value as WidgetPosition })}><option value="TOP_LEFT">왼쪽 위</option><option value="TOP_RIGHT">오른쪽 위</option><option value="BOTTOM_LEFT">왼쪽 아래</option><option value="BOTTOM_RIGHT">오른쪽 아래</option></select></label>
+    <label className="widget-control range"><span><b>글자 크기</b><small>{settings.fontSize}px</small></span><input type="range" min="16" max="44" value={settings.fontSize} onChange={(event) => onUpdate({ fontSize: Number(event.target.value) })} /></label>
+    <label className="widget-control range"><span><b>투명도</b><small>{Math.round(settings.opacity * 100)}%</small></span><input type="range" min="0.55" max="1" step="0.01" value={settings.opacity} onChange={(event) => onUpdate({ opacity: Number(event.target.value) })} /></label>
+    <button className="setting-row" onClick={() => onUpdate({ showGloss: !settings.showGloss })} aria-pressed={settings.showGloss}><span><b>Gloss 함께 표시</b><small>한국수어 중간 표기를 번역문 위에 표시합니다.</small></span><i className={settings.showGloss ? "on" : ""}>{settings.showGloss ? "표시" : "숨김"}</i></button>
+    <div className="widget-preview" style={{ opacity: settings.opacity }}><span>● PREVIEW</span>{settings.showGloss && <small>안녕하세요 / 도움</small>}<strong style={{ fontSize: settings.fontSize }}>무엇을 도와드릴까요?</strong></div>
+  </section>;
+}
+
+function widgetPositionLabel(position: WidgetPosition): string {
+  return { TOP_LEFT: "왼쪽 위", TOP_RIGHT: "오른쪽 위", BOTTOM_LEFT: "왼쪽 아래", BOTTOM_RIGHT: "오른쪽 아래" }[position];
+}
+
+function formatClock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function beep(context: AudioContext | null, urgent: boolean): void {
