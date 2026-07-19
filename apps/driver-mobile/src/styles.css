@@ -246,7 +246,7 @@ footer b{color:#5f6d67}
 .brand-lockup{display:flex;align-items:center;min-width:0}
 .brand-lockup .header-icon.back{flex:0 0 38px;width:38px;margin-right:3px;font-size:31px;font-weight:300}
 .brand{display:flex;align-items:center;gap:9px;justify-self:start;font-size:inherit;letter-spacing:normal}
-.brand>i{display:block;width:13px;height:13px;border:4px solid #20d782;border-radius:50%;box-shadow:0 0 0 5px rgba(32,215,130,.1)}
+.brand>img{display:block;width:38px;height:38px;border-radius:12px;box-shadow:0 5px 14px rgba(20,87,63,.16)}
 .brand>span{display:grid;color:#173d31;font-size:21px;font-weight:900;line-height:.85;letter-spacing:-.05em}
 .brand small{color:#6ba28e;font-size:6px;font-weight:900;letter-spacing:.2em}
 .topbar>.header-icon:last-child{color:#315c4e;background:#eef8f4;font-size:18px}

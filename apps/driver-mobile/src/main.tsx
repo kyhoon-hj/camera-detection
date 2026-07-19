@@ -435,7 +435,7 @@ function App() {
       <header className="topbar">
         <div className="brand-lockup">
           {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="홈으로 이동">‹</button>}
-          <div className="brand" aria-label="SUHA"><i /><span>suha<small>AI CARE</small></span></div>
+          <div className="brand" aria-label="SUHA"><img src="/icon-192.png" alt="" /><span>suha<small>AI CARE</small></span></div>
         </div>
         <button className="header-icon" onClick={() => {
           if (activeModule === "DROWSINESS" || activeModule === "POSTURE") setActiveTab("SETTINGS");
