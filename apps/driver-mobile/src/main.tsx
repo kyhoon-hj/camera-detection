@@ -24,6 +24,7 @@ interface WakeLockSentinelLike extends EventTarget {
 
 type RunState = "READY" | "LOADING" | "RUNNING" | "ERROR";
 type CameraPermission = "CHECKING" | "PROMPT" | "GRANTED" | "DENIED" | "UNAVAILABLE";
+type MobileTab = "MONITOR" | "DETAILS" | "SETTINGS";
 const isNativeApp = Capacitor.isNativePlatform();
 
 const initialSnapshot: MonitorSnapshot = {
@@ -63,6 +64,7 @@ function App() {
   const animationRef = useRef<number | null>(null);
   const lastInferenceRef = useRef(0);
   const lastVideoTimeRef = useRef(-1);
+  const lastVideoProgressRef = useRef(0);
   const recoveryRef = useRef(false);
   const cpuRecoveryUsedRef = useRef(false);
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
@@ -77,6 +79,7 @@ function App() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState("");
+  const [activeTab,setActiveTab]=useState<MobileTab>("MONITOR");
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -102,6 +105,7 @@ function App() {
     void stopKoreanSpeech();
     lastInferenceRef.current = 0;
     lastVideoTimeRef.current = -1;
+    lastVideoProgressRef.current = 0;
     recoveryRef.current = false;
     cpuRecoveryUsedRef.current = false;
   }, []);
@@ -121,6 +125,15 @@ function App() {
     const engine = engineRef.current;
     const now = performance.now();
     const hasNewFrame = video !== null && video.currentTime !== lastVideoTimeRef.current;
+    if (hasNewFrame) lastVideoProgressRef.current = now;
+    if (lastVideoProgressRef.current > 0 && now - lastVideoProgressRef.current >= 4_000) {
+      stopResources();
+      monitorRef.current.stop();
+      setSnapshot(initialSnapshot);
+      setError("카메라 영상이 멈췄습니다. 카메라를 사용하는 다른 앱을 닫고 다시 시작해 주세요.");
+      setRunState("ERROR");
+      return;
+    }
     if (video && canvas && engine && !recoveryRef.current && isUsableVideoFrame(video) && hasNewFrame && now - lastInferenceRef.current >= 80) {
       lastInferenceRef.current = now;
       lastVideoTimeRef.current = video.currentTime;
@@ -209,6 +222,15 @@ function App() {
       ]);
       setCameraPermission("GRANTED");
       streamRef.current = stream;
+      const handleCameraEnded = () => {
+        if (!mountedRef.current || streamRef.current !== stream) return;
+        stopResources();
+        monitorRef.current.stop();
+        setSnapshot(initialSnapshot);
+        setError("카메라 연결이 끊어졌습니다. 다른 앱에서 카메라를 사용 중인지 확인한 뒤 다시 시작해 주세요.");
+        setRunState("ERROR");
+      };
+      stream.getVideoTracks().forEach((track) => track.addEventListener("ended", handleCameraEnded, { once: true }));
       if (videoRef.current === null) throw new Error("카메라 화면을 준비하지 못했습니다.");
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
@@ -220,6 +242,7 @@ function App() {
       monitorRef.current.begin();
       lastInferenceRef.current = 0;
       lastVideoTimeRef.current = -1;
+      lastVideoProgressRef.current = performance.now();
       setRunState("RUNNING");
       animationRef.current = requestAnimationFrame(runDetection);
     } catch (cause) {
@@ -308,10 +331,17 @@ function App() {
     });
   }, [runState, snapshot.message, snapshot.status, soundEnabled]);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
-    stop();
-  }, [stop]);
+  useEffect(() => {
+    // React StrictMode intentionally runs effect setup/cleanup twice in development.
+    // Reset the mounted flag on every setup so the detection loop remains active
+    // after StrictMode's simulated unmount.
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stopResources();
+      monitorRef.current.stop();
+    };
+  }, [stopResources]);
 
   const install = async () => {
     if (installPrompt) {
@@ -346,11 +376,11 @@ function App() {
   return (
     <main className={`app status-${snapshot.status.toLowerCase()}`}>
       <header className="topbar">
-        <div className="brand"><span className="brand-mark" />SUHA <b>DRIVER</b></div>
+        <div className="brand"><span className="brand-mark" />SUHA <b>MOBILE</b></div>
         {isNativeApp ? (
           <span className="native-badge">설치형 앱</span>
         ) : (
-          <button className="install-button" onClick={() => void install()} aria-expanded={showInstallHelp}>앱 설치</button>
+          <button className="install-button" onClick={()=>setActiveTab("SETTINGS")}>설정</button>
         )}
       </header>
 
@@ -360,7 +390,7 @@ function App() {
         </aside>
       )}
 
-      <section className="camera-stage" aria-label="운전자 카메라">
+      <section className={`camera-stage ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label="운전자 카메라">
         <video ref={videoRef} playsInline muted />
         <canvas ref={canvasRef} />
         {runState !== "RUNNING" && (
@@ -391,7 +421,7 @@ function App() {
         )}
       </section>
 
-      <section className="status-panel" aria-live="polite">
+      <section className={`status-panel ${activeTab==="SETTINGS"?"mobile-screen-hidden":""}`} aria-live="polite">
         <div className="status-heading">
           <div>
             <span className="eyebrow">DRIVER STATUS</span>
@@ -401,7 +431,7 @@ function App() {
         </div>
         <p className="main-message">{error || snapshot.message}</p>
 
-        <div className="metric-grid">
+        {activeTab==="DETAILS"&&<div className="metric-grid">
           <article>
             <span>눈 상태</span>
             <strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong>
@@ -426,7 +456,7 @@ function App() {
             </div>
             <small className="confidence">3D 추정 신뢰도 {Math.round(snapshot.postureConfidence * 100)}% · 5프레임 흔들림 보정</small>
           </article>
-        </div>
+        </div>}
       </section>
 
       <nav className="controls" aria-label="감지 제어">
@@ -437,19 +467,27 @@ function App() {
             <span className="play-icon" />{runState === "LOADING" ? "준비 중…" : "5초 측정 후 감지 시작"}
           </button>
         )}
-        <div className="secondary-controls">
-          <button onClick={() => setSoundEnabled((value) => !value)} aria-pressed={soundEnabled}>
-            {soundEnabled ? "🔊 경보음 켜짐" : "🔇 경보음 꺼짐"}
-          </button>
-          <button onClick={() => monitorRef.current.recalibrate()} disabled={runState !== "RUNNING"}>↻ 기준 재측정</button>
-          <button className="voice-test" onClick={() => void testVoice()}>🗣 한국어 음성 테스트</button>
-        </div>
-        {voiceFeedback && <p className="voice-feedback" role="status">{voiceFeedback}</p>}
       </nav>
 
-      <footer>
+      {activeTab==="SETTINGS"&&<section className="mobile-settings" aria-label="앱 설정">
+        <div className="settings-heading"><span className="eyebrow">APP SETTINGS</span><h1>설정</h1><p>운전 중에는 조작하지 말고 출발 전에 설정해 주세요.</p></div>
+        <button className="setting-row" onClick={()=>setSoundEnabled(value=>!value)} aria-pressed={soundEnabled}><span><b>경보음과 음성 안내</b><small>주의·위험 상태를 한국어로 알립니다.</small></span><i className={soundEnabled?"on":""}>{soundEnabled?"켜짐":"꺼짐"}</i></button>
+        <button className="setting-row" onClick={()=>void testVoice()}><span><b>한국어 음성 테스트</b><small>기기의 TTS 음성이 들리는지 확인합니다.</small></span><i>실행</i></button>
+        <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>얼굴과 자세 기준을 5초간 다시 측정합니다.</small></span><i>재측정</i></button>
+        {!isNativeApp&&<button className="setting-row" onClick={()=>void install()} aria-expanded={showInstallHelp}><span><b>홈 화면에 앱 설치</b><small>전체 화면에서 빠르게 실행할 수 있습니다.</small></span><i>설치</i></button>}
+        {voiceFeedback&&<p className="voice-feedback" role="status">{voiceFeedback}</p>}
+        <div className="privacy-card"><b>기기 내 개인정보 처리</b><p>카메라 영상은 서버로 보내거나 저장하지 않습니다. 앱이 백그라운드로 가면 카메라를 즉시 종료합니다.</p></div>
+      </section>}
+
+      {activeTab==="SETTINGS"&&<footer>
         <b>안전 안내</b> 이 기능은 실험용 보조 장치이며 운전자의 전방 주시를 대신하지 않습니다. 경고가 발생하면 즉시 안전한 곳에 정차하세요.
-      </footer>
+      </footer>}
+
+      <nav className="bottom-nav" aria-label="주요 화면">
+        <button className={activeTab==="MONITOR"?"active":""} aria-current={activeTab==="MONITOR"?"page":undefined} onClick={()=>setActiveTab("MONITOR")}><span>◉</span>감지</button>
+        <button className={activeTab==="DETAILS"?"active":""} aria-current={activeTab==="DETAILS"?"page":undefined} onClick={()=>setActiveTab("DETAILS")}><span>▤</span>상세</button>
+        <button className={activeTab==="SETTINGS"?"active":""} aria-current={activeTab==="SETTINGS"?"page":undefined} onClick={()=>setActiveTab("SETTINGS")}><span>⚙</span>설정</button>
+      </nav>
     </main>
   );
 }
