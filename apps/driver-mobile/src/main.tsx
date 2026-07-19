@@ -3,6 +3,7 @@ import { StrictMode, useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { DriverMonitor, type MonitorSnapshot } from "./monitor";
 import { getKoreanSpeechStatus, speakKorean, stopKoreanSpeech } from "./speech";
+import { SignInterpreterScreen } from "./SignInterpreterScreen";
 import {
   MobileVisionEngine,
   VisionFrameUnavailableError,
@@ -452,7 +453,7 @@ function App() {
           onReset={() => { setMeditationRunning(false); setMeditationSeconds(300); }}
         />
       )}
-      {activeModule === "SIGN" && <SignScreen widgetSettings={widgetSettings} onWidget={() => setActiveModule("WIDGET")} />}
+      {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => setActiveModule("WIDGET")} />}
       {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
 
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
@@ -613,21 +614,6 @@ function MeditationScreen({ seconds, running, onToggle, onReset }: { seconds: nu
     <strong className="meditation-time">{formatClock(seconds)}</strong>
     <div className="meditation-actions"><button className="primary" onClick={onToggle}>{running ? "잠시 멈춤" : seconds === 0 ? "다시 시작" : "명상 시작"}</button><button onClick={onReset}>5분 초기화</button></div>
     <small>운전 중에는 명상을 사용하지 마세요. 안전한 장소에서만 실행하세요.</small>
-  </section>;
-}
-
-function SignScreen({ widgetSettings, onWidget }: { widgetSettings: WidgetSettings; onWidget(): void }) {
-  return <section className="sign-screen" aria-label="수어 통역">
-    <span className="eyebrow">KOREAN SIGN LANGUAGE</span>
-    <h1>수어 통역</h1>
-    <p>전문 한국수어 번역 엔진은 검수용 PC 콘솔에 구현되어 있으며, 모바일 카메라 연결은 다음 단계입니다.</p>
-    <div className="sign-status-card"><span>현재 모바일 상태</span><b>통역 화면 준비 중</b><small>검증되지 않은 번역을 실제 통역처럼 표시하지 않습니다.</small></div>
-    <div className="widget-preview" style={{ opacity: widgetSettings.opacity }}>
-      <span>● LOCAL WIDGET</span>
-      {widgetSettings.showGloss && <small>GLOSS 대기</small>}
-      <strong style={{ fontSize: widgetSettings.fontSize }}>수어 번역 대기 중</strong>
-    </div>
-    <button className="secondary-primary" onClick={onWidget}>번역 위젯 설정</button>
   </section>;
 }
 
