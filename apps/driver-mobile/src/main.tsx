@@ -30,7 +30,7 @@ interface WakeLockSentinelLike extends EventTarget {
 
 type RunState = "READY" | "LOADING" | "RUNNING" | "ERROR";
 type CameraPermission = "CHECKING" | "PROMPT" | "GRANTED" | "DENIED" | "UNAVAILABLE";
-type MobileTab = "MONITOR" | "DETAILS" | "SETTINGS";
+type MobileTab = "MONITOR" | "SETTINGS";
 type AppModule = "HOME" | "DROWSINESS" | "POSTURE" | "MEDITATION" | "SIGN" | "WIDGET";
 const isNativeApp = Capacitor.isNativePlatform();
 const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
@@ -96,6 +96,7 @@ function App() {
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState("");
   const [activeTab, setActiveTab] = useState<MobileTab>("MONITOR");
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [activeModule, setActiveModule] = useState<AppModule>("HOME");
   const [widgetSettings, setWidgetSettings] = useState(loadWidgetSettings);
   const [meditationSeconds, setMeditationSeconds] = useState(300);
@@ -431,10 +432,12 @@ function App() {
   return (
     <main className={`app status-${snapshot.status.toLowerCase()}`}>
       <header className="topbar">
-        <div className="brand"><span className="brand-mark" />SUHA <b>MOBILE</b></div>
-        {activeModule === "HOME"
-          ? <button className="install-button" onClick={() => setActiveModule("WIDGET")}>위젯 설정</button>
-          : <button className="install-button" onClick={goHome}>홈</button>}
+        <button className="header-icon" onClick={goHome} aria-label="홈으로 이동" disabled={activeModule === "HOME"}>⌂</button>
+        <div className="brand" aria-label="SUHA">suha</div>
+        <button className="header-icon" onClick={() => {
+          if (activeModule === "DROWSINESS" || activeModule === "POSTURE") setActiveTab("SETTINGS");
+          else setActiveModule("WIDGET");
+        }} aria-label="설정 열기">⚙</button>
       </header>
 
       {activeModule === "HOME" && <HomeScreen onOpen={openModule} widgetSettings={widgetSettings} />}
@@ -453,6 +456,12 @@ function App() {
       {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
 
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
+
+      <nav className="mode-switcher" aria-label="감지 모드 선택">
+        <button className={activeModule === "DROWSINESS" ? "active" : ""} onClick={() => openModule("DROWSINESS")}>졸음 감지</button>
+        <span aria-hidden="true">⇄</span>
+        <button className={activeModule === "POSTURE" ? "active" : ""} onClick={() => openModule("POSTURE")}>자세 교정</button>
+      </nav>
 
       {showInstallHelp && (
         <aside className="install-help">
@@ -501,7 +510,16 @@ function App() {
         </div>
         <p className="main-message">{error || snapshot.message}</p>
 
-        {activeTab==="DETAILS"&&<div className="metric-grid">
+        <div className="summary-metrics">
+          <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong></article>
+          <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
+          <article><span>자세</span><strong>{snapshot.postureScore === null ? "—" : `${snapshot.postureScore}점`}</strong></article>
+        </div>
+        <button className="details-toggle" onClick={() => setDetailsExpanded((value) => !value)} aria-expanded={detailsExpanded}>
+          {detailsExpanded ? "상세 정보 접기" : "상세 정보 보기"}<span>{detailsExpanded ? "⌃" : "⌄"}</span>
+        </button>
+
+        {detailsExpanded&&<div className="metric-grid">
           <article>
             <span>눈 상태</span>
             <strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong>
@@ -529,7 +547,7 @@ function App() {
         </div>}
       </section>
 
-      <nav className="controls" aria-label="감지 제어">
+      <nav className={`controls ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label="감지 제어">
         {runState === "RUNNING" ? (
           <button className="primary stop" onClick={stop}><span className="stop-icon" />감지 종료</button>
         ) : (
@@ -554,11 +572,7 @@ function App() {
         <b>안전 안내</b> 이 기능은 실험용 보조 장치이며 운전자의 전방 주시를 대신하지 않습니다. 경고가 발생하면 즉시 안전한 곳에 정차하세요.
       </footer>}
 
-      <nav className="bottom-nav" aria-label="주요 화면">
-        <button className={activeTab==="MONITOR"?"active":""} aria-current={activeTab==="MONITOR"?"page":undefined} onClick={()=>setActiveTab("MONITOR")}><span>◉</span>{activeModule === "POSTURE" ? "카메라" : "감지"}</button>
-        <button className={activeTab==="DETAILS"?"active":""} aria-current={activeTab==="DETAILS"?"page":undefined} onClick={()=>setActiveTab("DETAILS")}><span>▤</span>{activeModule === "POSTURE" ? "교정" : "상세"}</button>
-        <button className={activeTab==="SETTINGS"?"active":""} aria-current={activeTab==="SETTINGS"?"page":undefined} onClick={()=>setActiveTab("SETTINGS")}><span>⚙</span>설정</button>
-      </nav>
+      {activeTab==="SETTINGS"&&<button className="back-to-monitor" onClick={() => setActiveTab("MONITOR")}>카메라 화면으로 돌아가기</button>}
       </>}
     </main>
   );
@@ -567,27 +581,25 @@ function App() {
 function HomeScreen({ onOpen, widgetSettings }: { onOpen(module: AppModule): void; widgetSettings: WidgetSettings }) {
   return <section className="mobile-home" aria-label="SUHA 홈">
     <div className="home-hero">
-      <span className="eyebrow">SUHA WELLNESS</span>
-      <h1>오늘 어떤 도움이<br />필요하세요?</h1>
-      <p>카메라 영상은 저장하지 않고 기기 안에서만 분석합니다.</p>
+      <span>AI 생활 도우미</span>
+      <h1>무엇을 도와드릴까요?</h1>
+      <p>카메라 영상은 저장하지 않고 기기 안에서만 분석해요.</p>
     </div>
-    <div className="module-grid">
-      <button className="module-card drive" onClick={() => onOpen("DROWSINESS")}>
-        <span className="module-icon">◉</span><small>DRIVE SAFE</small><b>졸음운전 감지</b><p>눈 감김과 고개 숙임을 실시간으로 확인합니다.</p><i>시작하기 →</i>
+    <div className="home-actions">
+      <button className="home-action drive" onClick={() => onOpen("DROWSINESS")}>
+        <span className="action-icon">◉</span><b>졸음운전 감지</b><small>눈 감김과 고개 숙임을 확인해요</small>
       </button>
-      <button className="module-card posture" onClick={() => onOpen("POSTURE")}>
-        <span className="module-icon">◇</span><small>POSTURE</small><b>자세 교정</b><p>어깨 수평과 머리 기울기를 3D로 분석합니다.</p><i>교정하기 →</i>
+      <button className="home-action posture" onClick={() => onOpen("POSTURE")}>
+        <span className="action-icon">♙</span><b>자세 교정</b><small>어깨와 머리 기울기를 분석해요</small>
       </button>
-      <button className="module-card meditation" onClick={() => onOpen("MEDITATION")}>
-        <span className="module-icon">◌</span><small>MINDFUL</small><b>호흡 명상</b><p>5분 동안 천천히 호흡하며 긴장을 낮춥니다.</p><i>쉬어가기 →</i>
+      <button className="home-action sign" onClick={() => onOpen("SIGN")}>
+        <span className="action-icon">⌁</span><b>수어 통역</b><small>한국수어 번역과 자막을 준비해요</small>
       </button>
-      <button className="module-card sign" onClick={() => onOpen("SIGN")}>
-        <span className="module-icon">⌁</span><small>KSL</small><b>수어 통역</b><p>한국수어 번역 기능과 자막 위젯을 준비합니다.</p><i>열어보기 →</i>
-      </button>
+      <div className="home-action-split">
+        <button className="home-action meditation" onClick={() => onOpen("MEDITATION")}><span className="action-icon">◌</span><b>호흡 명상</b></button>
+        <button className="home-action widget" onClick={() => onOpen("WIDGET")}><span className="action-icon">▣</span><b>위젯 설정</b><small>{widgetSettings.enabled ? "켜짐" : "꺼짐"}</small></button>
+      </div>
     </div>
-    <button className="widget-shortcut" onClick={() => onOpen("WIDGET")}>
-      <span><b>번역 위젯 설정</b><small>{widgetSettings.enabled ? "표시 중" : "숨김"} · {widgetPositionLabel(widgetSettings.position)} · {widgetSettings.fontSize}px</small></span><i>⚙</i>
-    </button>
   </section>;
 }
 
