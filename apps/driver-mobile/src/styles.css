@@ -240,3 +240,46 @@ footer b{color:#5f6d67}
 .translation-result>small{color:#5c8a72;font-size:9px}.translation-result>strong{color:#1f382c;line-height:1.35}.translation-result>div{display:grid;grid-template-columns:1fr auto;gap:6px}.translation-result button{min-height:40px;padding:0 12px;border:0;border-radius:9px;color:#fff;background:#20c96a;font-size:10px;font-weight:800;cursor:pointer}.translation-result button:last-child{color:#68766f;background:#e3ece8}
 .conversation-log{display:grid;gap:7px;padding-top:6px}.conversation-log>div{display:flex;align-items:center;justify-content:space-between}.conversation-log>div b{font-size:12px}.conversation-log>div button{border:0;color:#939e99;background:transparent;font-size:9px;cursor:pointer}.conversation-log article{max-width:88%;padding:10px 12px;border-radius:12px;background:#edf2f0}.conversation-log article.signer{justify-self:end;background:#e7f8ef}.conversation-log article small{color:#89958f;font-size:8px}.conversation-log article p{margin:4px 0 0;color:#314038;font-size:12px;line-height:1.45}
 @media(max-width:370px){.sign-interpreter{padding-top:15px}.phrase-board{grid-template-columns:1fr}.voice-caption-panel{min-height:48dvh}.quality-row span{font-size:8px}}
+
+/* SUHA identity: calm care, organic signals and asymmetric cards. */
+.topbar{grid-template-columns:1fr 44px;padding:0 2px;border-bottom:0}
+.brand-lockup{display:flex;align-items:center;min-width:0}
+.brand-lockup .header-icon.back{flex:0 0 38px;width:38px;margin-right:3px;font-size:31px;font-weight:300}
+.brand{display:flex;align-items:center;gap:9px;justify-self:start;font-size:inherit;letter-spacing:normal}
+.brand>i{display:block;width:13px;height:13px;border:4px solid #20d782;border-radius:50%;box-shadow:0 0 0 5px rgba(32,215,130,.1)}
+.brand>span{display:grid;color:#173d31;font-size:21px;font-weight:900;line-height:.85;letter-spacing:-.05em}
+.brand small{color:#6ba28e;font-size:6px;font-weight:900;letter-spacing:.2em}
+.topbar>.header-icon:last-child{color:#315c4e;background:#eef8f4;font-size:18px}
+.mobile-home{min-height:calc(100dvh - 72px);padding:0 2px 9px;background:linear-gradient(180deg,#fff 0,#f8fcfa 52%,#f2f8f5 100%)}
+.home-hero{position:relative;display:block;min-height:auto;flex:0 0 auto;padding:34px 10px 27px;text-align:left;overflow:hidden}
+.home-hero::before,.home-hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.home-hero::before{width:150px;height:150px;right:-80px;top:-30px;background:rgba(59,223,157,.09);box-shadow:-48px 74px 0 8px rgba(113,221,184,.055)}
+.home-hero::after{width:7px;height:7px;right:32px;top:54px;background:#57e0aa;box-shadow:-34px 39px 0 2px #c6f3df,-92px -21px 0 1px #d7f5e8}
+.home-kicker{display:flex;align-items:center;gap:7px;color:#3a8e70;font-size:10px;font-weight:850;letter-spacing:.04em}
+.home-kicker i{width:7px;height:7px;border-radius:50%;background:#2bd688;box-shadow:0 0 0 5px rgba(43,214,136,.1)}
+.home-hero h1{margin:16px 0 0;color:#17392e;font-size:clamp(32px,9.5vw,45px);font-weight:650;line-height:1.12;letter-spacing:-.065em}
+.home-hero h1 b{color:#22b974;font-weight:900}
+.home-hero p{margin:12px 0 0;color:#84958e;font-size:12px;line-height:1.6}
+.hero-signal{display:flex;align-items:center;gap:10px;width:max-content;margin-top:22px;padding:9px 12px 9px 10px;border:1px solid #dff0e8;border-radius:999px;background:rgba(255,255,255,.8)}
+.hero-signal>i{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 50% 50%,#22d681 0 18%,#c9f4df 20% 45%,#eefaf5 47%)}
+.hero-signal>span{display:grid;gap:1px}.hero-signal b{color:#3b6757;font-size:9px}.hero-signal small{color:#91a19b;font-size:7px}
+.home-bento{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 2px}
+.suha-card{position:relative;display:flex;min-width:0;overflow:hidden;border:0;border-radius:23px;text-align:left;cursor:pointer}
+.suha-card small{font-size:7px;font-weight:900;letter-spacing:.13em}.suha-card b{display:block;margin-top:5px;font-size:16px;letter-spacing:-.03em}.suha-card p{margin:7px 0 0;font-size:9px;line-height:1.55}.suha-card em{font-size:9px;font-style:normal;font-weight:800}
+.suha-card.drive{grid-column:1/-1;min-height:180px;align-items:flex-end;padding:23px;color:#ecfff7;background:linear-gradient(135deg,#123f31,#176146 70%,#1c7651)}
+.suha-card.drive::before{content:"";position:absolute;width:190px;height:190px;right:-80px;top:-75px;border:1px solid rgba(105,255,190,.2);border-radius:50%;box-shadow:0 0 0 27px rgba(105,255,190,.045),0 0 0 58px rgba(105,255,190,.025)}
+.suha-card.drive>div{position:relative;z-index:1}.suha-card.drive small{color:#60e6ae}.suha-card.drive b{font-size:22px}.suha-card.drive p{color:#a6cebd;font-size:10px}.suha-card.drive em{position:absolute;right:21px;bottom:24px;color:#bde7d5}.suha-card.drive em span{display:inline-grid;place-items:center;width:24px;height:24px;margin-left:4px;border-radius:50%;color:#164f39;background:#6af0b5}
+.card-icon{position:absolute;right:24px;top:25px;width:62px;height:62px;border:1px solid rgba(103,244,180,.35);border-radius:50%}
+.card-icon::before,.card-icon::after,.card-icon i{content:"";position:absolute;inset:50%;border-radius:50%;transform:translate(-50%,-50%)}
+.card-icon::before{width:42px;height:42px;border:1px dashed rgba(103,244,180,.45)}.card-icon::after{width:19px;height:19px;background:#61ecac;box-shadow:0 0 24px #5bf2aa}.card-icon i{width:5px;height:5px;background:#fff}
+.suha-card.posture,.suha-card.sign{min-height:172px;flex-direction:column;padding:17px}
+.suha-card.posture{color:#174b49;background:#dff6f0}.suha-card.sign{color:#263d67;background:#e7edfa}
+.suha-card.posture small{color:#36a98d}.suha-card.sign small{color:#758fc6}.suha-card.posture p{color:#6c9690}.suha-card.sign p{color:#7e8ba7}
+.suha-card.posture em,.suha-card.sign em{margin-top:auto;color:currentColor;opacity:.68}
+.card-symbol{display:grid;place-items:center;width:37px;height:37px;margin-bottom:13px;border-radius:13px;background:rgba(255,255,255,.65);font-size:20px}
+.suha-card.meditation{grid-column:1/-1;min-height:102px;align-items:center;gap:13px;padding:16px 18px;color:#503f67;background:#f1eafb}
+.suha-card.meditation .breath-mark{display:grid;place-items:center;flex:0 0 50px;height:50px;border-radius:50%;color:#8f6db8;background:#fff;font-size:27px;box-shadow:0 7px 18px rgba(104,74,139,.1)}
+.suha-card.meditation small{color:#9274b5}.suha-card.meditation b{font-size:14px}.suha-card.meditation p{color:#9788a8}.suha-card.meditation em{margin-left:auto;color:#8468a5}
+.home-utility{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 4px);margin:9px 2px 0;padding:12px 14px;border:1px solid #e0ebe6;border-radius:16px;color:#476158;background:rgba(255,255,255,.86);text-align:left;cursor:pointer}
+.home-utility>span{display:grid;grid-template-columns:28px 1fr;grid-template-rows:auto auto;align-items:center}.home-utility i{grid-row:1/3;display:grid;place-items:center;width:24px;height:24px;border-radius:8px;color:#23885f;background:#e3f5ed;font-style:normal}.home-utility b{font-size:11px}.home-utility small{color:#94a29d;font-size:8px}.home-utility em{padding:6px 9px;border-radius:999px;color:#28825f;background:#edf8f3;font-size:8px;font-style:normal;font-weight:800}
+@media(max-width:370px){.home-hero{padding-top:24px;padding-bottom:21px}.home-hero h1{font-size:32px}.suha-card.drive{min-height:158px}.suha-card.posture,.suha-card.sign{min-height:155px;padding:14px}.suha-card.meditation{min-height:91px}}

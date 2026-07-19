@@ -433,8 +433,10 @@ function App() {
   return (
     <main className={`app status-${snapshot.status.toLowerCase()}`}>
       <header className="topbar">
-        <button className="header-icon" onClick={goHome} aria-label="홈으로 이동" disabled={activeModule === "HOME"}>⌂</button>
-        <div className="brand" aria-label="SUHA">suha</div>
+        <div className="brand-lockup">
+          {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="홈으로 이동">‹</button>}
+          <div className="brand" aria-label="SUHA"><i /><span>suha<small>AI CARE</small></span></div>
+        </div>
         <button className="header-icon" onClick={() => {
           if (activeModule === "DROWSINESS" || activeModule === "POSTURE") setActiveTab("SETTINGS");
           else setActiveModule("WIDGET");
@@ -582,25 +584,24 @@ function App() {
 function HomeScreen({ onOpen, widgetSettings }: { onOpen(module: AppModule): void; widgetSettings: WidgetSettings }) {
   return <section className="mobile-home" aria-label="SUHA 홈">
     <div className="home-hero">
-      <span>AI 생활 도우미</span>
-      <h1>무엇을 도와드릴까요?</h1>
-      <p>카메라 영상은 저장하지 않고 기기 안에서만 분석해요.</p>
+      <div className="home-kicker"><i />오늘의 SUHA</div>
+      <h1>당신의 하루를<br /><b>더 편안하게.</b></h1>
+      <p>안전과 건강, 소통을 하나의 AI로 돌봐요.</p>
+      <div className="hero-signal"><i /><span><b>기기 내 AI</b><small>카메라 영상은 저장되지 않아요</small></span></div>
     </div>
-    <div className="home-actions">
-      <button className="home-action drive" onClick={() => onOpen("DROWSINESS")}>
-        <span className="action-icon">◉</span><b>졸음운전 감지</b><small>눈 감김과 고개 숙임을 확인해요</small>
+    <div className="home-bento">
+      <button className="suha-card drive" onClick={() => onOpen("DROWSINESS")}>
+        <span className="card-icon"><i /></span><div><small>DRIVE SAFE</small><b>졸음운전 감지</b><p>눈과 고개 움직임을 살펴<br />안전한 운전을 도와요.</p></div><em>시작하기 <span>→</span></em>
       </button>
-      <button className="home-action posture" onClick={() => onOpen("POSTURE")}>
-        <span className="action-icon">♙</span><b>자세 교정</b><small>어깨와 머리 기울기를 분석해요</small>
+      <button className="suha-card posture" onClick={() => onOpen("POSTURE")}>
+        <span className="card-symbol">◇</span><small>POSTURE</small><b>자세 교정</b><p>바른 자세를<br />함께 찾아요.</p><em>열기 →</em>
       </button>
-      <button className="home-action sign" onClick={() => onOpen("SIGN")}>
-        <span className="action-icon">⌁</span><b>수어 통역</b><small>한국수어 번역과 자막을 준비해요</small>
+      <button className="suha-card sign" onClick={() => onOpen("SIGN")}>
+        <span className="card-symbol">⌁</span><small>KSL CARE</small><b>수어 통역</b><p>수어와 음성을<br />서로 이어줘요.</p><em>열기 →</em>
       </button>
-      <div className="home-action-split">
-        <button className="home-action meditation" onClick={() => onOpen("MEDITATION")}><span className="action-icon">◌</span><b>호흡 명상</b></button>
-        <button className="home-action widget" onClick={() => onOpen("WIDGET")}><span className="action-icon">▣</span><b>위젯 설정</b><small>{widgetSettings.enabled ? "켜짐" : "꺼짐"}</small></button>
-      </div>
+      <button className="suha-card meditation" onClick={() => onOpen("MEDITATION")}><span className="breath-mark">◌</span><div><small>MINDFUL BREATH</small><b>잠시, 호흡할까요?</b><p>5분 호흡 명상으로 마음을 가볍게.</p></div><em>시작 →</em></button>
     </div>
+    <button className="home-utility" onClick={() => onOpen("WIDGET")}><span><i>▣</i><b>통역 위젯</b><small>{widgetSettings.enabled ? `표시 중 · ${widgetPositionLabel(widgetSettings.position)}` : "현재 숨김"}</small></span><em>설정</em></button>
   </section>;
 }
 
