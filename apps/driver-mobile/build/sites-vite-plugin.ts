@@ -26,6 +26,7 @@ export function sites(): Plugin {
       const hostingConfig = resolve(root, ".openai", "hosting.json");
       const workerOutput = resolve(root, "dist", "suha_ai_driver_mobile");
       const serverOutput = resolve(root, "dist", "server");
+      const clientOutput = resolve(root, "dist", "client");
 
       await rm(outputDirectory, { recursive: true, force: true });
       await mkdir(outputDirectory, { recursive: true });
@@ -36,6 +37,10 @@ export function sites(): Plugin {
         await rm(serverOutput, { recursive: true, force: true });
         await cp(workerOutput, serverOutput, { recursive: true });
       }
+      // Runtime and model assets are fetched from pinned HTTPS sources.
+      // Avoid duplicating roughly 40 MB of binaries in every web deployment.
+      await rm(resolve(clientOutput, "models"), { recursive: true, force: true });
+      await rm(resolve(clientOutput, "wasm"), { recursive: true, force: true });
     },
   };
 }
