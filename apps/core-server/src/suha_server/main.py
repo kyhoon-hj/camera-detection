@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
@@ -18,6 +18,19 @@ from pydantic import BaseModel, Field
 from suha_core import __version__
 from suha_core.config import load_config
 from suha_core.domain import EventEnvelope
+from suha_core.ksl import (
+    CORE_EXPRESSIONS,
+    EXPRESSION_BY_CODE,
+    ConversationTracker,
+    CorrectionFeedbackQueue,
+    GlossRegistry,
+    KoreanTranslationService,
+    KslOfflineRuntime,
+    KslTtsService,
+    ProfessionalDictionary,
+    ProfessionalQaStore,
+    collection_status,
+)
 from suha_core.models import ModelRegistry
 from suha_core.pipeline import CoreRuntime
 from suha_core.recording import CaptureManager
@@ -59,6 +72,103 @@ class ModelQuarantine(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class GlossCreateRequest(BaseModel):
+    code: str = Field(min_length=2, max_length=64)
+    gloss: str = Field(min_length=1, max_length=200)
+    korean_text: str = Field(alias="koreanText", min_length=1, max_length=500)
+    domains: list[str] = Field(min_length=1)
+    aliases: list[str] = Field(default_factory=list)
+    emergency: bool = False
+    status: str = "DRAFT"
+    actor: str = Field("local-admin", min_length=1, max_length=100)
+
+
+class GlossUpdateRequest(BaseModel):
+    gloss: str | None = Field(None, min_length=1, max_length=200)
+    korean_text: str | None = Field(None, alias="koreanText", min_length=1, max_length=500)
+    domains: list[str] | None = None
+    aliases: list[str] | None = None
+    emergency: bool | None = None
+    status: str | None = None
+    actor: str = Field("local-admin", min_length=1, max_length=100)
+
+
+class TranslationConfirmationRequest(BaseModel):
+    action: Literal["CONFIRM", "CORRECT", "REJECT"]
+    candidate_id: str | None = Field(None, alias="candidateId", max_length=100)
+    corrected_text: str | None = Field(None, alias="correctedText", max_length=1000)
+    reason: Literal[
+        "HANDSHAPE_MISRECOGNITION",
+        "WORD_ORDER",
+        "NON_MANUAL_MISSING",
+        "WORD_MISSING",
+        "CONTEXT_ERROR",
+        "DIFFERENT_EXPRESSION",
+        "OTHER",
+    ] | None = None
+    consent_to_improve: bool = Field(False, alias="consentToImprove")
+    consent_id: str | None = Field(None, alias="consentId", max_length=200)
+
+
+class TtsSettingsRequest(BaseModel):
+    voice_preference: Literal["SYSTEM_KOREAN", "FEMALE_PREFERRED", "MALE_PREFERRED"] = Field(
+        "SYSTEM_KOREAN", alias="voicePreference"
+    )
+    rate: float = Field(1.0, ge=0.5, le=2.0)
+    auto_play: bool = Field(False, alias="autoPlay")
+    confirm_before_playback: bool = Field(True, alias="confirmBeforePlayback")
+
+
+class TtsPlaybackRequest(BaseModel):
+    mode: Literal["AUTO", "MANUAL"] = "MANUAL"
+    candidate_id: str | None = Field(None, alias="candidateId", max_length=100)
+
+
+class ConversationMessageRequest(BaseModel):
+    speaker: Literal["HEARING_USER", "KSL_USER"]
+    text: str = Field(min_length=1, max_length=2000)
+    source: Literal["STT", "KSL_TRANSLATION"]
+    confidence: float | None = Field(None, ge=0, le=1)
+    client_message_id: str | None = Field(None, alias="clientMessageId", max_length=200)
+
+
+class TranslationDomainRequest(BaseModel):
+    domain: Literal["general", "public", "parking", "medical", "disaster", "transport", "finance"]
+
+
+class ExpertReviewRequest(BaseModel):
+    reviewer_id: str = Field(alias="reviewerId", min_length=1, max_length=200)
+    reviewer_role: Literal[
+        "DEAF_SIGNER",
+        "KSL_INTERPRETER",
+        "KSL_EDUCATOR",
+        "DOMAIN_EXPERT",
+        "ACCESSIBILITY_UX_EXPERT",
+    ] = Field(alias="reviewerRole")
+    decision: Literal["APPROVE", "REJECT"]
+    meaning_preservation: int = Field(alias="meaningPreservation", ge=1, le=5)
+    korean_naturalness: int = Field(alias="koreanNaturalness", ge=1, le=5)
+    misrecognition_risk: int = Field(alias="misrecognitionRisk", ge=1, le=5)
+    notes: str = Field("", max_length=2000)
+
+
+class OfflineSettingsRequest(BaseModel):
+    mode: Literal["OFFLINE_ONLY", "AUTO", "ONLINE_ALLOWED"] = "OFFLINE_ONLY"
+    allow_online_enhancement: bool = Field(False, alias="allowOnlineEnhancement")
+
+
+class ProfessionalQaResultRequest(BaseModel):
+    scenario_id: str = Field(alias="scenarioId", min_length=1, max_length=100)
+    source: Literal["SYNTHETIC_REGRESSION", "HUMAN_REVIEWED_RECORDING"]
+    expected_code: str = Field(alias="expectedCode", min_length=1, max_length=100)
+    observed_candidates: list[str] = Field(alias="observedCandidates", max_length=3)
+    confidence: float = Field(ge=0, le=1)
+    latency_ms: int = Field(alias="latencyMs", ge=0, le=60000)
+    variant_tags: dict[str, str] = Field(alias="variantTags")
+    expert_accepted: bool = Field(alias="expertAccepted")
+    notes: str = Field("", max_length=2000)
+
+
 class GeminiAnalyzeRequest(BaseModel):
     camera_id: str = Field("laptop-front", alias="cameraId")
     question: str | None = Field(None, max_length=500)
@@ -69,8 +179,20 @@ class GeminiAnalyzeRequest(BaseModel):
 class AppState:
     def __init__(self, capture_root: str | Path = "data/recordings", gemini: GeminiVisionAnalyzer | None = None) -> None:
         capture_path = Path(capture_root)
+        self.capture_root = capture_path
         self.runtime = CoreRuntime(event_store_path=capture_path.parent / "suha-events.db")
         self.captures = CaptureManager(capture_path)
+        self.glossary = GlossRegistry(capture_path.parent / "ksl")
+        self.professional_dictionary = ProfessionalDictionary()
+        self.translations = KoreanTranslationService(self._lookup_ksl_term)
+        self.tts = KslTtsService()
+        self.conversations = ConversationTracker()
+        self.feedback = CorrectionFeedbackQueue(capture_path.parent / "ksl")
+        self.offline = KslOfflineRuntime()
+        self.professional_qa = ProfessionalQaStore(capture_path.parent / "ksl")
+        self.runtime.gloss_sequences.add_clear_listener(self.translations.clear)
+        self.runtime.gloss_sequences.add_clear_listener(self.tts.clear)
+        self.runtime.gloss_sequences.add_clear_listener(self.offline.clear)
         self.models = ModelRegistry(capture_path.parent / "models" / "registry", self.runtime.set_model, self._model_changed)
         self.gemini = gemini or GeminiVisionClient.from_environment()
         self.gemini_lock = asyncio.Lock()
@@ -81,6 +203,12 @@ class AppState:
         self.gemini_upstream_requests = 0
         self.gemini_successes = 0
         self.gemini_rate_limits = 0
+
+    def _lookup_ksl_term(self, code: str) -> dict[str, Any]:
+        try:
+            return self.glossary.get(code)
+        except KeyError:
+            return self.professional_dictionary.get(code)
 
     def _model_changed(self, model_id: str, previous: str | None) -> None:
         self.runtime.events.publish(
@@ -111,7 +239,7 @@ def create_app(capture_root: str | Path = "data/recordings", gemini: GeminiVisio
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
-        allow_methods=["GET", "POST", "PUT"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
     )
 
@@ -169,11 +297,14 @@ def create_app(capture_root: str | Path = "data/recordings", gemini: GeminiVisio
 
     @app.post("/v1/cameras/{camera_id}/stop")
     async def stop_camera(camera_id: str) -> dict[str, Any]:
-        return await asyncio.to_thread(state.runtime.stop, camera_id)
+        status = await asyncio.to_thread(state.runtime.stop, camera_id)
+        state.conversations.clear(str(status["sessionId"]))
+        return status
 
     @app.post("/v1/cameras/{camera_id}/reconnect")
     async def reconnect_camera(camera_id: str) -> dict[str, Any]:
-        await asyncio.to_thread(state.runtime.stop, camera_id)
+        status = await asyncio.to_thread(state.runtime.stop, camera_id)
+        state.conversations.clear(str(status["sessionId"]))
         return await asyncio.to_thread(state.runtime.start, camera_id)
 
     @app.get("/v1/cameras/{camera_id}/snapshot")
@@ -197,6 +328,353 @@ def create_app(capture_root: str | Path = "data/recordings", gemini: GeminiVisio
     @app.get("/v1/cameras/{camera_id}/diagnostics")
     async def diagnostics(camera_id: str) -> dict[str, Any]:
         return state.runtime.diagnostics(camera_id)
+
+    @app.get("/v1/cameras/{camera_id}/sign-input")
+    async def sign_input(camera_id: str) -> dict[str, Any]:
+        return state.runtime.sign_input_diagnostics(camera_id)
+
+    @app.get("/v1/sign/expressions")
+    async def sign_expressions(domain: str | None = None) -> dict[str, Any]:
+        expressions = [item for item in CORE_EXPRESSIONS if domain is None or domain in item.domains]
+        return {
+            "catalogVersion": "ksl-core-20-v1",
+            "items": [item.to_dict() for item in expressions],
+            "disclaimer": "Expressions require Deaf signer and professional KSL interpreter review before model training.",
+        }
+
+    @app.get("/v1/sign/collection-status")
+    async def sign_collection_status() -> dict[str, Any]:
+        return collection_status(state.capture_root)
+
+    @app.post("/v1/sign/capture/sessions")
+    async def create_sign_capture(request: CaptureRequest) -> dict[str, Any]:
+        code = request.label.upper()
+        expression = EXPRESSION_BY_CODE.get(code)
+        if expression is None:
+            raise ValueError(f"Unknown KSL core expression: {code}")
+        metadata = {
+            **request.metadata,
+            "catalogVersion": "ksl-core-20-v1",
+            "reviewStatus": "PENDING",
+            "dataPurpose": "KSL_CORE_20",
+            "requiresExpertReview": True,
+        }
+        capture = state.captures.create(
+            label=code,
+            target_samples=request.target_samples,
+            save_video=request.save_video,
+            save_landmarks=True,
+            consent_id=request.consent_id,
+            camera_id=request.camera_id,
+            dataset_id=request.dataset_id,
+            tester_alias=request.tester_alias,
+            metadata=metadata,
+        )
+        return {**capture.public(), "expression": expression.to_dict()}
+
+    @app.get("/v1/sign/glossary")
+    async def gloss_entries(domain: str | None = None, status: str | None = None) -> dict[str, Any]:
+        return {
+            "schemaVersion": "1.0",
+            "items": state.glossary.list_entries(domain=domain, status=status),
+        }
+
+    @app.get("/v1/sign/glossary/history")
+    async def gloss_history(limit: int = 100) -> dict[str, Any]:
+        return {"items": state.glossary.history(limit)}
+
+    @app.get("/v1/sign/glossary/{code}")
+    async def gloss_entry(code: str) -> dict[str, Any]:
+        return state.glossary.get(code)
+
+    @app.get("/v1/sign/professional-domains")
+    async def professional_domains() -> dict[str, Any]:
+        return {"items": state.professional_dictionary.domains()}
+
+    @app.get("/v1/sign/professional-dictionary")
+    async def professional_dictionary(domain: str | None = None) -> dict[str, Any]:
+        return {"domain": domain, "items": state.professional_dictionary.list_terms(domain)}
+
+    @app.post("/v1/sign/glossary")
+    async def register_gloss(request: GlossCreateRequest) -> dict[str, Any]:
+        return state.glossary.register(
+            code=request.code,
+            gloss=request.gloss,
+            korean_text=request.korean_text,
+            domains=request.domains,
+            aliases=request.aliases,
+            emergency=request.emergency,
+            status=request.status,
+            actor=request.actor,
+        )
+
+    @app.put("/v1/sign/glossary/{code}")
+    async def update_gloss(code: str, request: GlossUpdateRequest) -> dict[str, Any]:
+        return state.glossary.update(
+            code,
+            gloss=request.gloss,
+            korean_text=request.korean_text,
+            domains=request.domains,
+            aliases=request.aliases,
+            emergency=request.emergency,
+            status=request.status,
+            actor=request.actor,
+        )
+
+    @app.get("/v1/sign/sequences/{session_id}")
+    async def gloss_sequence(session_id: str) -> dict[str, Any]:
+        return state.runtime.gloss_sequence(session_id)
+
+    @app.post("/v1/sign/sequences/{session_id}/clear")
+    async def clear_gloss_sequence(session_id: str) -> dict[str, Any]:
+        return state.runtime.clear_gloss_sequence(session_id)
+
+    @app.post("/v1/sign/translations/{session_id}")
+    async def translate_gloss_sequence(session_id: str) -> dict[str, Any]:
+        sequence = state.runtime.gloss_sequence(session_id)
+        return {
+            **state.translations.translate(session_id, sequence),
+            **state.offline.translation_metadata(session_id),
+        }
+
+    @app.get("/v1/sign/translations/{session_id}")
+    async def latest_translation(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return {
+            **state.translations.latest(session_id),
+            **state.offline.translation_metadata(session_id),
+        }
+
+    @app.get("/v1/sign/offline/capabilities")
+    async def offline_capabilities() -> dict[str, Any]:
+        return state.offline.capabilities()
+
+    @app.get("/v1/sign/offline/package")
+    async def offline_package() -> dict[str, Any]:
+        return state.offline.package()
+
+    @app.get("/v1/sign/offline/{session_id}/settings")
+    async def offline_settings(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.offline.settings(session_id)
+
+    @app.put("/v1/sign/offline/{session_id}/settings")
+    async def configure_offline(
+        session_id: str, request: OfflineSettingsRequest
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.offline.configure(
+            session_id,
+            mode=request.mode,
+            allow_online_enhancement=request.allow_online_enhancement,
+        )
+
+    @app.post("/v1/sign/translations/{session_id}/confirm")
+    async def confirm_translation(
+        session_id: str, request: TranslationConfirmationRequest
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        previous = state.translations.latest(session_id)
+        if request.action == "CORRECT" and request.reason is None:
+            raise ValueError("A correction reason is required when action is CORRECT")
+        if request.consent_to_improve and not request.consent_id:
+            raise ValueError("consentId is required when consentToImprove is true")
+        result = state.translations.confirm(
+            session_id,
+            action=request.action,
+            candidate_id=request.candidate_id,
+            corrected_text=request.corrected_text,
+            reason=request.reason,
+            consent_to_improve=request.consent_to_improve,
+        )
+        if request.action == "CORRECT" and request.consent_to_improve:
+            candidates = previous.get("candidates", [])
+            original_text = str(candidates[0]["text"]) if candidates else ""
+            confirmation = result["confirmation"]
+            feedback = state.feedback.enqueue(
+                session_id=session_id,
+                translation_id=str(result["translationId"]),
+                original_text=original_text,
+                corrected_text=str(confirmation["selectedText"]),
+                reason=str(request.reason),
+                domain=str(result.get("domain", "general")),
+                gloss_sequence=[str(item) for item in result.get("glossSequence", [])],
+                consent_id=str(request.consent_id),
+            )
+            confirmation["improvementDataStored"] = True
+            confirmation["feedbackId"] = feedback["feedbackId"]
+            confirmation["feedbackStatus"] = feedback["status"]
+            confirmation["trainingEligible"] = False
+        return result
+
+    @app.get("/v1/sign/translations/{session_id}/domain")
+    async def translation_domain(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.translations.domain(session_id)
+
+    @app.put("/v1/sign/translations/{session_id}/domain")
+    async def set_translation_domain(
+        session_id: str, request: TranslationDomainRequest
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.translations.set_domain(session_id, request.domain)
+
+    @app.get("/v1/sign/tts/capabilities")
+    async def tts_capabilities() -> dict[str, Any]:
+        return state.tts.capabilities()
+
+    @app.get("/v1/sign/tts/{session_id}/settings")
+    async def tts_settings(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.tts.settings(session_id)
+
+    @app.put("/v1/sign/tts/{session_id}/settings")
+    async def configure_tts(session_id: str, request: TtsSettingsRequest) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.tts.configure(
+            session_id,
+            voice_preference=request.voice_preference,
+            rate=request.rate,
+            auto_play=request.auto_play,
+            confirm_before_playback=request.confirm_before_playback,
+        )
+
+    @app.post("/v1/sign/tts/{session_id}/play")
+    async def play_tts(session_id: str, request: TtsPlaybackRequest) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        translation = state.translations.latest(session_id)
+        return state.tts.prepare(
+            session_id,
+            translation,
+            mode=request.mode,
+            candidate_id=request.candidate_id,
+        )
+
+    @app.post("/v1/sign/tts/{session_id}/replay")
+    async def replay_tts(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.tts.replay(session_id)
+
+    @app.get("/v1/sign/conversations/{session_id}")
+    async def conversation(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.conversations.snapshot(session_id)
+
+    @app.post("/v1/sign/conversations/{session_id}/messages")
+    async def append_conversation_message(
+        session_id: str, request: ConversationMessageRequest
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.conversations.append(
+            session_id,
+            speaker=request.speaker,
+            text=request.text,
+            source=request.source,
+            confidence=request.confidence,
+            client_message_id=request.client_message_id,
+        )
+
+    @app.delete("/v1/sign/conversations/{session_id}")
+    async def clear_conversation(session_id: str) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.conversations.clear(session_id)
+
+    @app.get("/v1/sign/feedback")
+    async def correction_feedback(
+        session_id: str = Query(alias="sessionId"),
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return {"items": state.feedback.list_entries(session_id)}
+
+    @app.delete("/v1/sign/feedback/{feedback_id}")
+    async def delete_correction_feedback(
+        feedback_id: str, session_id: str = Query(alias="sessionId")
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.feedback.delete(feedback_id, session_id=session_id)
+
+    @app.delete("/v1/sign/feedback")
+    async def clear_correction_feedback(
+        session_id: str = Query(alias="sessionId"),
+    ) -> dict[str, Any]:
+        state.runtime.gloss_sequence(session_id)
+        return state.feedback.clear(session_id=session_id)
+
+    @app.get("/v1/admin/sign/reviews/summary")
+    async def expert_review_summary() -> dict[str, Any]:
+        return {**state.feedback.summary(), "authorization": "LOCAL_ADMIN_ONLY"}
+
+    @app.get("/v1/admin/sign/training-candidates")
+    async def approved_training_candidates() -> dict[str, Any]:
+        items = state.feedback.training_candidates()
+        return {
+            "items": items,
+            "count": len(items),
+            "policy": "Only multi-role APPROVED feedback is training eligible.",
+            "authorization": "LOCAL_ADMIN_ONLY",
+        }
+
+    @app.get("/v1/admin/sign/reviews")
+    async def expert_reviews(
+        status: str | None = None, domain: str | None = None
+    ) -> dict[str, Any]:
+        items = state.feedback.list_entries()
+        filtered = [
+            item
+            for item in items
+            if (status is None or item.get("status") == status)
+            and (domain is None or item.get("domain") == domain)
+        ]
+        return {"items": filtered, "count": len(filtered), "authorization": "LOCAL_ADMIN_ONLY"}
+
+    @app.get("/v1/admin/sign/reviews/{feedback_id}/history")
+    async def expert_review_history(feedback_id: str) -> dict[str, Any]:
+        return {"items": state.feedback.review_history(feedback_id)}
+
+    @app.post("/v1/admin/sign/reviews/{feedback_id}")
+    async def review_feedback(feedback_id: str, request: ExpertReviewRequest) -> dict[str, Any]:
+        return state.feedback.review(
+            feedback_id,
+            reviewer_id=request.reviewer_id,
+            reviewer_role=request.reviewer_role,
+            decision=request.decision,
+            meaning_preservation=request.meaning_preservation,
+            korean_naturalness=request.korean_naturalness,
+            misrecognition_risk=request.misrecognition_risk,
+            notes=request.notes,
+        )
+
+    @app.get("/v1/admin/sign/qa/scenarios")
+    async def professional_qa_scenarios() -> dict[str, Any]:
+        items = state.professional_qa.scenarios()
+        return {"items": items, "count": len(items), "authorization": "LOCAL_ADMIN_ONLY"}
+
+    @app.get("/v1/admin/sign/qa/results")
+    async def professional_qa_results(source: str | None = None) -> dict[str, Any]:
+        items = state.professional_qa.results(source=source)
+        return {"items": items, "count": len(items), "authorization": "LOCAL_ADMIN_ONLY"}
+
+    @app.post("/v1/admin/sign/qa/results")
+    async def record_professional_qa(request: ProfessionalQaResultRequest) -> dict[str, Any]:
+        return state.professional_qa.record(
+            scenario_id=request.scenario_id,
+            source=request.source,
+            expected_code=request.expected_code,
+            observed_candidates=request.observed_candidates,
+            confidence=request.confidence,
+            latency_ms=request.latency_ms,
+            variant_tags=request.variant_tags,
+            expert_accepted=request.expert_accepted,
+            notes=request.notes,
+        )
+
+    @app.get("/v1/admin/sign/qa/summary")
+    async def professional_qa_summary() -> dict[str, Any]:
+        return {**state.professional_qa.summary(), "authorization": "LOCAL_ADMIN_ONLY"}
+
+    @app.delete("/v1/admin/sign/qa/results")
+    async def clear_professional_qa() -> dict[str, int]:
+        return state.professional_qa.clear()
 
     @app.post("/v1/cameras/{camera_id}/posture/recalibrate")
     async def recalibrate_posture(camera_id: str) -> dict[str, object]:

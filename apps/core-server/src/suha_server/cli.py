@@ -12,6 +12,7 @@ import cv2
 import uvicorn
 from suha_core import __version__
 from suha_core.datasets import validate_dataset
+from suha_core.ksl import KslImportOptions, import_ksl_dataset, validate_ksl_source
 from suha_core.models.dynamic_training import train_dynamic_gesture_model
 from suha_core.models.training import train_static_gesture_model
 
@@ -63,6 +64,18 @@ def main() -> None:
     train_ksl.add_argument("--model-id", required=True)
     train_ksl.add_argument("--version", default="1.0.0")
     train_ksl.add_argument("--epochs", type=int, default=80)
+    ksl_dataset = sub.add_parser("ksl-dataset")
+    ksl_dataset_commands = ksl_dataset.add_subparsers(dest="ksl_dataset_command", required=True)
+    ksl_validate = ksl_dataset_commands.add_parser("validate")
+    ksl_validate.add_argument("source", type=Path)
+    ksl_validate.add_argument("--dataset-type", required=True, choices=("aihub-sign-video", "aihub-disaster-safety", "nikl-parallel"))
+    ksl_import = ksl_dataset_commands.add_parser("import")
+    ksl_import.add_argument("source", type=Path)
+    ksl_import.add_argument("target", type=Path)
+    ksl_import.add_argument("--dataset-type", required=True, choices=("aihub-sign-video", "aihub-disaster-safety", "nikl-parallel"))
+    ksl_import.add_argument("--confirm-license", action="store_true")
+    ksl_import.add_argument("--license-reference", required=True)
+    ksl_import.add_argument("--extract-landmarks", action="store_true")
     args = parser.parse_args()
     if args.command == "doctor":
         raise SystemExit(doctor())
@@ -100,6 +113,23 @@ def main() -> None:
             task="SIGN_LANGUAGE_KSL",
         )
         print(json.dumps({"manifestPath": str(ksl_result.manifest_path.resolve())}, ensure_ascii=False, indent=2))
+        return
+    if args.command == "ksl-dataset":
+        if args.ksl_dataset_command == "validate":
+            validation, _ = validate_ksl_source(args.dataset_type, args.source)
+            print(json.dumps(validation.to_dict(), ensure_ascii=False, indent=2))
+            raise SystemExit(0 if validation.valid else 1)
+        validation = import_ksl_dataset(
+            KslImportOptions(
+                dataset_type=args.dataset_type,
+                source=args.source,
+                target=args.target,
+                license_confirmed=args.confirm_license,
+                extract_landmarks=args.extract_landmarks,
+                license_reference=args.license_reference,
+            )
+        )
+        print(json.dumps(validation.to_dict(), ensure_ascii=False, indent=2))
         return
     uvicorn.run("suha_server.main:app", host=args.host, port=args.port, reload=False)
 

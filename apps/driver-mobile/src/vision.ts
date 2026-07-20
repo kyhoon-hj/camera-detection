@@ -9,6 +9,10 @@ import type { Landmark, VisionFrame } from "./monitor";
 
 export type VisionDelegate = "GPU" | "CPU";
 
+const VISION_WASM_ROOT = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
+const FACE_LANDMARKER_MODEL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+const POSE_LANDMARKER_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+
 export interface VideoFrameState {
   readyState: number;
   videoWidth: number;
@@ -40,7 +44,7 @@ export class MobileVisionEngine {
 
   async initialize(preferredDelegate: VisionDelegate = "GPU"): Promise<void> {
     this.close();
-    const files = await FilesetResolver.forVisionTasks("/wasm");
+    const files = await FilesetResolver.forVisionTasks(VISION_WASM_ROOT);
     if (preferredDelegate === "GPU") {
       try {
         await this.initializeWithDelegate(files, "GPU");
@@ -96,7 +100,7 @@ export class MobileVisionEngine {
 
   private createFaceLandmarker(files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: VisionDelegate) {
     return FaceLandmarker.createFromOptions(files, {
-      baseOptions: { modelAssetPath: "/models/face_landmarker.task", delegate },
+      baseOptions: { modelAssetPath: FACE_LANDMARKER_MODEL, delegate },
       runningMode: "VIDEO",
       numFaces: 1,
       minFaceDetectionConfidence: 0.55,
@@ -109,7 +113,7 @@ export class MobileVisionEngine {
 
   private createPoseLandmarker(files: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: VisionDelegate) {
     return PoseLandmarker.createFromOptions(files, {
-      baseOptions: { modelAssetPath: "/models/pose_landmarker_lite.task", delegate },
+      baseOptions: { modelAssetPath: POSE_LANDMARKER_MODEL, delegate },
       runningMode: "VIDEO",
       numPoses: 1,
       minPoseDetectionConfidence: 0.5,

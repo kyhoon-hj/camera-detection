@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.hjsolution.suha.driver",
-  appName: "SUHA Driver",
+  appName: "졸음운전",
   webDir: "dist/client",
   server: {
     androidScheme: "https",

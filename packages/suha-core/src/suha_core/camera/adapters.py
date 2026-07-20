@@ -72,6 +72,7 @@ class OpenCVCameraAdapter:
             rgb,
             width=rgb.shape[1],
             height=rgb.shape[0],
+            metadata={"mirrored": self.mirror, "rotationDegrees": 0},
         )
 
     def close(self) -> None:
@@ -138,6 +139,8 @@ class SyntheticCameraAdapter:
             height=self.height,
             metadata={
                 "synthetic": True,
+                "mirrored": False,
+                "rotationDegrees": 0,
                 "staticGesture": gesture,
                 "wrist": [x / self.width, 0.35 + 0.02 * math.sin(t * 2), 0.0],
                 "head": [0.5 + 0.04 * math.sin(t * 5), 0.25 + 0.025 * math.sin(t * 6), 0.0],

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict, deque
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +11,36 @@ import onnxruntime as ort
 from suha_core.domain import FeatureFrame, RecognitionCandidate
 
 from .learned_static import hand_feature_vector
+
+
+@dataclass(frozen=True, slots=True)
+class RankedPrediction:
+    label: str
+    confidence: float
+
+    def to_dict(self, *, ksl: bool = False) -> dict[str, str | float]:
+        return {
+            "code": f"KSL_{self.label}" if ksl else self.label,
+            "gloss": self.label,
+            "confidence": self.confidence,
+        }
+
+
+def rank_predictions(probabilities: np.ndarray, labels: list[str], top_k: int = 3) -> list[RankedPrediction]:
+    if probabilities.ndim != 1 or len(probabilities) != len(labels):
+        raise ValueError("Prediction probabilities must match model labels")
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
+    indices = np.argsort(probabilities)[::-1][: min(top_k, len(labels))]
+    return [RankedPrediction(labels[int(index)], float(probabilities[int(index)])) for index in indices]
+
+
+def _confidence_decision(confidence: float) -> str:
+    if confidence >= 0.85:
+        return "AUTO_SELECT"
+    if confidence >= 0.60:
+        return "SELECT_CANDIDATE"
+    return "RETAKE"
 
 
 def dynamic_feature(features: FeatureFrame) -> np.ndarray | None:
@@ -97,14 +128,15 @@ class OnnxTemporalGestureRecognizer:
         sequence, mask = prepare_sequence(np.stack(buffer), self.window)
         logits = self.session.run(None, {"sequence": sequence[None, :], "mask": mask[None, :]})[0][0]
         probabilities = _softmax(logits)
-        index = int(np.argmax(probabilities))
         ksl = self.task == "SIGN_LANGUAGE_KSL"
-        label = self.labels[index]
+        ranked = rank_predictions(probabilities, self.labels, top_k=3 if ksl else 1)
+        top = ranked[0]
+        label = top.label
         return [
             RecognitionCandidate(
                 "SIGN_LANGUAGE" if ksl else "GESTURE_DYNAMIC",
                 f"KSL_{label}" if ksl else label,
-                float(probabilities[index]),
+                top.confidence,
                 features.person_id,
                 None,
                 features.timestamp_ms - 1000,
@@ -114,7 +146,18 @@ class OnnxTemporalGestureRecognizer:
                 metadata={
                     "source": "onnx-temporal",
                     "windowFrames": len(buffer),
-                    **({"language": "KSL", "recognitionType": "ISOLATED_SIGN", "recognizedText": label} if ksl else {}),
+                    **(
+                        {
+                            "language": "KSL",
+                            "recognitionType": "ISOLATED_SIGN",
+                            "recognizedText": label,
+                            "candidates": [item.to_dict(ksl=True) for item in ranked],
+                            "requiresConfirmation": top.confidence < 0.85,
+                            "decision": _confidence_decision(top.confidence),
+                        }
+                        if ksl
+                        else {}
+                    ),
                 },
             )
         ]

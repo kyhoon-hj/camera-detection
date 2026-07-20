@@ -73,7 +73,17 @@ class SyntheticLandmarkProvider:
             LandmarkSet(pose_points, [1.0] * 3),
             LandmarkSet([head], [1.0]),
             quality,
-            metadata={"staticGesture": frame.metadata.get("staticGesture")},
+            metadata={
+                "staticGesture": frame.metadata.get("staticGesture"),
+                "landmarkProvider": {
+                    "provider": "synthetic",
+                    "handCount": 1,
+                    "poseCount": 1,
+                    "faceCount": 1,
+                    "personCount": 1,
+                    "syncSkewMs": 0.0,
+                },
+            },
         )
 
     def close(self) -> None:
@@ -184,9 +194,12 @@ class MediaPipeLandmarkProvider:
         face_result = None if hands_only else self._face.detect_for_video(image, frame.timestamp_ms)
         left: LandmarkSet | None = None
         right: LandmarkSet | None = None
+        handedness_scores: dict[str, float] = {}
         for index, points in enumerate(hand_result.hand_landmarks):
             categories = hand_result.handedness[index]
             handedness = str(categories[0].category_name).upper() if categories else None
+            if handedness and categories:
+                handedness_scores[handedness] = float(categories[0].score or 0.0)
             value = self._set(points, handedness, edge_space)
             if handedness == "LEFT":
                 left = value
@@ -207,6 +220,23 @@ class MediaPipeLandmarkProvider:
             pose,
             face,
             quality,
+            metadata={
+                "landmarkProvider": {
+                    "provider": "mediapipe-tasks",
+                    "handModel": "hand_landmarker.task",
+                    "poseModel": "pose_landmarker_lite.task",
+                    "faceModel": "face_landmarker.task",
+                    "handCount": len(hand_result.hand_landmarks),
+                    "poseCount": len(pose_result.pose_landmarks) if pose_result else 0,
+                    "faceCount": len(face_result.face_landmarks) if face_result else 0,
+                    "personCount": max(
+                        len(pose_result.pose_landmarks) if pose_result else 0,
+                        len(face_result.face_landmarks) if face_result else 0,
+                    ),
+                    "handednessScores": handedness_scores,
+                    "syncSkewMs": 0.0,
+                }
+            },
         )
 
     def close(self) -> None:

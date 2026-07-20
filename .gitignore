@@ -15,8 +15,10 @@ coverage/
 .env
 .mplconfig/
 output/
+.sites-*/
 data/recordings/*
 !data/recordings/.gitkeep
+data/ksl/*
 models/**/*.task
 models/**/*.onnx
 models/mediapipe/manifest.json

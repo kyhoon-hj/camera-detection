@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
+import { chooseKoreanVoice, getVoiceProfile, type VoiceProfileId } from "./voiceProfiles";
 
 interface NativeSpeechStatus {
   ready: boolean;
@@ -15,12 +16,13 @@ interface NativeSpeechPlugin {
 
 const NativeSpeech = registerPlugin<NativeSpeechPlugin>("NativeSpeech");
 
-export async function speakKorean(text: string): Promise<void> {
+export async function speakKorean(text: string, profileId: VoiceProfileId = "FEMALE"): Promise<void> {
+  const profile = getVoiceProfile(profileId);
   if (Capacitor.getPlatform() === "android") {
-    await NativeSpeech.speak({ text, rate: 1.03, pitch: 1 });
+    await NativeSpeech.speak({ text, rate: profile.rate, pitch: profile.pitch });
     return;
   }
-  await speakWithBrowser(text);
+  await speakWithBrowser(text, profileId);
 }
 
 export async function stopKoreanSpeech(): Promise<void> {
@@ -43,7 +45,7 @@ export async function getKoreanSpeechStatus(): Promise<NativeSpeechStatus> {
   };
 }
 
-function speakWithBrowser(text: string): Promise<void> {
+function speakWithBrowser(text: string, profileId: VoiceProfileId): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!("speechSynthesis" in window)) {
       reject(new Error("이 브라우저는 음성 안내를 지원하지 않습니다."));
@@ -51,12 +53,14 @@ function speakWithBrowser(text: string): Promise<void> {
     }
 
     const synthesis = window.speechSynthesis;
+    const profile = getVoiceProfile(profileId);
     synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const koreanVoice = synthesis.getVoices().find((voice) => voice.lang.toLowerCase().startsWith("ko"));
+    const koreanVoice = chooseKoreanVoice(synthesis.getVoices(), profileId);
     if (koreanVoice) utterance.voice = koreanVoice;
     utterance.lang = "ko-KR";
-    utterance.rate = 1.03;
+    utterance.rate = profile.rate;
+    utterance.pitch = profile.pitch;
     utterance.volume = 1;
     utterance.onstart = () => resolve();
     utterance.onerror = (event) => reject(new Error(`음성 엔진 오류: ${event.error}`));

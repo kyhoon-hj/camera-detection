@@ -19,7 +19,32 @@
 | LOOP 14 | Complete | RGB-D contracts, calibration, alignment, actual-vs-estimated distance sources, mock depth camera, vendor SDK adapter, capabilities API and depth-plugin integration |
 | LOOP 15 | Pending | Packaging, deployment and operational verification; LOOP 11 real-dataset acceptance remains an explicitly tracked external risk |
 
+## Professional KSL SIGN LOOP status
+
+| Sign loop | Status | Evidence |
+|---|---|---|
+| SIGN LOOP 1 | Automated implementation complete; human validation pending | Synchronized Face/Pose/Left/Right Hand schema, shoulder normalization, velocities, privacy-safe diagnostics, quality gate before KSL inference; 60 Python and 26 TypeScript tests pass |
+| SIGN LOOP 2 | Software complete; data acceptance pending | 20-expression catalog, consent-gated pending-review capture, approved-signer readiness, Top 3 KSL candidates and 0.85/0.60 confidence policy; real reviewed recordings and trained-model accuracy remain pending |
+| SIGN LOOP 3 | Software complete; human threshold validation pending | IDLE/ACTIVE/OCCLUDED/ENDED sequence state, motion and static-hold boundaries, 300ms occlusion recovery, bounded duration, segment-linked candidates and per-segment model reset |
+| SIGN LOOP 4 | Software complete; expert vocabulary approval pending | Persistent 20-entry Gloss registry, admin create/update with revisioned audit history, ended-segment deduplication, bounded session Gloss sequence and privacy-oriented clear lifecycle |
+| SIGN LOOP 5 | Software complete; expert grammar validation pending | Deterministic Gloss-to-semantic rules, up to 3 confidence-ranked Korean sentence candidates, natural-language cleanup, in-memory user confirm/correct/reject and lifecycle deletion |
+| SIGN LOOP 6 | Software complete; device voice acceptance pending | Session-scoped Korean device-TTS settings, voice preference and 0.5–2.0× rate, manual/confirmed auto playback, replay, console controls and privacy-oriented lifecycle deletion |
+| SIGN LOOP 7 | Software complete; browser STT acceptance pending | Continuous ko-KR STT, interim large captions, final-only in-memory text, hearing/KSL speaker timeline, timestamps, auto-scroll, full deletion and camera-stop cleanup |
+| SIGN LOOP 8 | Software complete; domain expert approval pending | 26 professional terms across public, parking, medical, disaster, transport and finance; session domain selection, domain-ranked Korean candidates, rule provenance and high-stakes confirmation notices |
+| SIGN LOOP 9 | Software complete; consent policy acceptance pending | Required correction reasons, explicit consent ID gate, hashed consent/session references, persistent pending-review feedback queue, training-use block, individual and session deletion, console correction controls |
+| SIGN LOOP 10 | Software complete; human expert operation pending | Five reviewer roles, score thresholds, multi-role and high-stakes domain approval gates, immutable review history, approved-only sanitized training export and local admin console |
+| SIGN LOOP 11 | Software complete; device offline acceptance pending | Versioned emergency/basic offline package, built-in lightweight rule engine, offline-first connectivity settings, explicit no-network translation metadata and configurable floating translation widget |
+| SIGN LOOP 12 | Software complete; human QA evidence pending | Seven-category professional QA matrix, variant-tag validation, stricter emergency Top-1 policy, persistent results, synthetic-vs-human evidence separation, release readiness report and console |
+
 Hardware validation is reported separately from deterministic synthetic-camera tests.
+
+SIGN LOOP 10 full gate: 96 Python tests and 30 TypeScript tests pass; Ruff, strict mypy and all production builds pass.
+
+SIGN LOOP 11 full gate: 99 Python tests and 32 TypeScript tests pass; Ruff, strict mypy and all production builds pass.
+
+SIGN LOOP 12 full gate: 102 Python tests and 32 TypeScript tests pass; Ruff, strict mypy and all production builds pass.
+
+Mobile UI follow-up: the driver app now uses thumb-reachable Monitor/Details/Settings tabs, a persistent primary start/stop action, compact first-view status and dedicated settings/privacy screens. Eight driver tests and the production build pass; Android/iOS web assets are synchronized. Android APK generation is blocked by the machine's incomplete JDK 17 installation, and the existing Sites project ID is no longer accessible to the current account.
 
 Pen edge tracking now preserves 16:9 input geometry, supplies MediaPipe with a 10% context border, and reconnects a nearby same-hand pointer after short bottom/outer-frame loss without bridging a large coordinate jump.
 
