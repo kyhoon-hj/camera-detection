@@ -1,6 +1,6 @@
 {
-  "name": "SUHA Driver Safety",
-  "short_name": "SUHA Driver",
+  "name": "졸음운전",
+  "short_name": "졸음운전",
   "description": "기기 안에서 동작하는 운전자 졸음 및 자세 감지 프로토타입",
   "id": "/",
   "start_url": "/",

@@ -15,6 +15,7 @@ from suha_core.domain import CameraCalibration, EventEnvelope, FeatureFrame, Fra
 from suha_core.drowsiness import DrowsinessMonitor, DrowsinessSnapshot
 from suha_core.events import EventBus, EventStore
 from suha_core.intents import IntentMapper
+from suha_core.ksl import GlossSequenceTracker, KslSegmentSnapshot, KslSequenceSegmenter, SignFeatureFrame, SignInputAssembler
 from suha_core.landmarks import (
     LandmarkProvider,
     MediaPipeLandmarkProvider,
@@ -79,6 +80,8 @@ class CameraRuntime:
     error: str | None = None
     drowsiness: DrowsinessSnapshot | None = None
     posture: PostureSnapshot | None = None
+    last_sign_input: SignFeatureFrame | None = None
+    last_sign_segment: KslSegmentSnapshot | None = None
 
 
 class CoreRuntime:
@@ -97,6 +100,9 @@ class CoreRuntime:
         self.custom_temporal: OnnxTemporalGestureRecognizer | None = None
         self.custom_ksl: OnnxTemporalGestureRecognizer | None = None
         self.ksl_enabled = False
+        self.sign_input = SignInputAssembler()
+        self.ksl_segments = KslSequenceSegmenter()
+        self.gloss_sequences = GlossSequenceTracker()
         self.stabilizer = EventStabilizer(self.mapper)
         self.drowsiness = DrowsinessMonitor()
         self.posture = PostureMonitor()
@@ -178,6 +184,11 @@ class CoreRuntime:
             self.custom_temporal.reset(runtime.session_id)
         if self.custom_ksl is not None:
             self.custom_ksl.reset(runtime.session_id)
+        self.sign_input.reset(runtime.session_id)
+        self.ksl_segments.reset(runtime.session_id)
+        runtime.last_sign_input = None
+        runtime.last_sign_segment = None
+        self.gloss_sequences.clear(runtime.session_id)
         for recognizer in self.depth_recognizers:
             recognizer.reset(runtime.session_id)
         return self.status(camera_id)
@@ -204,6 +215,11 @@ class CoreRuntime:
         self.mapper.set_profile(profile)
         runtime = self._get(camera_id)
         runtime.mode, runtime.profile = mode, profile
+        self.sign_input.reset(runtime.session_id)
+        self.ksl_segments.reset(runtime.session_id)
+        runtime.last_sign_input = None
+        runtime.last_sign_segment = None
+        self.gloss_sequences.clear(runtime.session_id)
         if mode == "DROWSINESS_MONITOR":
             self.drowsiness.reset(runtime.session_id)
             self.posture.reset(runtime.session_id)
@@ -318,7 +334,41 @@ class CoreRuntime:
             else None,
             "drowsiness": runtime.drowsiness.to_dict() if runtime.drowsiness else None,
             "posture": runtime.posture.to_dict() if runtime.posture else None,
+            "signInput": runtime.last_sign_input.to_dict() if runtime.last_sign_input else None,
+            "signSegment": runtime.last_sign_segment.to_dict() if runtime.last_sign_segment else None,
         }
+
+    def sign_input_diagnostics(self, camera_id: str) -> dict[str, Any]:
+        runtime = self._get(camera_id)
+        if runtime.last_sign_input is None:
+            return {
+                "available": False,
+                "cameraId": camera_id,
+                "mode": runtime.mode,
+                "reason": "SIGN_INPUT_NOT_ACTIVE",
+            }
+        recognition = next((candidate for candidate in runtime.raw_candidates if candidate.category == "SIGN_LANGUAGE"), None)
+        return {
+            "available": True,
+            **runtime.last_sign_input.to_dict(),
+            "segment": runtime.last_sign_segment.to_dict() if runtime.last_sign_segment else None,
+            "recognition": asdict(recognition) if recognition else None,
+            "glossSequence": self.gloss_sequences.snapshot(runtime.session_id),
+        }
+
+    def gloss_sequence(self, session_id: str) -> dict[str, Any]:
+        self._camera_for_session(session_id)
+        return self.gloss_sequences.snapshot(session_id)
+
+    def clear_gloss_sequence(self, session_id: str) -> dict[str, Any]:
+        self._camera_for_session(session_id)
+        return self.gloss_sequences.clear(session_id)
+
+    def _camera_for_session(self, session_id: str) -> CameraRuntime:
+        runtime = next((item for item in self.cameras.values() if item.session_id == session_id), None)
+        if runtime is None:
+            raise KeyError(f"Session not found: {session_id}")
+        return runtime
 
     def _get(self, camera_id: str) -> CameraRuntime:
         try:
@@ -388,8 +438,30 @@ class CoreRuntime:
                 if runtime.mode == "DROWSINESS_MONITOR":
                     candidates = []
                 elif runtime.mode == "SIGN_LANGUAGE_KSL":
-                    candidates = self.custom_ksl.process(features) if self.custom_ksl is not None else []
+                    runtime.last_sign_input = self.sign_input.assemble(analysis_frame, features)
+                    runtime.last_sign_segment = self.ksl_segments.process(features)
+                    candidates = (
+                        self.custom_ksl.process(features)
+                        if self.custom_ksl is not None
+                        and runtime.last_sign_input.quality.ready_for_recognition
+                        and runtime.last_sign_segment.accept_frame
+                        else []
+                    )
+                    for candidate in candidates:
+                        candidate.metadata.update(
+                            {
+                                "segmentId": runtime.last_sign_segment.segment_id,
+                                "segmentState": runtime.last_sign_segment.state,
+                                "sequenceReady": runtime.last_sign_segment.sequence_ready,
+                            }
+                        )
+                    if runtime.last_sign_segment.sequence_ready and candidates:
+                        self.gloss_sequences.append(runtime.session_id, candidates[0])
+                    if runtime.last_sign_segment.ended and self.custom_ksl is not None:
+                        self.custom_ksl.reset(runtime.session_id)
                 else:
+                    runtime.last_sign_input = None
+                    runtime.last_sign_segment = None
                     custom = self.custom_static
                     candidates = self.static.process(features)
                     if custom is not None:

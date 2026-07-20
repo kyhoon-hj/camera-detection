@@ -1,8 +1,10 @@
 import { Capacitor } from "@capacitor/core";
-import { StrictMode, useCallback, useEffect, useRef, useState } from "react";
+import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createRoot } from "react-dom/client";
 import { DriverMonitor, type MonitorSnapshot } from "./monitor";
+import { getMeditationGuidance } from "./meditation";
 import { getKoreanSpeechStatus, speakKorean, stopKoreanSpeech } from "./speech";
+import { VOICE_PROFILES, getVoiceProfile, normalizeVoiceProfile, type VoiceProfileId } from "./voiceProfiles";
 import { SignInterpreterScreen } from "./SignInterpreterScreen";
 import {
   MobileVisionEngine,
@@ -35,6 +37,7 @@ type MobileTab = "MONITOR" | "SETTINGS";
 type AppModule = "HOME" | "DROWSINESS" | "POSTURE" | "MEDITATION" | "SIGN" | "WIDGET";
 const isNativeApp = Capacitor.isNativePlatform();
 const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
+const VOICE_STORAGE_KEY = "suha.voice-profile.v1";
 
 function loadWidgetSettings(): WidgetSettings {
   try {
@@ -42,6 +45,10 @@ function loadWidgetSettings(): WidgetSettings {
   } catch {
     return DEFAULT_WIDGET_SETTINGS;
   }
+}
+
+function loadVoiceProfile(): VoiceProfileId {
+  return normalizeVoiceProfile(localStorage.getItem(VOICE_STORAGE_KEY));
 }
 
 const initialSnapshot: MonitorSnapshot = {
@@ -87,12 +94,16 @@ function App() {
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const lastAlertRef = useRef(0);
+  const meditationCueRef = useRef("");
+  const activeModuleRef = useRef<AppModule>("HOME");
+  const drowsyNoticeAcceptedRef = useRef(false);
   const mountedRef = useRef(true);
   const [runState, setRunState] = useState<RunState>("READY");
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [error, setError] = useState("");
   const [cameraPermission, setCameraPermission] = useState<CameraPermission>("CHECKING");
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [voiceProfile, setVoiceProfile] = useState(loadVoiceProfile);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState("");
@@ -102,6 +113,7 @@ function App() {
   const [widgetSettings, setWidgetSettings] = useState(loadWidgetSettings);
   const [meditationSeconds, setMeditationSeconds] = useState(300);
   const [meditationRunning, setMeditationRunning] = useState(false);
+  const [showDrowsyNotice, setShowDrowsyNotice] = useState(false);
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -164,7 +176,8 @@ function App() {
         const next = monitorRef.current.process(frame);
         setSnapshot(next);
         setError("");
-        drawLandmarks(canvas, video, frame, next.status === "ALARM" || next.status === "WARNING");
+        const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "ALARM" || next.status === "WARNING");
+        drawLandmarks(canvas, video, frame, showWarning);
       } catch (cause) {
         if (cause instanceof VisionFrameUnavailableError) {
           animationRef.current = requestAnimationFrame(runDetection);
@@ -212,16 +225,20 @@ function App() {
     animationRef.current = requestAnimationFrame(runDetection);
   }, [stopResources]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (): Promise<boolean> => {
+    if (activeModuleRef.current === "DROWSINESS" && !drowsyNoticeAcceptedRef.current) {
+      setShowDrowsyNotice(true);
+      return false;
+    }
     if (!window.isSecureContext) {
       setError("모바일 Chrome 카메라는 HTTPS 주소에서만 사용할 수 있습니다. 안전한 HTTPS 주소로 다시 접속해 주세요.");
       setRunState("ERROR");
-      return;
+      return false;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
       setError("이 브라우저에서는 카메라를 사용할 수 없습니다. HTTPS 또는 설치된 앱에서 실행해 주세요.");
       setRunState("ERROR");
-      return;
+      return false;
     }
     setRunState("LOADING");
     setError("");
@@ -267,12 +284,14 @@ function App() {
       lastVideoProgressRef.current = performance.now();
       setRunState("RUNNING");
       animationRef.current = requestAnimationFrame(runDetection);
+      return true;
     } catch (cause) {
       stopResources();
       const message = cameraErrorMessage(cause);
       setError(message);
       if (cause instanceof DOMException && cause.name === "NotAllowedError") setCameraPermission("DENIED");
       setRunState("ERROR");
+      return false;
     }
   }, [requestWakeLock, runDetection, soundEnabled, stopResources]);
 
@@ -341,20 +360,37 @@ function App() {
   }, [runState, stop]);
 
   useEffect(() => {
-    if (!soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "AWAKE") return;
+    if (activeModule === "MEDITATION" || !soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "AWAKE") return;
     const now = Date.now();
     const interval = snapshot.status === "ALARM" ? 2_500 : 7_000;
     if (now - lastAlertRef.current < interval) return;
     lastAlertRef.current = now;
     beep(audioRef.current, snapshot.status === "ALARM");
-    void speakKorean(snapshot.message).catch((cause) => {
+    void speakKorean(snapshot.message, voiceProfile).catch((cause) => {
       const message = cause instanceof Error ? cause.message : "음성 안내를 재생하지 못했습니다.";
       setVoiceFeedback(`${message} Android 설정에서 한국어 TTS를 확인해 주세요.`);
     });
-  }, [runState, snapshot.message, snapshot.status, soundEnabled]);
+  }, [activeModule, runState, snapshot.message, snapshot.status, soundEnabled, voiceProfile]);
+
+  const meditationPhase = Math.floor(meditationSeconds / 4) % 2 === 0 ? "내쉬기" : "들이쉬기";
+  const meditationGuidance = useMemo(() => getMeditationGuidance({
+    seconds: meditationSeconds,
+    running: meditationRunning,
+    runState,
+    error,
+    snapshot,
+    breathPhase: meditationPhase,
+  }), [error, meditationPhase, meditationRunning, meditationSeconds, runState, snapshot]);
 
   useEffect(() => {
-    if (!meditationRunning) return;
+    const cue = meditationGuidance.voiceCue;
+    if (activeModule !== "MEDITATION" || !soundEnabled || !cue || cue === meditationCueRef.current) return;
+    meditationCueRef.current = cue;
+    void speakKorean(cue, voiceProfile).catch(() => undefined);
+  }, [activeModule, meditationGuidance.voiceCue, soundEnabled, voiceProfile]);
+
+  useEffect(() => {
+    if (!meditationRunning || activeModule !== "MEDITATION" || !meditationGuidance.timerActive) return;
     const timer = window.setInterval(() => {
       setMeditationSeconds((seconds) => {
         if (seconds <= 1) {
@@ -365,7 +401,7 @@ function App() {
       });
     }, 1_000);
     return () => window.clearInterval(timer);
-  }, [meditationRunning]);
+  }, [activeModule, meditationGuidance.timerActive, meditationRunning]);
 
   useEffect(() => {
     // React StrictMode intentionally runs effect setup/cleanup twice in development.
@@ -381,6 +417,12 @@ function App() {
 
   const openModule = useCallback((module: AppModule) => {
     if (module !== "DROWSINESS" && module !== "POSTURE") stop();
+    activeModuleRef.current = module;
+    meditationCueRef.current = "";
+    if (module === "DROWSINESS") {
+      drowsyNoticeAcceptedRef.current = false;
+      setShowDrowsyNotice(true);
+    }
     setActiveModule(module);
     if (module === "DROWSINESS") setActiveTab("MONITOR");
     if (module === "POSTURE") setActiveTab("MONITOR");
@@ -389,8 +431,24 @@ function App() {
   const goHome = useCallback(() => {
     stop();
     setMeditationRunning(false);
+    setShowDrowsyNotice(false);
+    drowsyNoticeAcceptedRef.current = false;
+    activeModuleRef.current = "HOME";
+    meditationCueRef.current = "";
     setActiveModule("HOME");
   }, [stop]);
+
+  const toggleMeditation = useCallback(async () => {
+    if (meditationRunning) {
+      setMeditationRunning(false);
+      return;
+    }
+    if (runState === "LOADING") return;
+    if (meditationSeconds === 0) setMeditationSeconds(300);
+    if (runState !== "RUNNING" && !(await start())) return;
+    meditationCueRef.current = "";
+    setMeditationRunning(true);
+  }, [meditationRunning, meditationSeconds, runState, start]);
 
   const updateWidgetSettings = useCallback((next: Partial<WidgetSettings>) => {
     setWidgetSettings((current) => {
@@ -410,14 +468,24 @@ function App() {
     }
   };
 
+  const selectVoiceProfile = (profileId: VoiceProfileId) => {
+    setVoiceProfile(profileId);
+    localStorage.setItem(VOICE_STORAGE_KEY, profileId);
+    setSoundEnabled(true);
+    setVoiceFeedback(`${getVoiceProfile(profileId).label} 음성으로 설정했습니다.`);
+    void speakKorean(getVoiceProfile(profileId).sample, profileId).catch(() => {
+      setVoiceFeedback("선택한 음성 미리듣기를 재생하지 못했습니다. 기기의 한국어 TTS 설정을 확인해 주세요.");
+    });
+  };
+
   const testVoice = async () => {
     setSoundEnabled(true);
     setVoiceFeedback("한국어 음성 엔진을 확인하고 있습니다…");
     try {
       const status = await getKoreanSpeechStatus();
       if (status.error) throw new Error(status.error);
-      await speakKorean("수하 드라이버 음성 안내가 정상적으로 작동합니다.");
-      setVoiceFeedback("음성 테스트를 재생했습니다.");
+      await speakKorean(getVoiceProfile(voiceProfile).sample, voiceProfile);
+      setVoiceFeedback(`${getVoiceProfile(voiceProfile).label} 음성 테스트를 재생했습니다.`);
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "한국어 음성 엔진을 사용할 수 없습니다.";
       setVoiceFeedback(`${message} Android 설정 → 일반 관리 → 글자 읽어주기에서 한국어 음성을 설치해 주세요.`);
@@ -431,15 +499,19 @@ function App() {
   const permissionLabel = getPermissionLabel(cameraPermission);
 
   return (
-    <main className={`app status-${snapshot.status.toLowerCase()}`}>
+    <main className={`app status-${activeModule === "MEDITATION" ? "awake" : snapshot.status.toLowerCase()}`}>
       <header className="topbar">
         <div className="brand-lockup">
           {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="홈으로 이동">‹</button>}
-          <div className="brand" aria-label="SUHA"><img src="/icon-192.png" alt="" /><span>suha<small>AI CARE</small></span></div>
+          <div className="brand" aria-label="졸음운전"><img src="/icon-192.png" alt="" /><span>졸음운전<small>AI SAFETY</small></span></div>
         </div>
         <button className="header-icon" onClick={() => {
-          if (activeModule === "DROWSINESS" || activeModule === "POSTURE") setActiveTab("SETTINGS");
-          else setActiveModule("WIDGET");
+          if (activeModule !== "DROWSINESS" && activeModule !== "POSTURE") {
+            stop();
+            activeModuleRef.current = "DROWSINESS";
+            setActiveModule("DROWSINESS");
+          }
+          setActiveTab("SETTINGS");
         }} aria-label="설정 열기">⚙</button>
       </header>
 
@@ -448,11 +520,16 @@ function App() {
         <MeditationScreen
           seconds={meditationSeconds}
           running={meditationRunning}
-          onToggle={() => {
-            if (meditationSeconds === 0) setMeditationSeconds(300);
-            setMeditationRunning((value) => !value);
-          }}
-          onReset={() => { setMeditationRunning(false); setMeditationSeconds(300); }}
+          guidance={meditationGuidance}
+          snapshot={snapshot}
+          runState={runState}
+          cameraPermission={cameraPermission}
+          permissionLabel={permissionLabel}
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          postureLabel={postureLabel}
+          onToggle={() => void toggleMeditation()}
+          onReset={() => { setMeditationRunning(false); setMeditationSeconds(300); meditationCueRef.current = ""; }}
         />
       )}
       {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => setActiveModule("WIDGET")} />}
@@ -563,7 +640,13 @@ function App() {
       {activeTab==="SETTINGS"&&<section className="mobile-settings" aria-label="앱 설정">
         <div className="settings-heading"><span className="eyebrow">APP SETTINGS</span><h1>설정</h1><p>운전 중에는 조작하지 말고 출발 전에 설정해 주세요.</p></div>
         <button className="setting-row" onClick={()=>setSoundEnabled(value=>!value)} aria-pressed={soundEnabled}><span><b>경보음과 음성 안내</b><small>주의·위험 상태를 한국어로 알립니다.</small></span><i className={soundEnabled?"on":""}>{soundEnabled?"켜짐":"꺼짐"}</i></button>
-        <button className="setting-row" onClick={()=>void testVoice()}><span><b>한국어 음성 테스트</b><small>기기의 TTS 음성이 들리는지 확인합니다.</small></span><i>실행</i></button>
+        <div className="voice-profile-setting" role="group" aria-label="안내 음성 선택">
+          <div className="voice-profile-heading"><span><b>안내 음성</b><small>선택하면 바로 미리듣기가 재생됩니다.</small></span><i>{getVoiceProfile(voiceProfile).label}</i></div>
+          <div className="voice-profile-grid">
+            {VOICE_PROFILES.map((profile) => <button key={profile.id} className={voiceProfile === profile.id ? "selected" : ""} onClick={() => selectVoiceProfile(profile.id)} aria-pressed={voiceProfile === profile.id}><span>{profile.id === "FEMALE" ? "♀" : profile.id === "MALE" ? "♂" : profile.id === "CHILD" ? "○" : "✦"}</span><b>{profile.label}</b><small>{profile.description}</small></button>)}
+          </div>
+        </div>
+        <button className="setting-row" onClick={()=>void testVoice()}><span><b>선택 음성 다시 듣기</b><small>현재 선택한 목소리와 한국어 TTS 상태를 확인합니다.</small></span><i>재생</i></button>
         <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>얼굴과 자세 기준을 5초간 다시 측정합니다.</small></span><i>재측정</i></button>
         <button className="setting-row" onClick={() => setActiveModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
         {!isNativeApp&&<button className="setting-row" onClick={()=>void install()} aria-expanded={showInstallHelp}><span><b>홈 화면에 앱 설치</b><small>전체 화면에서 빠르게 실행할 수 있습니다.</small></span><i>설치</i></button>}
@@ -576,15 +659,41 @@ function App() {
       </footer>}
 
       {activeTab==="SETTINGS"&&<button className="back-to-monitor" onClick={() => setActiveTab("MONITOR")}>카메라 화면으로 돌아가기</button>}
+      {showDrowsyNotice&&<DrowsySafetyNotice
+        onConfirm={() => {
+          drowsyNoticeAcceptedRef.current = true;
+          setShowDrowsyNotice(false);
+        }}
+        onCancel={goHome}
+      />}
       </>}
     </main>
   );
 }
 
+function DrowsySafetyNotice({ onConfirm, onCancel }: { onConfirm(): void; onCancel(): void }) {
+  return <div className="safety-modal-backdrop">
+    <section className="safety-modal" role="dialog" aria-modal="true" aria-labelledby="drowsy-safety-title" aria-describedby="drowsy-safety-description">
+      <div className="safety-modal-icon" aria-hidden="true">!</div>
+      <span className="eyebrow">SAFETY FIRST</span>
+      <h2 id="drowsy-safety-title">졸음운전 안전 안내</h2>
+      <p id="drowsy-safety-description">이 기능을 사용하기 전에 아래 내용을 반드시 확인해 주세요.</p>
+      <ul>
+        <li><b>운전 중에는 휴대전화를 조작하지 마세요.</b> 모든 설정은 출발 전에 완료해야 합니다.</li>
+        <li>본 앱은 졸음운전을 예방하거나 운전자의 안전을 보장하는 장치가 아닙니다.</li>
+        <li>피곤하거나 졸리면 즉시 휴게소·졸음쉼터 등 안전한 장소에 정차하고 충분히 휴식한 뒤 운전하세요.</li>
+        <li>앱의 경고보다 도로 상황과 운전자의 판단을 항상 우선하세요.</li>
+      </ul>
+      <button className="safety-confirm" onClick={onConfirm}>확인했습니다</button>
+      <button className="safety-cancel" onClick={onCancel}>사용하지 않고 홈으로</button>
+    </section>
+  </div>;
+}
+
 function HomeScreen({ onOpen, widgetSettings }: { onOpen(module: AppModule): void; widgetSettings: WidgetSettings }) {
-  return <section className="mobile-home" aria-label="SUHA 홈">
+  return <section className="mobile-home" aria-label="졸음운전 홈">
     <div className="home-hero">
-      <div className="home-kicker"><i />오늘의 SUHA</div>
+      <div className="home-kicker"><i />오늘도 안전운전</div>
       <h1>당신의 하루를<br /><b>더 편안하게.</b></h1>
       <p>안전과 건강, 소통을 하나의 AI로 돌봐요.</p>
       <div className="hero-signal"><i /><span><b>기기 내 AI</b><small>카메라 영상은 저장되지 않아요</small></span></div>
@@ -605,15 +714,42 @@ function HomeScreen({ onOpen, widgetSettings }: { onOpen(module: AppModule): voi
   </section>;
 }
 
-function MeditationScreen({ seconds, running, onToggle, onReset }: { seconds: number; running: boolean; onToggle(): void; onReset(): void }) {
-  const phase = Math.floor(seconds / 4) % 2 === 0 ? "내쉬기" : "들이쉬기";
+function MeditationScreen({ seconds, running, guidance, snapshot, runState, cameraPermission, permissionLabel, videoRef, canvasRef, postureLabel, onToggle, onReset }: {
+  seconds: number;
+  running: boolean;
+  guidance: ReturnType<typeof getMeditationGuidance>;
+  snapshot: MonitorSnapshot;
+  runState: RunState;
+  cameraPermission: CameraPermission;
+  permissionLabel: string;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  postureLabel: string;
+  onToggle(): void;
+  onReset(): void;
+}) {
   return <section className="meditation-screen" aria-label="호흡 명상">
     <span className="eyebrow">5 MINUTE BREATH</span>
     <h1>호흡 명상</h1>
-    <p>편안하게 앉아 코로 천천히 호흡해 보세요.</p>
-    <div className={`breath-orb ${running ? "running" : ""}`}><span>{running ? phase : "준비"}</span></div>
-    <strong className="meditation-time">{formatClock(seconds)}</strong>
-    <div className="meditation-actions"><button className="primary" onClick={onToggle}>{running ? "잠시 멈춤" : seconds === 0 ? "다시 시작" : "명상 시작"}</button><button onClick={onReset}>5분 초기화</button></div>
+    <p>카메라가 눈 상태와 앉은 자세를 살피며 편안한 호흡을 안내합니다.</p>
+    <div className="meditation-layout">
+      <div className="meditation-visual">
+        <div className={`breath-orb ${guidance.timerActive ? "running" : ""}`}><span>{guidance.title}</span></div>
+        <strong className="meditation-time">{formatClock(seconds)}</strong>
+      </div>
+      <div className="meditation-camera camera-stage" aria-label="명상 자세 확인 카메라">
+        <video ref={videoRef} playsInline muted />
+        <canvas ref={canvasRef} />
+        {runState !== "RUNNING" && <div className="camera-placeholder compact"><div className="face-guide"><span /><span /></div><strong>{runState === "LOADING" ? "카메라 준비 중" : "자세 확인 준비"}</strong><p>얼굴과 양쪽 어깨가 보이게 맞춰 주세요.</p><div className={`permission-state ${cameraPermission.toLowerCase()}`}>{permissionLabel}</div></div>}
+        {runState === "RUNNING" && <div className="meditation-camera-badge"><i />기기 내 자세 분석</div>}
+      </div>
+    </div>
+    <article className={`meditation-guide stage-${guidance.stage.toLowerCase()}`} aria-live="polite"><span>{guidance.stage === "BREATHING" ? "LIVE COACH" : "MEDITATION GUIDE"}</span><strong>{guidance.title}</strong><p>{guidance.message}</p></article>
+    <div className="meditation-metrics">
+      <article><span>눈 상태</span><strong>{snapshot.eyeAspectRatio === null ? "준비 전" : snapshot.eyesClosed ? "편안히 감음" : "눈 뜸"}</strong></article>
+      <article><span>앉은 자세</span><strong>{snapshot.postureScore === null ? "준비 전" : `${postureLabel} · ${snapshot.postureScore}점`}</strong></article>
+    </div>
+    <div className="meditation-actions"><button className="primary" onClick={onToggle} disabled={runState === "LOADING"}>{runState === "LOADING" ? "카메라 준비 중…" : running ? "잠시 멈춤" : seconds === 0 ? "다시 시작" : runState === "RUNNING" ? "계속하기" : "카메라로 명상 시작"}</button><button onClick={onReset}>5분 초기화</button></div>
     <small>운전 중에는 명상을 사용하지 마세요. 안전한 장소에서만 실행하세요.</small>
   </section>;
 }

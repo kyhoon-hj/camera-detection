@@ -1,4 +1,4 @@
-# SUHA Driver Mobile
+# 졸음운전
 
 휴대폰 전면 카메라와 MediaPipe 얼굴·자세 랜드마크를 기기 안에서 처리하는 하이브리드 앱입니다. 하나의 React 코드로 웹/PWA, Android, iOS를 지원하며 카메라 영상은 서버로 전송하지 않습니다.
 

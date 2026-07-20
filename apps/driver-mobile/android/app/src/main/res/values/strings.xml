@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SUHA Driver</string>
-    <string name="title_activity_main">SUHA Driver</string>
+    <string name="app_name">졸음운전</string>
+    <string name="title_activity_main">졸음운전</string>
     <string name="package_name">com.hjsolution.suha.driver</string>
     <string name="custom_url_scheme">com.hjsolution.suha.driver</string>
 </resources>
