@@ -1,8 +1,10 @@
 import { Capacitor } from "@capacitor/core";
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createRoot } from "react-dom/client";
+import { removeBottomBannerAd, showBottomBannerAd, showMenuInterstitialAd } from "./ads";
 import { DriverMonitor, type MonitorSnapshot } from "./monitor";
 import { getMeditationGuidance } from "./meditation";
+import { REMOVE_ADS_PRODUCT_ID, purchaseRemoveAds, restoreRemoveAdsPurchase } from "./purchases";
 import { getKoreanSpeechStatus, speakKorean, stopKoreanSpeech } from "./speech";
 import { VOICE_PROFILES, getVoiceProfile, normalizeVoiceProfile, type VoiceProfileId } from "./voiceProfiles";
 import { SignInterpreterScreen } from "./SignInterpreterScreen";
@@ -38,6 +40,7 @@ type AppModule = "HOME" | "DROWSINESS" | "POSTURE" | "MEDITATION" | "SIGN" | "WI
 const isNativeApp = Capacitor.isNativePlatform();
 const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
 const VOICE_STORAGE_KEY = "suha.voice-profile.v1";
+const ADS_REMOVED_STORAGE_KEY = "suha.ads-removed.v1";
 
 function loadWidgetSettings(): WidgetSettings {
   try {
@@ -49,6 +52,10 @@ function loadWidgetSettings(): WidgetSettings {
 
 function loadVoiceProfile(): VoiceProfileId {
   return normalizeVoiceProfile(localStorage.getItem(VOICE_STORAGE_KEY));
+}
+
+function loadAdsRemoved(): boolean {
+  return localStorage.getItem(ADS_REMOVED_STORAGE_KEY) === "true";
 }
 
 const initialSnapshot: MonitorSnapshot = {
@@ -114,6 +121,10 @@ function App() {
   const [meditationSeconds, setMeditationSeconds] = useState(300);
   const [meditationRunning, setMeditationRunning] = useState(false);
   const [showDrowsyNotice, setShowDrowsyNotice] = useState(false);
+  const [adsRemoved, setAdsRemoved] = useState(loadAdsRemoved);
+  const [showRemoveAdsDialog, setShowRemoveAdsDialog] = useState(false);
+  const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [purchaseFeedback, setPurchaseFeedback] = useState("");
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -415,7 +426,17 @@ function App() {
     };
   }, [stopResources]);
 
-  const openModule = useCallback((module: AppModule) => {
+  useEffect(() => {
+    if (adsRemoved) void removeBottomBannerAd();
+    else void showBottomBannerAd();
+    return () => {
+      void removeBottomBannerAd();
+    };
+  }, [adsRemoved]);
+
+  const openModule = useCallback(async (module: AppModule) => {
+    if (module === activeModuleRef.current) return;
+    if (!adsRemoved) await showMenuInterstitialAd();
     if (module !== "DROWSINESS" && module !== "POSTURE") stop();
     activeModuleRef.current = module;
     meditationCueRef.current = "";
@@ -426,7 +447,42 @@ function App() {
     setActiveModule(module);
     if (module === "DROWSINESS") setActiveTab("MONITOR");
     if (module === "POSTURE") setActiveTab("MONITOR");
-  }, [stop]);
+  }, [adsRemoved, stop]);
+
+  const completeRemoveAdsPurchase = useCallback(() => {
+    localStorage.setItem(ADS_REMOVED_STORAGE_KEY, "true");
+    setAdsRemoved(true);
+    setPurchaseFeedback("광고 제거가 적용되었습니다. 배너와 전면 광고가 더 이상 표시되지 않습니다.");
+    void removeBottomBannerAd();
+  }, []);
+
+  const buyRemoveAds = useCallback(async () => {
+    setPurchaseBusy(true);
+    setPurchaseFeedback("");
+    try {
+      const result = await purchaseRemoveAds();
+      if (result.success) completeRemoveAdsPurchase();
+      else setPurchaseFeedback(result.message);
+    } catch (cause) {
+      setPurchaseFeedback(cause instanceof Error ? cause.message : "결제를 시작하지 못했습니다.");
+    } finally {
+      setPurchaseBusy(false);
+    }
+  }, [completeRemoveAdsPurchase]);
+
+  const restoreRemoveAds = useCallback(async () => {
+    setPurchaseBusy(true);
+    setPurchaseFeedback("");
+    try {
+      const result = await restoreRemoveAdsPurchase();
+      if (result.success) completeRemoveAdsPurchase();
+      else setPurchaseFeedback(result.message);
+    } catch (cause) {
+      setPurchaseFeedback(cause instanceof Error ? cause.message : "구매 복원을 확인하지 못했습니다.");
+    } finally {
+      setPurchaseBusy(false);
+    }
+  }, [completeRemoveAdsPurchase]);
 
   const goHome = useCallback(() => {
     stop();
@@ -499,20 +555,21 @@ function App() {
   const permissionLabel = getPermissionLabel(cameraPermission);
 
   return (
-    <main className={`app status-${activeModule === "MEDITATION" ? "awake" : snapshot.status.toLowerCase()}`}>
+    <main className={`app ${isNativeApp ? "native-app" : ""} status-${activeModule === "MEDITATION" ? "awake" : snapshot.status.toLowerCase()}`}>
       <header className="topbar">
         <div className="brand-lockup">
           {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="홈으로 이동">‹</button>}
           <div className="brand" aria-label="졸음운전"><img src="/icon-192.png" alt="" /><span>졸음운전<small>AI SAFETY</small></span></div>
         </div>
-        <button className="header-icon" onClick={() => {
+        <button className="header-icon" onClick={() => void (async () => {
           if (activeModule !== "DROWSINESS" && activeModule !== "POSTURE") {
+            if (!adsRemoved) await showMenuInterstitialAd();
             stop();
             activeModuleRef.current = "DROWSINESS";
             setActiveModule("DROWSINESS");
           }
           setActiveTab("SETTINGS");
-        }} aria-label="설정 열기">⚙</button>
+        })()} aria-label="설정 열기">⚙</button>
       </header>
 
       {activeModule === "HOME" && <HomeScreen onOpen={openModule} widgetSettings={widgetSettings} />}
@@ -532,7 +589,7 @@ function App() {
           onReset={() => { setMeditationRunning(false); setMeditationSeconds(300); meditationCueRef.current = ""; }}
         />
       )}
-      {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => setActiveModule("WIDGET")} />}
+      {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => void openModule("WIDGET")} />}
       {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
 
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
@@ -648,7 +705,8 @@ function App() {
         </div>
         <button className="setting-row" onClick={()=>void testVoice()}><span><b>선택 음성 다시 듣기</b><small>현재 선택한 목소리와 한국어 TTS 상태를 확인합니다.</small></span><i>재생</i></button>
         <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>얼굴과 자세 기준을 5초간 다시 측정합니다.</small></span><i>재측정</i></button>
-        <button className="setting-row" onClick={() => setActiveModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
+        <button className="setting-row remove-ads-row" onClick={() => { setPurchaseFeedback(""); setShowRemoveAdsDialog(true); }}><span><b>광고 제거</b><small>{adsRemoved ? "광고 제거가 적용되어 있습니다." : "배너와 메뉴 이동 전면 광고를 제거합니다."}</small></span><i className={adsRemoved ? "on" : ""}>{adsRemoved ? "적용됨" : "구매"}</i></button>
+        <button className="setting-row" onClick={() => void openModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
         {!isNativeApp&&<button className="setting-row" onClick={()=>void install()} aria-expanded={showInstallHelp}><span><b>홈 화면에 앱 설치</b><small>전체 화면에서 빠르게 실행할 수 있습니다.</small></span><i>설치</i></button>}
         {voiceFeedback&&<p className="voice-feedback" role="status">{voiceFeedback}</p>}
         <div className="privacy-card"><b>기기 내 개인정보 처리</b><p>카메라 영상은 서버로 보내거나 저장하지 않습니다. 앱이 백그라운드로 가면 카메라를 즉시 종료합니다.</p></div>
@@ -666,9 +724,50 @@ function App() {
         }}
         onCancel={goHome}
       />}
+      {showRemoveAdsDialog&&<RemoveAdsDialog
+        adsRemoved={adsRemoved}
+        busy={purchaseBusy}
+        feedback={purchaseFeedback}
+        onBuy={() => void buyRemoveAds()}
+        onClose={() => setShowRemoveAdsDialog(false)}
+        onRestore={() => void restoreRemoveAds()}
+      />}
       </>}
     </main>
   );
+}
+
+function RemoveAdsDialog({ adsRemoved, busy, feedback, onBuy, onClose, onRestore }: {
+  adsRemoved: boolean;
+  busy: boolean;
+  feedback: string;
+  onBuy(): void;
+  onClose(): void;
+  onRestore(): void;
+}) {
+  return <div className="purchase-modal-backdrop">
+    <section className="purchase-modal" role="dialog" aria-modal="true" aria-labelledby="remove-ads-title">
+      <span className="eyebrow">AD FREE</span>
+      <h2 id="remove-ads-title">광고 제거</h2>
+      <p>한 번 구매하면 이 기기와 같은 Google Play 계정에서 배너 광고와 메뉴 이동 전면 광고를 표시하지 않습니다.</p>
+      <div className="purchase-summary">
+        <b>구매 상품</b>
+        <code>{REMOVE_ADS_PRODUCT_ID}</code>
+      </div>
+      <ol className="purchase-steps">
+        <li>Google Play 결제창을 엽니다.</li>
+        <li>결제가 완료되면 구매 토큰을 확인합니다.</li>
+        <li>검증이 끝나면 광고 제거 상태를 저장하고 광고를 즉시 숨깁니다.</li>
+      </ol>
+      {adsRemoved&&<p className="purchase-feedback success">광고 제거가 이미 적용되어 있습니다.</p>}
+      {feedback&&<p className="purchase-feedback">{feedback}</p>}
+      <div className="purchase-actions">
+        <button className="purchase-primary" onClick={onBuy} disabled={busy || adsRemoved}>{busy ? "처리 중…" : adsRemoved ? "구매 완료" : "광고 제거 구매"}</button>
+        <button onClick={onRestore} disabled={busy}>구매 복원</button>
+      </div>
+      <button className="purchase-close" onClick={onClose}>닫기</button>
+    </section>
+  </div>;
 }
 
 function DrowsySafetyNotice({ onConfirm, onCancel }: { onConfirm(): void; onCancel(): void }) {
