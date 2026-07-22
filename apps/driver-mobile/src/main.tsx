@@ -755,6 +755,8 @@ function App() {
   const countdown = Math.max(1, Math.ceil(snapshot.calibrationRemainingMs / 1_000));
   const statusLabel = getStatusLabel(snapshot.status);
   const postureLabel = getPostureLabel(snapshot.postureStatus, snapshot.postureIssue);
+  const postureBaselineDeviated = snapshot.postureStatus === "WARNING";
+  const shoulderDeviated = snapshot.postureIssue === "SHOULDER_TILT";
   const permissionLabel = getPermissionLabel(cameraPermission);
 
   return (
@@ -882,6 +884,18 @@ function App() {
           <div className="privacy-chip">기기 내 분석</div>
         </div>
         <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "HEAD" ? "고개 숙임이 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "BODY" ? "상체 쓰러짐이 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 3회 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
+
+        <div className="detection-labels" aria-label={`${activeModule === "POSTURE" ? "자세 교정" : "졸음운전"} 감지 항목`}>
+          {activeModule === "POSTURE" ? <>
+            <span className={shoulderDeviated ? "active warning" : ""}><i />어깨 기울기</span>
+            <span className={postureBaselineDeviated ? "active warning" : ""}><i />기준 자세 이탈</span>
+            <span className={snapshot.eyesClosed ? "active danger" : ""}><i />눈 감김</span>
+            <span className={snapshot.headDown ? "active danger" : ""}><i />고개 숙임</span>
+          </> : <>
+            <span className={snapshot.eyesClosed ? "active danger" : ""}><i />눈 감김</span>
+            <span className={snapshot.headDown ? "active danger" : ""}><i />고개 숙임</span>
+          </>}
+        </div>
 
         <div className="summary-metrics">
           {activeModule === "POSTURE" ? <>
