@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  calculatePostureOverlayAngles,
   isRecoverableVisionError,
   isUsableVideoFrame,
   visionErrorMessage,
   type VideoFrameState,
 } from "../src/vision";
+import type { Landmark } from "../src/monitor";
 
 const validFrame: VideoFrameState = {
   readyState: 2,
@@ -34,3 +36,40 @@ describe("카메라 프레임 보호", () => {
     expect(message).not.toContain("third_party");
   });
 });
+
+describe("posture overlay angles", () => {
+  it("reports zero for a level head and shoulders", () => {
+    const face = landmarks(478);
+    const pose = landmarks(33);
+    face[10] = point(0.5, 0.2);
+    face[152] = point(0.5, 0.5);
+    pose[11] = point(0.35, 0.62);
+    pose[12] = point(0.65, 0.62);
+
+    expect(calculatePostureOverlayAngles(face, pose, 640, 480)).toEqual({
+      headTiltDegrees: 0,
+      shoulderTiltDegrees: 0,
+    });
+  });
+
+  it("measures head and shoulder tilt in display pixels", () => {
+    const face = landmarks(478);
+    const pose = landmarks(33);
+    face[10] = point(0.5, 0.2);
+    face[152] = point(0.55, 0.5);
+    pose[11] = point(0.35, 0.6);
+    pose[12] = point(0.65, 0.65);
+
+    const angles = calculatePostureOverlayAngles(face, pose, 640, 480);
+    expect(angles.headTiltDegrees).toBeCloseTo(12.5, 1);
+    expect(angles.shoulderTiltDegrees).toBeCloseTo(7.1, 1);
+  });
+});
+
+function point(x: number, y: number): Landmark {
+  return { x, y, z: 0 };
+}
+
+function landmarks(length: number): Landmark[] {
+  return Array.from({ length }, () => point(0, 0));
+}
