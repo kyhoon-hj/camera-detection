@@ -4,7 +4,7 @@ import { CALIBRATION_DURATION_MS, DriverMonitor, type Landmark, type VisionFrame
 describe("DriverMonitor 5초 기준 측정", () => {
   it("유효한 얼굴과 자세를 5초간 모은 뒤에만 감지를 시작한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     let snapshot = monitor.process(frame(0));
     expect(snapshot.status).toBe("CALIBRATING");
 
@@ -21,7 +21,7 @@ describe("DriverMonitor 5초 기준 측정", () => {
 
   it("측정 중 얼굴이나 어깨를 오래 잃으면 5초 측정을 다시 시작한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     for (let time = 0; time <= 2_500; time += 100) monitor.process(frame(time));
 
     monitor.process({ timestampMs: 2_600, face: null, pose: null });
@@ -41,11 +41,12 @@ describe("DriverMonitor 5초 기준 측정", () => {
     const warning = monitor.process(frame(6_700, true));
     expect(warning.status).toBe("WARNING");
     expect(warning.trigger).toBe("EYES_ONLY");
+    expect(warning.message).toBe("눈 감김이 감지되었습니다.");
   });
 
   it("70도 측면 촬영도 3D 어깨축으로 보정하고 수치를 제공한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     let snapshot = monitor.process(frame(0, false, makePose({ yawDegrees: 70 })));
     for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
       snapshot = monitor.process(frame(time, false, makePose({ yawDegrees: 70 })));
@@ -61,7 +62,7 @@ describe("DriverMonitor 5초 기준 측정", () => {
 
   it("측면에서도 실제 어깨 기울기와 거북목 이동을 기준 자세 대비 감지한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     for (let time = 0; time <= CALIBRATION_DURATION_MS; time += 100) {
       monitor.process(frame(time, false, makePose({ yawDegrees: 70 })));
     }
@@ -84,12 +85,137 @@ describe("DriverMonitor 5초 기준 측정", () => {
     expect(forward.postureIssue).toBe("FORWARD_HEAD");
     expect(forward.forwardHeadPercent).toBeGreaterThan(20);
   });
+
+  it("졸음운전 모드는 어깨가 없어도 얼굴 기준 측정을 완료한다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("DROWSINESS");
+    let snapshot = monitor.process({ timestampMs: 0, face: makeFace(false), pose: null });
+    for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
+      snapshot = monitor.process({ timestampMs: time, face: makeFace(false), pose: null });
+    }
+    expect(snapshot.status).toBe("AWAKE");
+
+    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.18 }));
+    const collapsedPose = makePose({ yawDegrees: 70, verticalDrop: 0.1 });
+    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: collapsedPose });
+    const warning = monitor.process({ timestampMs: 6_900, face: collapsedFace, pose: collapsedPose });
+    expect(warning.trigger).toBe("BODY_COLLAPSE");
+  });
+
+  it("졸음운전 모드는 어깨 기울기 대신 지속된 상체 쓰러짐을 경고한다", () => {
+    const monitor = calibratedMonitor();
+    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.14 }));
+    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) });
+    const warning = monitor.process({ timestampMs: 6_200, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) });
+    expect(warning.status).toBe("WARNING");
+    expect(warning.trigger).toBe("BODY_COLLAPSE");
+    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
+    expect(warning.shoulderTiltDegrees).toBeNull();
+    expect(warning.bodyCollapseCountReady).toBe(false);
+    expect(monitor.process({ timestampMs: 7_100, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) }).bodyCollapseCountReady).toBe(true);
+  });
+
+  it("측면에서는 얼굴 기울기나 정면 기준의 작은 하강만으로 쓰러짐 처리하지 않는다", () => {
+    const sidePose = makePose({ yawDegrees: 70 });
+    const monitor = calibratedMonitor(sidePose);
+    const tiltedFace = rotateFace(makeFace(false), 60);
+
+    monitor.process({ timestampMs: 5_100, face: tiltedFace, pose: sidePose });
+    const tiltOnly = monitor.process({ timestampMs: 8_500, face: tiltedFace, pose: sidePose });
+    expect(tiltOnly.status).toBe("AWAKE");
+    expect(tiltOnly.trigger).toBe("NONE");
+    expect(tiltOnly.postureIssue).toBe("NONE");
+    expect(tiltOnly.cameraView).toBe("SIDE");
+
+    const smallDropFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.14 }));
+    monitor.process({ timestampMs: 8_600, face: smallDropFace, pose: sidePose });
+    const smallDrop = monitor.process({ timestampMs: 11_000, face: smallDropFace, pose: sidePose });
+    expect(smallDrop.status).toBe("AWAKE");
+    expect(smallDrop.trigger).toBe("NONE");
+    expect(smallDrop.postureIssue).toBe("NONE");
+  });
+
+  it("측면에서도 얼굴과 상체가 함께 크게 내려가면 더 긴 확인 후 쓰러짐을 경고한다", () => {
+    const sidePose = makePose({ yawDegrees: 70 });
+    const monitor = calibratedMonitor(sidePose);
+    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.18 }));
+    const collapsedPose = makePose({ yawDegrees: 70, verticalDrop: 0.1 });
+
+    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: collapsedPose });
+    const checking = monitor.process({ timestampMs: 6_800, face: collapsedFace, pose: collapsedPose });
+    expect(checking.status).toBe("AWAKE");
+    expect(checking.postureStatus).toBe("CHECKING");
+
+    const warning = monitor.process({ timestampMs: 6_900, face: collapsedFace, pose: collapsedPose });
+    expect(warning.status).toBe("WARNING");
+    expect(warning.trigger).toBe("BODY_COLLAPSE");
+    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
+    expect(warning.cameraView).toBe("SIDE");
+    expect(warning.bodyCollapseCountReady).toBe(false);
+    expect(monitor.process({ timestampMs: 7_900, face: collapsedFace, pose: collapsedPose }).bodyCollapseCountReady).toBe(true);
+  });
+
+  it("사선 쓰러짐은 경고보다 1초 더 지속된 2.4초부터 영상 카운트를 허용한다", () => {
+    const obliquePose = makePose({ yawDegrees: 40 });
+    const monitor = calibratedMonitor(obliquePose);
+    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.16 }));
+    const collapsedPose = makePose({ yawDegrees: 40, verticalDrop: 0.08 });
+
+    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: collapsedPose });
+    const beforeCount = monitor.process({ timestampMs: 7_400, face: collapsedFace, pose: collapsedPose });
+    expect(beforeCount.status).toBe("WARNING");
+    expect(beforeCount.cameraView).toBe("OBLIQUE");
+    expect(beforeCount.bodyCollapseCountReady).toBe(false);
+
+    const countReady = monitor.process({ timestampMs: 7_500, face: collapsedFace, pose: collapsedPose });
+    expect(countReady.bodyCollapseCountReady).toBe(true);
+  });
+
+  it("기준 측정 후 운전자가 화면에서 사라져도 쓰러짐 시간을 계속 누적한다", () => {
+    const monitor = calibratedMonitor();
+
+    const checking = monitor.process({ timestampMs: 5_100, face: null, pose: null });
+    expect(checking.trigger).toBe("FACE_MISSING");
+    expect(checking.postureStatus).toBe("CHECKING");
+
+    const warning = monitor.process({ timestampMs: 6_100, face: null, pose: null });
+    expect(warning.trigger).toBe("BODY_COLLAPSE");
+    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
+    expect(warning.bodyCollapseDurationMs).toBe(1_000);
+    expect(warning.bodyCollapseCountReady).toBe(false);
+
+    const countReady = monitor.process({ timestampMs: 7_100, face: null, pose: null });
+    expect(countReady.bodyCollapseCountReady).toBe(true);
+    expect(monitor.process({ timestampMs: 9_100, face: null, pose: null }).bodyCollapseDurationMs).toBe(4_000);
+  });
+
+  it("얼굴이 거의 수평으로 누우면 작은 하강에서도 쓰러짐으로 확인한다", () => {
+    const monitor = calibratedMonitor();
+    const horizontalFace = rotateFace(makeFace(false), 74)
+      .map((point) => ({ ...point, y: point.y + 0.02 }));
+
+    monitor.process({ timestampMs: 5_100, face: horizontalFace, pose: makePose() });
+    const warning = monitor.process({ timestampMs: 6_100, face: horizontalFace, pose: makePose() });
+    expect(warning.trigger).toBe("BODY_COLLAPSE");
+    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
+  });
+
+  it("고개 숙임이 2초 지속되면 별도 안내를 제공한다", () => {
+    const monitor = calibratedMonitor();
+    const loweredHead = makeFace(false);
+    loweredHead[1] = { ...loweredHead[1], y: loweredHead[1].y + 0.08 };
+    monitor.process({ timestampMs: 5_100, face: loweredHead, pose: makePose() });
+    const warning = monitor.process({ timestampMs: 7_100, face: loweredHead, pose: makePose() });
+    expect(warning.status).toBe("WARNING");
+    expect(warning.trigger).toBe("HEAD_ONLY");
+    expect(warning.message).toBe("고개 숙임이 감지되었습니다.");
+  });
 });
 
-function calibratedMonitor(): DriverMonitor {
+function calibratedMonitor(pose = makePose()): DriverMonitor {
   const monitor = new DriverMonitor();
   monitor.begin();
-  for (let time = 0; time <= CALIBRATION_DURATION_MS; time += 100) monitor.process(frame(time));
+  for (let time = 0; time <= CALIBRATION_DURATION_MS; time += 100) monitor.process(frame(time, false, pose));
   return monitor;
 }
 
@@ -118,12 +244,26 @@ function setEye(face: Landmark[], indices: number[], left: number, right: number
   face[indices[5]] = { x: left + 0.025, y: lower, z: 0 };
 }
 
-function makePose(options: { yawDegrees?: number; rightShoulderDrop?: number; forwardShift?: number } = {}): Landmark[] {
+function rotateFace(face: Landmark[], degrees: number): Landmark[] {
+  const radians = degrees * Math.PI / 180;
+  return face.map((point) => {
+    const x = point.x - 0.5;
+    const y = point.y - 0.5;
+    return {
+      ...point,
+      x: 0.5 + x * Math.cos(radians) - y * Math.sin(radians),
+      y: 0.5 + x * Math.sin(radians) + y * Math.cos(radians),
+    };
+  });
+}
+
+function makePose(options: { yawDegrees?: number; rightShoulderDrop?: number; forwardShift?: number; verticalDrop?: number } = {}): Landmark[] {
   const landmarks = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 1 }));
   const forwardShift = options.forwardShift ?? 0;
-  landmarks[0] = { x: 0.5, y: 0.25, z: -0.1 - forwardShift, visibility: 1 };
-  landmarks[7] = { x: 0.45, y: 0.32, z: -0.08 - forwardShift, visibility: 1 };
-  landmarks[8] = { x: 0.55, y: 0.32, z: -0.08 - forwardShift, visibility: 1 };
+  const verticalDrop = options.verticalDrop ?? 0;
+  landmarks[0] = { x: 0.5, y: 0.25 + verticalDrop, z: -0.1 - forwardShift, visibility: 1 };
+  landmarks[7] = { x: 0.45, y: 0.32 + verticalDrop, z: -0.08 - forwardShift, visibility: 1 };
+  landmarks[8] = { x: 0.55, y: 0.32 + verticalDrop, z: -0.08 - forwardShift, visibility: 1 };
   landmarks[11] = { x: 0.38, y: 0.6, z: 0, visibility: 1 };
   landmarks[12] = { x: 0.62, y: 0.6 + (options.rightShoulderDrop ?? 0), z: 0, visibility: 1 };
   const yaw = (options.yawDegrees ?? 0) * Math.PI / 180;

@@ -1,31 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { chooseKoreanVoice, getVoiceProfile, normalizeVoiceProfile } from "../src/voiceProfiles";
+import { DEFAULT_VOICE_PROFILE, chooseKoreanVoice } from "../src/voiceProfiles";
 
 describe("voice profiles", () => {
-  it("keeps supported profiles and falls back to female", () => {
-    expect(normalizeVoiceProfile("CUTE")).toBe("CUTE");
-    expect(normalizeVoiceProfile("UNKNOWN")).toBe("FEMALE");
+  it("하나의 기본 한국어 안내 음성만 제공한다", () => {
+    expect(DEFAULT_VOICE_PROFILE.label).toBe("기본 안내 음성");
+    expect(DEFAULT_VOICE_PROFILE.rate).toBe(1);
+    expect(DEFAULT_VOICE_PROFILE.pitch).toBe(1);
   });
 
-  it("provides distinct rate and pitch settings", () => {
-    expect(getVoiceProfile("MALE").pitch).toBeLessThan(getVoiceProfile("FEMALE").pitch);
-    expect(getVoiceProfile("CUTE").pitch).toBeGreaterThan(getVoiceProfile("CHILD").pitch);
-  });
-
-  it("describes profiles by tone instead of implied speaker identity", () => {
-    expect(getVoiceProfile("FEMALE").label).toBe("부드러운 기본톤");
-    expect(getVoiceProfile("MALE").label).toBe("차분한 저음");
-    expect(getVoiceProfile("CHILD").label).toBe("밝은 고음");
-    expect(getVoiceProfile("CUTE").label).toBe("발랄한 캐릭터톤");
-  });
-
-  it("prefers a matching Korean voice name", () => {
+  it("기본 한국어 음성 이름을 우선 선택한다", () => {
     const voices = [
       { lang: "en-US", name: "English" },
       { lang: "ko-KR", name: "Microsoft InJoon" },
       { lang: "ko-KR", name: "Microsoft SunHi" },
     ];
-    expect(chooseKoreanVoice(voices, "MALE")?.name).toBe("Microsoft InJoon");
-    expect(chooseKoreanVoice(voices, "FEMALE")?.name).toBe("Microsoft SunHi");
+    expect(chooseKoreanVoice(voices)?.name).toBe("Microsoft SunHi");
+  });
+
+  it("일치하는 이름이 없으면 첫 번째 한국어 음성을 사용한다", () => {
+    const voices = [
+      { lang: "en-US", name: "English" },
+      { lang: "ko-KR", name: "기본 한국어" },
+    ];
+    expect(chooseKoreanVoice(voices)?.name).toBe("기본 한국어");
   });
 });

@@ -1,3 +1,5 @@
+import { WAKE_UP_COUNT_THRESHOLDS } from "./wakeUpVideos";
+
 export interface Landmark {
   x: number;
   y: number;
@@ -12,6 +14,7 @@ export interface VisionFrame {
 }
 
 export type DriverStatus = "IDLE" | "CALIBRATING" | "AWAKE" | "WARNING" | "ALARM" | "NO_FACE";
+export type MonitorMode = "DROWSINESS" | "POSTURE";
 
 export interface MonitorSnapshot {
   status: DriverStatus;
@@ -26,6 +29,8 @@ export interface MonitorSnapshot {
   headDown: boolean;
   headDownDurationMs: number;
   combinedDurationMs: number;
+  bodyCollapseDurationMs: number;
+  bodyCollapseCountReady: boolean;
   postureStatus: "WAITING" | "GOOD" | "CHECKING" | "WARNING" | "NO_POSE";
   postureIssue: string;
   postureScore: number | null;
@@ -60,6 +65,9 @@ interface CalibrationSample {
   ear: number;
   pitch: number;
   pose: PoseMeasurement;
+  poseAvailable: boolean;
+  faceY: number;
+  faceRoll: number;
 }
 
 interface Baseline {
@@ -75,6 +83,9 @@ interface Baseline {
   shoulderX: number;
   shoulderY: number;
   shoulderWidth: number;
+  poseAvailable: boolean;
+  faceY: number;
+  faceRoll: number;
 }
 
 interface PostureResult {
@@ -90,6 +101,16 @@ interface PostureResult {
   forwardHeadPercent: number | null;
   cameraViewAngleDegrees: number | null;
   cameraView: MonitorSnapshot["cameraView"];
+}
+
+interface CollapseProfile {
+  faceDropThreshold: number;
+  poseDropThreshold: number | null;
+  rollThreshold: number;
+  minimumFaceDropForRoll: number;
+  minimumPoseDropForRoll: number | null;
+  warningMs: number;
+  alarmMs: number;
 }
 
 const RIGHT_EYE = [33, 160, 158, 133, 153, 144] as const;
@@ -113,9 +134,12 @@ export class DriverMonitor {
   private poseHistory: PoseMeasurement[] = [];
   private eyesWereClosed = false;
   private headWasDown = false;
+  private collapseSince: number | null = null;
+  private mode: MonitorMode = "DROWSINESS";
   private active = false;
 
-  begin(): void {
+  begin(mode: MonitorMode = "DROWSINESS"): void {
+    this.mode = mode;
     this.active = true;
     this.restartCalibration();
   }
@@ -153,10 +177,11 @@ export class DriverMonitor {
     this.poseHistory = [];
     this.eyesWereClosed = false;
     this.headWasDown = false;
+    this.collapseSince = null;
   }
 
   private calibrate(frame: VisionFrame): MonitorSnapshot {
-    const sample = getCalibrationSample(frame);
+    const sample = getCalibrationSample(frame, this.mode === "POSTURE");
     const valid = sample !== null && isStableSample(this.previousSample, sample);
 
     if (!valid) {
@@ -174,7 +199,9 @@ export class DriverMonitor {
         Math.ceil((CALIBRATION_DURATION_MS * (1 - progress)) / 1_000) * 1_000,
         false,
         sample === null
-          ? "얼굴과 양쪽 어깨가 모두 보이도록 휴대폰 위치를 맞춰 주세요."
+          ? this.mode === "POSTURE"
+            ? "얼굴과 양쪽 어깨가 모두 보이도록 휴대폰 위치를 맞춰 주세요."
+            : "얼굴과 상체가 화면 중앙에 보이도록 휴대폰 위치를 맞춰 주세요."
           : "몸을 움직이지 말고 정면을 보세요. 기준 측정을 다시 이어갑니다.",
       );
     }
@@ -195,7 +222,9 @@ export class DriverMonitor {
       progress,
       Math.max(0, CALIBRATION_DURATION_MS - elapsed),
       true,
-      `${getCameraViewLabel(sample.pose.viewAngle)} 촬영 기준을 잡고 있습니다. 평소 운전 자세를 유지하세요.`,
+      this.mode === "POSTURE"
+        ? `${getCameraViewLabel(sample.pose.viewAngle)} 촬영 기준을 잡고 있습니다. 평소 앉은 자세를 유지하세요.`
+        : "얼굴과 고개 움직임 기준을 잡고 있습니다. 정면을 바라봐 주세요.",
     );
   }
 
@@ -212,14 +241,45 @@ export class DriverMonitor {
       this.headDownSince = null;
       this.eyesWereClosed = false;
       this.headWasDown = false;
-      const status: DriverStatus = missingMs >= 3_000 ? "ALARM" : missingMs >= 1_500 ? "WARNING" : "NO_FACE";
+      const missingCountsAsCollapse = this.mode === "DROWSINESS";
+      if (missingCountsAsCollapse && this.collapseSince === null) this.collapseSince = frame.timestampMs;
+      if (!missingCountsAsCollapse) this.collapseSince = null;
+      const collapseDurationMs = missingCountsAsCollapse && this.collapseSince !== null
+        ? frame.timestampMs - this.collapseSince
+        : 0;
+      const collapseView = cameraView(baseline.viewAngle);
+      const collapseProfile = getCollapseProfile(collapseView);
+      const collapseConfirmed = missingCountsAsCollapse && collapseDurationMs >= collapseProfile.warningMs;
+      const bodyCollapseCountReady = collapseConfirmed
+        && collapseDurationMs >= collapseProfile.warningMs + WAKE_UP_COUNT_THRESHOLDS.bodyAdditionalDurationMs;
+      const status: DriverStatus = missingCountsAsCollapse && collapseDurationMs >= collapseProfile.alarmMs
+        ? "ALARM"
+        : collapseConfirmed || missingMs >= 1_500
+          ? "WARNING"
+          : "NO_FACE";
       return {
         ...baseSnapshot(status),
-        trigger: "FACE_MISSING",
-        message: missingMs >= 1_500
-          ? "운전자 얼굴이 보이지 않습니다. 전방과 휴대폰 위치를 확인하세요."
+        trigger: collapseConfirmed ? "BODY_COLLAPSE" : "FACE_MISSING",
+        message: status === "ALARM"
+          ? "운전자가 화면에서 사라졌습니다. 쓰러짐 가능성이 있어 즉시 안전한 곳에 정차하세요."
+          : collapseConfirmed
+            ? "운전자가 화면에서 사라져 쓰러짐 여부를 확인하고 있습니다."
+            : missingMs >= 1_500
+              ? "운전자 얼굴이 보이지 않습니다. 전방과 휴대폰 위치를 확인하세요."
           : "얼굴을 카메라 중앙에 보여 주세요.",
         poseVisible,
+        bodyCollapseDurationMs: collapseDurationMs,
+        bodyCollapseCountReady,
+        postureStatus: missingCountsAsCollapse ? (collapseConfirmed ? "WARNING" : "CHECKING") : "NO_POSE",
+        postureIssue: collapseConfirmed ? "BODY_COLLAPSE" : "NONE",
+        postureConfidence: 0,
+        postureMessage: collapseConfirmed
+          ? `화면에서 운전자가 보이지 않는 상태를 ${Math.max(1, Math.ceil(collapseDurationMs / 1_000))}초 동안 확인하고 있습니다.`
+          : missingCountsAsCollapse
+            ? "운전자가 화면에서 사라져 쓰러짐 여부를 확인하고 있습니다."
+            : "얼굴과 상체를 다시 화면에 맞춰 주세요.",
+        cameraViewAngleDegrees: round(Math.abs(baseline.viewAngle), 1),
+        cameraView: collapseView,
         baselineEyeAspectRatio: round(baseline.ear, 3),
       };
     }
@@ -249,6 +309,38 @@ export class DriverMonitor {
       ? Math.min(closedDurationMs, headDownDurationMs)
       : 0;
 
+    const faceDrop = face[1].y - baseline.faceY;
+    const faceRollDelta = angleDistance(faceRoll(face), baseline.faceRoll);
+    const currentPose = this.mode === "DROWSINESS" && upperBodyVisible(frame.pose)
+      ? measurePose(frame.pose)
+      : null;
+    const collapseViewAngle = currentPose !== null && Math.abs(currentPose.viewAngle) > Math.abs(baseline.viewAngle)
+      ? currentPose.viewAngle
+      : baseline.viewAngle;
+    const collapseProfile = getCollapseProfile(cameraView(collapseViewAngle));
+    const poseDrop = currentPose === null || !baseline.poseAvailable
+      ? null
+      : currentPose.noseY - baseline.noseY;
+    const verticalDropConfirmed = faceDrop > collapseProfile.faceDropThreshold
+      && (collapseProfile.poseDropThreshold === null
+        || poseDrop === null
+        || poseDrop > collapseProfile.poseDropThreshold);
+    const lateralDropConfirmed = faceRollDelta > collapseProfile.rollThreshold
+      && faceDrop >= collapseProfile.minimumFaceDropForRoll
+      && (collapseProfile.minimumPoseDropForRoll === null
+        || poseDrop === null
+        || poseDrop >= collapseProfile.minimumPoseDropForRoll);
+    const nearHorizontalConfirmed = faceRollDelta > 68 && faceDrop >= 0.015;
+    const bodyCollapsed = this.mode === "DROWSINESS"
+      && (verticalDropConfirmed || lateralDropConfirmed || nearHorizontalConfirmed);
+    if (bodyCollapsed && this.collapseSince === null) this.collapseSince = frame.timestampMs;
+    if (!bodyCollapsed) this.collapseSince = null;
+    const collapseDurationMs = bodyCollapsed && this.collapseSince !== null
+      ? frame.timestampMs - this.collapseSince
+      : 0;
+    const bodyCollapseCountReady = bodyCollapsed
+      && collapseDurationMs >= collapseProfile.warningMs + WAKE_UP_COUNT_THRESHOLDS.bodyAdditionalDurationMs;
+
     let status: DriverStatus = "AWAKE";
     let trigger = "NONE";
     let message = "정상적으로 주시하고 있습니다.";
@@ -256,17 +348,32 @@ export class DriverMonitor {
       status = "ALARM"; trigger = "EYES_AND_HEAD"; message = "눈 감김과 고개 숙임이 함께 감지됐습니다. 즉시 안전한 곳에 정차하세요.";
     } else if (closedDurationMs >= 3_000) {
       status = "ALARM"; trigger = "EYES_ONLY"; message = "눈 감김이 오래 지속됐습니다. 즉시 안전한 곳에 정차하세요.";
-    } else if (headDownDurationMs >= 9_000) {
-      status = "ALARM"; trigger = "HEAD_ONLY"; message = "전방을 보지 않는 상태가 오래 지속됐습니다.";
+    } else if (collapseDurationMs >= collapseProfile.alarmMs) {
+      status = "ALARM"; trigger = "BODY_COLLAPSE"; message = "상체 쓰러짐이 감지되었습니다. 즉시 안전한 곳에 정차하세요.";
+    } else if (headDownDurationMs >= 5_000) {
+      status = "ALARM"; trigger = "HEAD_ONLY"; message = "고개 숙임이 감지되었습니다. 즉시 안전한 곳에 정차하세요.";
     } else if (combinedDurationMs >= 650) {
       status = "WARNING"; trigger = "EYES_AND_HEAD"; message = "눈 감김과 고개 숙임이 동시에 감지됐습니다.";
     } else if (closedDurationMs >= 1_500) {
-      status = "WARNING"; trigger = "EYES_ONLY"; message = "눈 감김이 길어지고 있습니다.";
-    } else if (headDownDurationMs >= 5_000) {
-      status = "WARNING"; trigger = "HEAD_ONLY"; message = "고개 숙임이 오래 지속됐습니다. 전방을 확인하세요.";
+      status = "WARNING"; trigger = "EYES_ONLY"; message = "눈 감김이 감지되었습니다.";
+    } else if (collapseDurationMs >= collapseProfile.warningMs) {
+      status = "WARNING"; trigger = "BODY_COLLAPSE"; message = "상체 쓰러짐이 감지되었습니다.";
+    } else if (headDownDurationMs >= 2_000) {
+      status = "WARNING"; trigger = "HEAD_ONLY"; message = "고개 숙임이 감지되었습니다.";
     }
 
-    const posture = this.measurePosture(frame.pose, frame.timestampMs);
+    const collapseConfirmed = bodyCollapsed && collapseDurationMs >= collapseProfile.warningMs;
+    const posture = this.mode === "POSTURE"
+      ? this.measurePosture(frame.pose, frame.timestampMs)
+      : drowsinessBodyResult(
+        bodyCollapsed,
+        collapseConfirmed,
+        collapseDurationMs,
+        faceRollDelta,
+        faceDrop,
+        collapseViewAngle,
+        collapseProfile.warningMs,
+      );
     return {
       status,
       trigger,
@@ -280,6 +387,8 @@ export class DriverMonitor {
       headDown,
       headDownDurationMs,
       combinedDurationMs,
+      bodyCollapseDurationMs: collapseDurationMs,
+      bodyCollapseCountReady,
       postureStatus: posture.postureStatus,
       postureIssue: posture.postureIssue,
       postureScore: posture.postureScore,
@@ -359,9 +468,25 @@ export function headPitch(face: Landmark[]): number {
   return (face[1].y - eyeY) / height;
 }
 
-function getCalibrationSample(frame: VisionFrame): CalibrationSample | null {
-  if (!faceVisible(frame.face) || !upperBodyVisible(frame.pose)) return null;
-  return { ear: eyeAspectRatio(frame.face), pitch: headPitch(frame.face), pose: measurePose(frame.pose) };
+function getCalibrationSample(frame: VisionFrame, requirePose: boolean): CalibrationSample | null {
+  if (!faceVisible(frame.face)) return null;
+  if (requirePose && !upperBodyVisible(frame.pose)) return null;
+  let pose: PoseMeasurement;
+  let poseAvailable = false;
+  if (upperBodyVisible(frame.pose)) {
+    pose = measurePose(frame.pose);
+    poseAvailable = true;
+  } else {
+    pose = faceOnlyMeasurement(frame.face);
+  }
+  return {
+    ear: eyeAspectRatio(frame.face),
+    pitch: headPitch(frame.face),
+    pose,
+    poseAvailable,
+    faceY: frame.face[1].y,
+    faceRoll: faceRoll(frame.face),
+  };
 }
 
 function isStableSample(previous: CalibrationSample | null, current: CalibrationSample): boolean {
@@ -389,6 +514,101 @@ function buildBaseline(samples: CalibrationSample[]): Baseline {
     shoulderX: median(samples.map((sample) => sample.pose.shoulderX)),
     shoulderY: median(samples.map((sample) => sample.pose.shoulderY)),
     shoulderWidth: median(samples.map((sample) => sample.pose.shoulderWidth)),
+    poseAvailable: samples.filter((sample) => sample.poseAvailable).length >= Math.ceil(samples.length * 0.6),
+    faceY: median(samples.map((sample) => sample.faceY)),
+    faceRoll: circularMedian(samples.map((sample) => sample.faceRoll)),
+  };
+}
+
+function faceOnlyMeasurement(face: Landmark[]): PoseMeasurement {
+  const faceHeight = Math.max(distance(face[10], face[152]), 0.2);
+  return {
+    shoulderTilt: 0,
+    headOffset: 0,
+    headHeight: faceHeight,
+    headForward: 0,
+    headLeanDegrees: faceRoll(face),
+    viewAngle: 0,
+    confidence: 1,
+    noseX: face[1].x,
+    noseY: face[1].y,
+    shoulderX: face[1].x,
+    shoulderY: Math.min(1, face[152].y + faceHeight),
+    shoulderWidth: 0.4,
+  };
+}
+
+function faceRoll(face: Landmark[]): number {
+  const left = face[33];
+  const right = face[263];
+  return normalizeAngle(Math.atan2(right.y - left.y, right.x - left.x) * 180 / Math.PI);
+}
+
+function drowsinessBodyResult(
+  collapseCandidate: boolean,
+  collapseConfirmed: boolean,
+  durationMs: number,
+  rollDegrees: number,
+  dropRatio: number,
+  viewAngle: number,
+  warningMs: number,
+): PostureResult {
+  const status: MonitorSnapshot["postureStatus"] = collapseConfirmed
+    ? "WARNING"
+    : collapseCandidate
+      ? "CHECKING"
+      : "GOOD";
+  return {
+    status,
+    issue: collapseConfirmed ? "BODY_COLLAPSE" : "NONE",
+    postureStatus: status,
+    postureIssue: collapseConfirmed ? "BODY_COLLAPSE" : "NONE",
+    postureScore: null,
+    postureConfidence: 1,
+    postureMessage: collapseConfirmed
+      ? `상체 쓰러짐을 ${Math.max(1, Math.ceil(durationMs / 1_000))}초 동안 확인하고 있습니다.`
+      : collapseCandidate
+        ? `${getCameraViewLabel(viewAngle)} 촬영 기준으로 상체 움직임을 ${Math.max(1, Math.ceil((warningMs - durationMs) / 1_000))}초 더 확인합니다.`
+      : "고개와 상체가 안정적으로 유지되고 있습니다.",
+    shoulderTiltDegrees: null,
+    headLeanDegrees: round(rollDegrees, 1),
+    forwardHeadPercent: round(Math.max(0, dropRatio) * 100, 1),
+    cameraViewAngleDegrees: round(Math.abs(viewAngle), 1),
+    cameraView: cameraView(viewAngle),
+  };
+}
+
+function getCollapseProfile(view: MonitorSnapshot["cameraView"]): CollapseProfile {
+  if (view === "SIDE") {
+    return {
+      faceDropThreshold: 0.16,
+      poseDropThreshold: 0.075,
+      rollThreshold: 52,
+      minimumFaceDropForRoll: 0.06,
+      minimumPoseDropForRoll: 0.04,
+      warningMs: 1_800,
+      alarmMs: 3_800,
+    };
+  }
+  if (view === "OBLIQUE") {
+    return {
+      faceDropThreshold: 0.14,
+      poseDropThreshold: 0.055,
+      rollThreshold: 38,
+      minimumFaceDropForRoll: 0.035,
+      minimumPoseDropForRoll: 0.025,
+      warningMs: 1_400,
+      alarmMs: 3_200,
+    };
+  }
+  return {
+    faceDropThreshold: 0.12,
+    poseDropThreshold: null,
+    rollThreshold: 28,
+    minimumFaceDropForRoll: 0,
+    minimumPoseDropForRoll: null,
+    warningMs: 1_000,
+    alarmMs: 2_500,
   };
 }
 
@@ -593,6 +813,8 @@ function baseSnapshot(status: DriverStatus): MonitorSnapshot {
     headDown: false,
     headDownDurationMs: 0,
     combinedDurationMs: 0,
+    bodyCollapseDurationMs: 0,
+    bodyCollapseCountReady: false,
     postureStatus: "WAITING",
     postureIssue: "NONE",
     postureScore: null,

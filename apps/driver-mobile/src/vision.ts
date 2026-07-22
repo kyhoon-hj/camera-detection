@@ -150,13 +150,49 @@ const EYE_PATHS = [
   [33, 160, 158, 133, 153, 144, 33],
   [362, 385, 387, 263, 373, 380, 362],
 ];
-const POSE_PATHS = [[7, 0, 8], [7, 11, 12, 8], [11, 12]];
+const FACE_OVAL_PATH = [
+  10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365,
+  379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93,
+  234, 127, 162, 21, 54, 103, 67, 109, 10,
+];
+
+export interface PostureOverlayAngles {
+  headTiltDegrees: number | null;
+  shoulderTiltDegrees: number | null;
+}
+
+export function calculatePostureOverlayAngles(
+  face: Landmark[] | null,
+  pose: Landmark[] | null,
+  width: number,
+  height: number,
+): PostureOverlayAngles {
+  const forehead = face?.[10];
+  const chin = face?.[152];
+  const leftShoulder = pose?.[11];
+  const rightShoulder = pose?.[12];
+  return {
+    headTiltDegrees: forehead && chin
+      ? roundAngle(Math.atan2(
+        Math.abs((chin.x - forehead.x) * width),
+        Math.abs((chin.y - forehead.y) * height),
+      ) * 180 / Math.PI)
+      : null,
+    shoulderTiltDegrees: leftShoulder && rightShoulder
+      ? roundAngle(Math.atan2(
+        Math.abs((rightShoulder.y - leftShoulder.y) * height),
+        Math.abs((rightShoulder.x - leftShoulder.x) * width),
+      ) * 180 / Math.PI)
+      : null,
+  };
+}
 
 export function drawLandmarks(
   canvas: HTMLCanvasElement,
   video: HTMLVideoElement,
   frame: DetectionFrame,
   alert: boolean,
+  showPostureGuides = true,
 ): void {
   const width = video.videoWidth;
   const height = video.videoHeight;
@@ -168,17 +204,134 @@ export function drawLandmarks(
   const context = canvas.getContext("2d");
   if (context === null) return;
   context.clearRect(0, 0, width, height);
-  context.lineWidth = Math.max(2, width / 320);
-  context.strokeStyle = alert ? "#ff665e" : "#41f2af";
-  context.fillStyle = alert ? "#ff665e" : "#eafcf5";
+  context.save();
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  const accent = alert ? "rgba(255, 181, 91, .92)" : "rgba(79, 231, 176, .9)";
+  const subtle = alert ? "rgba(255, 205, 143, .62)" : "rgba(181, 255, 229, .64)";
+  const fineLine = Math.max(1, width / 960);
+  const bodyLine = Math.max(1.2, width / 760);
 
   if (frame.face !== null) {
+    context.lineWidth = fineLine;
+    context.strokeStyle = accent;
+    context.setLineDash([Math.max(2, width / 250), Math.max(3, width / 190)]);
+    drawPath(context, frame.face, FACE_OVAL_PATH, width, height);
+
+    context.strokeStyle = subtle;
+    context.setLineDash([1.5, 3.5]);
     for (const path of EYE_PATHS) drawPath(context, frame.face, path, width, height);
-    for (const index of [1, 33, 133, 263, 362]) drawPoint(context, frame.face[index], width, height, 3.2);
+
+    context.setLineDash([3, 5]);
+    drawPath(context, frame.face, [10, 152], width, height);
   }
-  if (frame.pose !== null) {
-    for (const path of POSE_PATHS) drawPath(context, frame.pose, path, width, height);
-    for (const index of [0, 7, 8, 11, 12]) drawPoint(context, frame.pose[index], width, height, 4);
+  if (showPostureGuides && frame.pose !== null) {
+    context.lineWidth = bodyLine;
+    context.strokeStyle = subtle;
+    context.setLineDash([5, 6]);
+    drawPath(context, frame.pose, [11, 23], width, height);
+    drawPath(context, frame.pose, [12, 24], width, height);
+
+    context.strokeStyle = accent;
+    context.setLineDash([]);
+    drawPath(context, frame.pose, [11, 12], width, height);
+    drawShoulderReference(context, frame.pose, width, height, accent, subtle);
+
+    context.fillStyle = accent;
+    for (const index of [11, 12]) drawPoint(context, frame.pose[index], width, height, Math.max(1.8, width / 420));
+  }
+  if (showPostureGuides && frame.face !== null && frame.pose !== null) {
+    drawNeckGuide(context, frame.face, frame.pose, width, height, subtle);
+  }
+
+  if (showPostureGuides) {
+    const angles = calculatePostureOverlayAngles(frame.face, frame.pose, width, height);
+    drawAngleLabels(context, frame.face, frame.pose, angles, width, height, alert);
+  }
+  context.restore();
+}
+
+function drawShoulderReference(
+  context: CanvasRenderingContext2D,
+  pose: Landmark[],
+  width: number,
+  height: number,
+  accent: string,
+  subtle: string,
+): void {
+  const left = toCanvasPoint(pose[11], width, height);
+  const right = toCanvasPoint(pose[12], width, height);
+  const center = midpoint(left, right);
+  const halfLength = Math.min(38, Math.abs(right.x - left.x) * 0.28);
+  context.strokeStyle = subtle;
+  context.lineWidth = Math.max(1, width / 1050);
+  context.setLineDash([2, 4]);
+  context.beginPath();
+  context.moveTo(center.x - halfLength, center.y);
+  context.lineTo(center.x + halfLength, center.y);
+  context.stroke();
+
+  const actualAngle = Math.atan2(right.y - left.y, right.x - left.x);
+  const referenceAngle = right.x >= left.x ? 0 : Math.PI;
+  context.strokeStyle = accent;
+  context.setLineDash([]);
+  context.beginPath();
+  context.arc(center.x, center.y, Math.max(10, width / 46), referenceAngle, actualAngle, actualAngle < referenceAngle);
+  context.stroke();
+}
+
+function drawNeckGuide(
+  context: CanvasRenderingContext2D,
+  face: Landmark[],
+  pose: Landmark[],
+  width: number,
+  height: number,
+  color: string,
+): void {
+  const chin = toCanvasPoint(face[152], width, height);
+  const shoulderCenter = midpoint(toCanvasPoint(pose[11], width, height), toCanvasPoint(pose[12], width, height));
+  const neckEnd = midpoint(chin, shoulderCenter);
+  context.strokeStyle = color;
+  context.lineWidth = Math.max(1, width / 1000);
+  context.setLineDash([3, 5]);
+  context.beginPath();
+  context.moveTo(chin.x, chin.y);
+  context.lineTo(neckEnd.x, neckEnd.y);
+  context.stroke();
+}
+
+function drawAngleLabels(
+  context: CanvasRenderingContext2D,
+  face: Landmark[] | null,
+  pose: Landmark[] | null,
+  angles: PostureOverlayAngles,
+  width: number,
+  height: number,
+  alert: boolean,
+): void {
+  const labels: Array<{ text: string; x: number; y: number }> = [];
+  if (face && angles.headTiltDegrees !== null) {
+    const chin = toCanvasPoint(face[152], width, height);
+    labels.push({ text: `고개 ${angles.headTiltDegrees.toFixed(1)}°`, x: chin.x + 8, y: chin.y - 10 });
+  }
+  if (pose && angles.shoulderTiltDegrees !== null) {
+    const center = midpoint(toCanvasPoint(pose[11], width, height), toCanvasPoint(pose[12], width, height));
+    labels.push({ text: `어깨 ${angles.shoulderTiltDegrees.toFixed(1)}°`, x: center.x + 8, y: center.y + 18 });
+  }
+  const fontSize = Math.max(9, Math.min(13, width / 55));
+  context.font = `600 ${fontSize}px system-ui, sans-serif`;
+  context.textBaseline = "middle";
+  for (const label of labels) {
+    const paddingX = 6;
+    const boxHeight = fontSize + 8;
+    const boxWidth = context.measureText(label.text).width + paddingX * 2;
+    const x = Math.max(4, Math.min(label.x, width - boxWidth - 4));
+    const y = Math.max(boxHeight / 2 + 4, Math.min(label.y, height - boxHeight / 2 - 4));
+    context.fillStyle = "rgba(8, 24, 20, .64)";
+    roundedRect(context, x, y - boxHeight / 2, boxWidth, boxHeight, boxHeight / 2);
+    context.fill();
+    context.fillStyle = alert ? "#ffd6a6" : "#d9ffef";
+    context.fillText(label.text, x + paddingX, y + 0.5);
   }
 }
 
@@ -210,4 +363,34 @@ function drawPoint(
   context.beginPath();
   context.arc((1 - point.x) * width, point.y * height, radius, 0, Math.PI * 2);
   context.fill();
+}
+
+function toCanvasPoint(point: Landmark, width: number, height: number): { x: number; y: number } {
+  return { x: (1 - point.x) * width, y: point.y * height };
+}
+
+function midpoint(a: { x: number; y: number }, b: { x: number; y: number }): { x: number; y: number } {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function roundAngle(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function roundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  const r = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + width, y, x + width, y + height, r);
+  context.arcTo(x + width, y + height, x, y + height, r);
+  context.arcTo(x, y + height, x, y, r);
+  context.arcTo(x, y, x + width, y, r);
+  context.closePath();
 }
