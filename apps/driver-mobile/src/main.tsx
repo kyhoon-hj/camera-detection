@@ -38,6 +38,15 @@ type RunState = "READY" | "LOADING" | "RUNNING" | "ERROR";
 type CameraPermission = "CHECKING" | "PROMPT" | "GRANTED" | "DENIED" | "UNAVAILABLE";
 type MobileTab = "MONITOR" | "SETTINGS";
 type AppModule = "HOME" | "DROWSINESS" | "POSTURE" | "MEDITATION" | "SIGN" | "WIDGET";
+type TimelineMode = "DROWSINESS" | "POSTURE";
+
+interface TimelineSample {
+  elapsedSeconds: number;
+  risk: 0 | 1 | 2;
+  eyeCount: number;
+  headCount: number;
+  auxiliaryCount: number;
+}
 const isNativeApp = Capacitor.isNativePlatform();
 const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
 const VOICE_STORAGE_KEY = "suha.voice-profile.v1";
@@ -115,6 +124,10 @@ function App() {
   const postureBlinkCountRef = useRef(0);
   const postureHeadDownCountRef = useRef(0);
   const postureSeatAwayCountRef = useRef(0);
+  const bodyCollapseActiveRef = useRef(false);
+  const bodyCollapseCountRef = useRef(0);
+  const sessionStartedAtRef = useRef(0);
+  const lastTimelineSampleRef = useRef(0);
   const wakeUpVideoPlayingRef = useRef(false);
   const lastWakeUpVideoRef = useRef<string | null>(null);
   const meditationCueRef = useRef("");
@@ -150,6 +163,7 @@ function App() {
   const [postureBlinkCount, setPostureBlinkCount] = useState(0);
   const [postureHeadDownCount, setPostureHeadDownCount] = useState(0);
   const [postureSeatAwayCount, setPostureSeatAwayCount] = useState(0);
+  const [timelineSamples, setTimelineSamples] = useState<TimelineSample[]>([]);
   const [wakeUpVideoSrc, setWakeUpVideoSrc] = useState<string>(WAKE_UP_VIDEO_PATHS[0]);
   const [wakeUpVideoReason, setWakeUpVideoReason] = useState<"EYES" | "HEAD" | "BODY">("EYES");
 
@@ -200,6 +214,7 @@ function App() {
     postureBlinkActiveRef.current = false;
     postureHeadDownActiveRef.current = false;
     postureSeatAwayActiveRef.current = false;
+    bodyCollapseActiveRef.current = false;
   }, [resetWakeUpVideo]);
 
   const stop = useCallback(() => {
@@ -282,6 +297,12 @@ function App() {
           postureSeatAwayCountRef.current += 1;
           setPostureSeatAwayCount(postureSeatAwayCountRef.current);
         }
+        const bodyCollapseActive = activeModuleRef.current === "DROWSINESS"
+          && (next.status === "WARNING" || next.status === "ALARM")
+          && next.trigger === "BODY_COLLAPSE";
+        if (bodyCollapseActive && !bodyCollapseActiveRef.current) {
+          bodyCollapseCountRef.current += 1;
+        }
         if (wakeUpDecision.reason !== null && !wakeUpVideoPlayingRef.current) {
           const selectedVideo = chooseWakeUpVideo(lastWakeUpVideoRef.current);
           lastWakeUpVideoRef.current = selectedVideo;
@@ -298,6 +319,24 @@ function App() {
         postureBlinkActiveRef.current = postureBlinkActive;
         postureHeadDownActiveRef.current = postureHeadDownActive;
         postureSeatAwayActiveRef.current = postureSeatAwayActive;
+        bodyCollapseActiveRef.current = bodyCollapseActive;
+        const timelineMode = activeModuleRef.current === "POSTURE" ? "POSTURE" : "DROWSINESS";
+        if (next.status !== "CALIBRATING" && now - lastTimelineSampleRef.current >= 1_000) {
+          lastTimelineSampleRef.current = now;
+          const risk: 0 | 1 | 2 = next.status === "ALARM"
+            ? 2
+            : next.status === "WARNING" || next.status === "NO_FACE" || next.postureStatus === "WARNING"
+              ? 1
+              : 0;
+          const sample: TimelineSample = {
+            elapsedSeconds: Math.max(0, (now - sessionStartedAtRef.current) / 1_000),
+            risk,
+            eyeCount: timelineMode === "POSTURE" ? postureBlinkCountRef.current : sessionEyeClosureCountRef.current,
+            headCount: timelineMode === "POSTURE" ? postureHeadDownCountRef.current : sessionHeadDownCountRef.current,
+            auxiliaryCount: timelineMode === "POSTURE" ? postureSeatAwayCountRef.current : bodyCollapseCountRef.current,
+          };
+          setTimelineSamples((samples) => [...samples, sample].slice(-300));
+        }
         const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "ALARM" || next.status === "WARNING");
         drawLandmarks(canvas, video, frame, showWarning, activeModuleRef.current === "POSTURE");
       } catch (cause) {
@@ -370,9 +409,14 @@ function App() {
     postureBlinkCountRef.current = 0;
     postureHeadDownCountRef.current = 0;
     postureSeatAwayCountRef.current = 0;
+    bodyCollapseCountRef.current = 0;
+    bodyCollapseActiveRef.current = false;
+    sessionStartedAtRef.current = performance.now();
+    lastTimelineSampleRef.current = 0;
     setPostureBlinkCount(0);
     setPostureHeadDownCount(0);
     setPostureSeatAwayCount(0);
+    setTimelineSamples([]);
     setRunState("LOADING");
     setError("");
     try {
@@ -850,6 +894,10 @@ function App() {
             <article><span>상체</span><strong>{snapshot.postureIssue === "BODY_COLLAPSE" ? "쓰러짐" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
           </>}
         </div>
+        <DetectionTimeline
+          samples={timelineSamples}
+          mode={activeModule === "POSTURE" ? "POSTURE" : "DROWSINESS"}
+        />
         <button className="details-toggle" onClick={() => setDetailsExpanded((value) => !value)} aria-expanded={detailsExpanded}>
           {detailsExpanded ? "상세 정보 접기" : "상세 정보 보기"}<span>{detailsExpanded ? "⌃" : "⌄"}</span>
         </button>
@@ -941,6 +989,116 @@ function App() {
       </>}
     </main>
   );
+}
+
+function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode: TimelineMode }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const latestRisk = samples.at(-1)?.risk ?? 0;
+  const riskLabel = latestRisk === 2 ? "위험" : latestRisk === 1 ? "주의" : "정상";
+  const riskClass = latestRisk === 2 ? "danger" : latestRisk === 1 ? "warning" : "normal";
+  const eventLabels = mode === "POSTURE"
+    ? ["눈 깜박임", "고개 숙임", "자리 이탈"]
+    : ["눈 감김", "고개 숙임", "쓰러짐"];
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const draw = () => {
+      const bounds = canvas.getBoundingClientRect();
+      if (bounds.width <= 0) return;
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(bounds.width * ratio);
+      canvas.height = Math.round(160 * ratio);
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      const width = bounds.width;
+      const height = 160;
+      const top = 12;
+      const graphBottom = 116;
+      const eventRows = [132, 143, 154];
+      const yForRisk = (risk: TimelineSample["risk"]) => graphBottom - risk * 44;
+      context.clearRect(0, 0, width, height);
+
+      context.fillStyle = "rgba(255,104,97,.035)";
+      context.fillRect(0, top, width, 34);
+      context.fillStyle = "rgba(255,183,77,.025)";
+      context.fillRect(0, 46, width, 44);
+      context.strokeStyle = "rgba(139,188,170,.13)";
+      context.lineWidth = 1;
+      context.setLineDash([3, 5]);
+      [28, 72, 116].forEach((y) => {
+        context.beginPath();
+        context.moveTo(0, y + .5);
+        context.lineTo(width, y + .5);
+        context.stroke();
+      });
+      context.setLineDash([]);
+
+      if (samples.length === 0) return;
+      const lastSecond = samples.at(-1)?.elapsedSeconds ?? 0;
+      const windowStart = Math.max(0, lastSecond - 300);
+      const visibleSpan = Math.max(30, lastSecond - windowStart);
+      const xForTime = (seconds: number) => ((seconds - windowStart) / visibleSpan) * width;
+      const visibleSamples = samples.filter((sample) => sample.elapsedSeconds >= windowStart);
+
+      context.strokeStyle = mode === "POSTURE" ? "#67c9ff" : "#45e5a4";
+      context.lineWidth = 2.25;
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.beginPath();
+      visibleSamples.forEach((sample, index) => {
+        const x = xForTime(sample.elapsedSeconds);
+        const y = yForRisk(sample.risk);
+        if (index === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      });
+      context.stroke();
+
+      visibleSamples.forEach((sample, index) => {
+        const x = xForTime(sample.elapsedSeconds);
+        const y = yForRisk(sample.risk);
+        if (sample.risk > 0 || index === visibleSamples.length - 1) {
+          context.beginPath();
+          context.fillStyle = sample.risk === 2 ? "#ff6861" : sample.risk === 1 ? "#ffb74d" : mode === "POSTURE" ? "#67c9ff" : "#45e5a4";
+          context.arc(x, y, sample.risk === 2 ? 4 : 3, 0, Math.PI * 2);
+          context.fill();
+        }
+        const previous = visibleSamples[index - 1];
+        const previousCounts = previous ? [previous.eyeCount, previous.headCount, previous.auxiliaryCount] : [0, 0, 0];
+        const currentCounts = [sample.eyeCount, sample.headCount, sample.auxiliaryCount];
+        currentCounts.forEach((count, eventIndex) => {
+          if (count <= previousCounts[eventIndex]) return;
+          context.beginPath();
+          context.fillStyle = ["#75d9ff", "#ffbe61", "#ff7470"][eventIndex];
+          context.arc(x, eventRows[eventIndex], 3, 0, Math.PI * 2);
+          context.fill();
+        });
+      });
+    };
+    draw();
+    const observer = new ResizeObserver(draw);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [mode, samples]);
+
+  return <section className="timeline-panel" aria-label="시간 흐름 분석">
+    <header className="timeline-heading">
+      <div><span>SESSION TIMELINE</span><strong>시간 흐름 분석</strong></div>
+      <div className="timeline-status"><i className={riskClass} />현재 {riskLabel}</div>
+    </header>
+    <div className="timeline-chart">
+      <div className="timeline-axis" aria-hidden="true"><span>위험</span><span>주의</span><span>정상</span></div>
+      <canvas ref={canvasRef} className="timeline-canvas" role="img" aria-label={`최근 5분 ${eventLabels.join(", ")} 상태 그래프`} />
+    </div>
+    <div className="timeline-footer">
+      <div className="timeline-legend">
+        {eventLabels.map((label, index) => <span key={label}><i className={`event-${index + 1}`} />{label}</span>)}
+      </div>
+      <small>최근 5분 · 1초 간격</small>
+    </div>
+    {samples.length < 2 && <p className="timeline-empty">감지를 시작하면 시간에 따른 정상·주의·위험 변화가 여기에 기록됩니다.</p>}
+  </section>;
 }
 
 function RemoveAdsDialog({ adsRemoved, busy, feedback, onBuy, onClose, onRestore }: {
