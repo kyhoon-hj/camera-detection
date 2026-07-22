@@ -105,7 +105,10 @@ function App() {
   const lastAlertRef = useRef(0);
   const eyeClosureAlertActiveRef = useRef(false);
   const headDownAlertActiveRef = useRef(false);
+  const headDownCountActiveRef = useRef(false);
   const eyeClosureAlertCountRef = useRef(0);
+  const sessionEyeClosureCountRef = useRef(0);
+  const sessionHeadDownCountRef = useRef(0);
   const wakeUpVideoPlayingRef = useRef(false);
   const lastWakeUpVideoRef = useRef<string | null>(null);
   const meditationCueRef = useRef("");
@@ -136,6 +139,8 @@ function App() {
   const [wakeUpVideoPlaying, setWakeUpVideoPlaying] = useState(false);
   const [wakeUpVideoNeedsTap, setWakeUpVideoNeedsTap] = useState(false);
   const [eyeClosureAlertCount, setEyeClosureAlertCount] = useState(0);
+  const [sessionEyeClosureCount, setSessionEyeClosureCount] = useState(0);
+  const [sessionHeadDownCount, setSessionHeadDownCount] = useState(0);
   const [wakeUpVideoSrc, setWakeUpVideoSrc] = useState<string>(WAKE_UP_VIDEO_PATHS[0]);
   const [wakeUpVideoReason, setWakeUpVideoReason] = useState<"EYES" | "HEAD" | "BODY">("EYES");
 
@@ -182,6 +187,7 @@ function App() {
     cpuRecoveryUsedRef.current = false;
     resetWakeUpVideo();
     headDownAlertActiveRef.current = false;
+    headDownCountActiveRef.current = false;
   }, [resetWakeUpVideo]);
 
   const stop = useCallback(() => {
@@ -226,6 +232,9 @@ function App() {
         const headDownAlertActive = activeModuleRef.current === "DROWSINESS"
           && (next.status === "WARNING" || next.status === "ALARM")
           && (next.trigger === "HEAD_ONLY" || next.trigger === "EYES_AND_HEAD" || next.trigger === "BODY_COLLAPSE");
+        const headDownCountActive = activeModuleRef.current === "DROWSINESS"
+          && (next.status === "WARNING" || next.status === "ALARM")
+          && (next.trigger === "HEAD_ONLY" || next.trigger === "EYES_AND_HEAD");
         const wakeUpDecision = getWakeUpDecision({
           eyeAlertActive: eyeClosureAlertActive,
           eyeAlertWasActive: eyeClosureAlertActiveRef.current,
@@ -236,6 +245,12 @@ function App() {
         if (wakeUpDecision.eyeClosureCount !== eyeClosureAlertCountRef.current) {
           eyeClosureAlertCountRef.current = wakeUpDecision.eyeClosureCount;
           setEyeClosureAlertCount(wakeUpDecision.eyeClosureCount);
+          sessionEyeClosureCountRef.current += 1;
+          setSessionEyeClosureCount(sessionEyeClosureCountRef.current);
+        }
+        if (headDownCountActive && !headDownCountActiveRef.current) {
+          sessionHeadDownCountRef.current += 1;
+          setSessionHeadDownCount(sessionHeadDownCountRef.current);
         }
         if (wakeUpDecision.reason !== null && !wakeUpVideoPlayingRef.current) {
           const selectedVideo = chooseWakeUpVideo(lastWakeUpVideoRef.current);
@@ -249,6 +264,7 @@ function App() {
         }
         eyeClosureAlertActiveRef.current = eyeClosureAlertActive;
         headDownAlertActiveRef.current = headDownAlertActive;
+        headDownCountActiveRef.current = headDownCountActive;
         const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "ALARM" || next.status === "WARNING");
         drawLandmarks(canvas, video, frame, showWarning, activeModuleRef.current === "POSTURE");
       } catch (cause) {
@@ -314,6 +330,10 @@ function App() {
       return false;
     }
     resetWakeUpVideo();
+    sessionEyeClosureCountRef.current = 0;
+    sessionHeadDownCountRef.current = 0;
+    setSessionEyeClosureCount(0);
+    setSessionHeadDownCount(0);
     setRunState("LOADING");
     setError("");
     try {
@@ -781,8 +801,8 @@ function App() {
         <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "HEAD" ? "고개 숙임이 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "BODY" ? "상체 쓰러짐이 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 3회 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
 
         <div className="summary-metrics">
-          <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong></article>
-          <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
+          <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong>{activeModule === "DROWSINESS" && <small className="session-count">감지 {sessionEyeClosureCount}회</small>}</article>
+          <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong>{activeModule === "DROWSINESS" && <small className="session-count">감지 {sessionHeadDownCount}회</small>}</article>
           <article><span>{activeModule === "POSTURE" ? "자세" : "상체"}</span><strong>{activeModule === "POSTURE" ? (snapshot.postureScore === null ? "—" : `${snapshot.postureScore}점`) : snapshot.postureIssue === "BODY_COLLAPSE" ? "쓰러짐" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
         </div>
         <button className="details-toggle" onClick={() => setDetailsExpanded((value) => !value)} aria-expanded={detailsExpanded}>
