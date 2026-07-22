@@ -226,6 +226,31 @@ export class DriverMonitor {
     const poseVisible = upperBodyVisible(frame.pose);
 
     if (!faceVisible(face)) {
+      if (this.mode === "DROWSINESS" && baseline.poseAvailable && poseVisible && poseMatchesBaseline(frame.pose, baseline)) {
+        this.faceMissingSince = null;
+        this.eyesClosedSince = null;
+        this.headDownSince = null;
+        this.eyesWereClosed = false;
+        this.headWasDown = false;
+        const measured = measurePose(frame.pose);
+        return {
+          ...baseSnapshot("AWAKE"),
+          trigger: "NONE",
+          message: "초기 측정한 운전 각도를 정상 기준으로 감지하고 있습니다.",
+          faceVisible: false,
+          poseVisible: true,
+          baselineEyeAspectRatio: round(baseline.ear, 3),
+          postureStatus: "GOOD",
+          postureIssue: "NONE",
+          postureConfidence: round(measured.confidence, 3),
+          postureMessage: "초기 측정 각도와 같은 운전 자세입니다.",
+          cameraViewAngleDegrees: round(Math.abs(measured.viewAngle), 1),
+          cameraView: cameraView(measured.viewAngle),
+          calibrationProgress: 1,
+          calibrationRemainingMs: 0,
+          calibrationStable: true,
+        };
+      }
       if (this.faceMissingSince === null) this.faceMissingSince = frame.timestampMs;
       const missingMs = frame.timestampMs - this.faceMissingSince;
       this.eyesClosedSince = null;
@@ -492,6 +517,19 @@ function upperBodyVisible(pose: Landmark[] | null): pose is Landmark[] {
   const ears = [visibility(pose[7]), visibility(pose[8])].sort((a, b) => b - a);
   const shoulders = [visibility(pose[11]), visibility(pose[12])].sort((a, b) => b - a);
   return nose >= 0.35 && ears[0] >= 0.45 && ears[1] >= 0.08 && shoulders[0] >= 0.5 && shoulders[1] >= 0.12;
+}
+
+function poseMatchesBaseline(pose: Landmark[], baseline: Baseline): boolean {
+  const measured = measurePose(pose);
+  const scale = Math.max(baseline.shoulderWidth, measured.shoulderWidth, 0.12);
+  const noseShift = Math.hypot(measured.noseX - baseline.noseX, measured.noseY - baseline.noseY);
+  const shoulderShift = Math.hypot(measured.shoulderX - baseline.shoulderX, measured.shoulderY - baseline.shoulderY);
+  const heightChange = Math.abs(measured.headHeight - baseline.headHeight) / Math.max(Math.abs(baseline.headHeight), 0.15);
+  return angleDistance(measured.viewAngle, baseline.viewAngle) <= 28
+    && noseShift <= Math.max(0.12, scale * 0.65)
+    && shoulderShift <= Math.max(0.10, scale * 0.5)
+    && heightChange <= 0.38
+    && measured.confidence >= 0.38;
 }
 
 function measurePose(pose: Landmark[]): PoseMeasurement {

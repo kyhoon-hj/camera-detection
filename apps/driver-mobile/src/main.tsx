@@ -1009,6 +1009,12 @@ function App() {
             <span className="status-dot" />{statusLabel}
           </div>
         )}
+        {activeModule === "DROWSINESS" && runState === "RUNNING" && !calibrating && (
+          <div className="drowsy-camera-signals" aria-label="졸음운전 감지 상태">
+            <span className={snapshot.eyesClosed ? "active" : ""}><i />눈 감김</span>
+            <span className={snapshot.headDown ? "active" : ""}><i />고개 숙임</span>
+          </div>
+        )}
       </section>
 
       <section className={`status-panel ${activeTab==="SETTINGS"?"mobile-screen-hidden":""}`} aria-live="polite">
@@ -1017,32 +1023,29 @@ function App() {
             <span className="eyebrow">{activeModule === "POSTURE" ? "POSTURE COACH" : "DRIVER STATUS"}</span>
             <h1>{calibrating ? "기준 측정 중" : statusLabel}</h1>
           </div>
-          <div className="privacy-chip">기기 내 분석</div>
+          {activeModule === "DROWSINESS" && <div className="drowsy-quick-metrics" aria-label="졸음운전 감지 횟수">
+            <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong><small>감지 {sessionEyeClosureCount}회</small></article>
+            <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong><small>감지 {sessionHeadDownCount}회</small></article>
+          </div>}
         </div>
         <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "COMBINED" ? "눈 감김과 고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "HEAD" ? "고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 지속 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
 
-        <div className="detection-labels" aria-label={`${activeModule === "POSTURE" ? "자세 교정" : "졸음운전"} 감지 항목`}>
-          {activeModule === "POSTURE" ? <>
+        {activeModule === "POSTURE" && <div className="detection-labels" aria-label="자세 교정 감지 항목">
+          <>
             <span className={shoulderDeviated ? "active warning" : ""}><i />어깨 기울기</span>
             <span className={postureBaselineDeviated ? "active warning" : ""}><i />기준 자세 이탈</span>
             <span className={snapshot.eyesClosed ? "active danger" : ""}><i />눈 감김</span>
             <span className={snapshot.headDown ? "active danger" : ""}><i />고개 숙임</span>
-          </> : <>
-            <span className={snapshot.eyesClosed ? "active danger" : ""}><i />눈 감김</span>
-            <span className={snapshot.headDown ? "active danger" : ""}><i />고개 숙임</span>
-          </>}
-        </div>
+          </>
+        </div>}
 
-        <div className={`summary-metrics ${activeModule === "POSTURE" ? "" : "two"}`}>
-          {activeModule === "POSTURE" ? <>
+        {activeModule === "POSTURE" && <div className="summary-metrics">
+          <>
             <article className="posture-count-card"><span>눈 깜박임</span><strong>{postureBlinkCount}회</strong><small>이번 측정</small></article>
             <article className="posture-count-card"><span>고개 숙임</span><strong>{postureHeadDownCount}회</strong><small>{snapshot.headDown ? "숙임 확인 중" : "고개 안정"}</small></article>
             <article className="posture-count-card"><span>자리 이탈</span><strong>{postureSeatAwayCount}회</strong><small>{snapshot.trigger === "FACE_MISSING" ? "자리 확인 필요" : "자리 유지"}</small></article>
-          </> : <>
-            <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong><small className="session-count">감지 {sessionEyeClosureCount}회</small></article>
-            <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong><small className="session-count">감지 {sessionHeadDownCount}회</small></article>
-          </>}
-        </div>
+          </>
+        </div>}
         <DetectionTimeline
           samples={timelineSamples}
           mode={activeModule === "POSTURE" ? "POSTURE" : "DROWSINESS"}
