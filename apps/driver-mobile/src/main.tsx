@@ -1,3 +1,4 @@
+import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject, type WheelEvent as ReactWheelEvent } from "react";
 import { createPortal } from "react-dom";
@@ -801,6 +802,61 @@ function App() {
     setShowFirstRunNotice(false);
   };
 
+  useEffect(() => {
+    if (!isNativeApp) return;
+    const removeListener = CapacitorApp.addListener("backButton", () => {
+      if (showFirstRunNotice) {
+        setShowFirstRunNotice(false);
+        return;
+      }
+      if (showRemoveAdsDialog) {
+        setShowRemoveAdsDialog(false);
+        return;
+      }
+      if (showDrowsyNotice) {
+        goHome();
+        return;
+      }
+      if (showSignComingSoon) {
+        setShowSignComingSoon(false);
+        return;
+      }
+      if (wakeUpVideoPlayingRef.current) {
+        finishWakeUpVideo();
+        return;
+      }
+      if (showInstallHelp) {
+        setShowInstallHelp(false);
+        return;
+      }
+      if (detailsExpanded) {
+        setDetailsExpanded(false);
+        return;
+      }
+      if (activeTab === "SETTINGS") {
+        setActiveTab("MONITOR");
+        return;
+      }
+      if (activeModule !== "HOME") {
+        goHome();
+      }
+    });
+    return () => {
+      void removeListener.then((listener) => listener.remove());
+    };
+  }, [
+    activeModule,
+    activeTab,
+    detailsExpanded,
+    finishWakeUpVideo,
+    goHome,
+    showDrowsyNotice,
+    showFirstRunNotice,
+    showInstallHelp,
+    showRemoveAdsDialog,
+    showSignComingSoon,
+  ]);
+
   const persistWakeUpLibrary = useCallback((next: WakeUpLibraryState) => {
     localStorage.setItem(WAKE_UP_LIBRARY_STORAGE_KEY, JSON.stringify(next));
     setWakeUpLibrary(next);
@@ -848,11 +904,11 @@ function App() {
       return;
     }
     setWakeUpDownloadBusy(true);
-    setWakeUpLibraryFeedback("광고를 시청하면 영상 다운로드가 시작됩니다.");
+    setWakeUpLibraryFeedback("보상형 동영상 광고를 끝까지 시청하면 영상 다운로드가 시작됩니다.");
     try {
       const rewarded = await showRewardedDownloadAd();
       if (!rewarded) {
-        setWakeUpLibraryFeedback("광고 시청이 완료되지 않아 다운로드를 시작하지 않았습니다.");
+        setWakeUpLibraryFeedback("동영상 광고 시청 보상이 확인되지 않아 다운로드를 시작하지 않았습니다.");
         return;
       }
       const response = await fetch(profile.path, { cache: "force-cache" });
@@ -932,14 +988,6 @@ function App() {
       {showSignComingSoon && <SignComingSoonDialog onClose={() => setShowSignComingSoon(false)} />}
 
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
-
-      <nav className="mode-switcher" aria-label="감지 모드 선택">
-        <button className={activeModule === "DROWSINESS" ? "active" : ""} onClick={() => openModule("DROWSINESS")}>졸음운전 방지 모드</button>
-        <span className="mode-switch-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>
-        </span>
-        <button className={activeModule === "POSTURE" ? "active" : ""} onClick={() => openModule("POSTURE")}>자세 교정</button>
-      </nav>
 
       {showInstallHelp && (
         <aside className="install-help">
