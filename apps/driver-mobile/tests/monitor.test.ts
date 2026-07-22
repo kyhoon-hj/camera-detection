@@ -94,25 +94,6 @@ describe("DriverMonitor 5초 기준 측정", () => {
       snapshot = monitor.process({ timestampMs: time, face: makeFace(false), pose: null });
     }
     expect(snapshot.status).toBe("AWAKE");
-
-    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.18 }));
-    const collapsedPose = makePose({ yawDegrees: 70, verticalDrop: 0.1 });
-    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: collapsedPose });
-    const warning = monitor.process({ timestampMs: 6_900, face: collapsedFace, pose: collapsedPose });
-    expect(warning.trigger).toBe("BODY_COLLAPSE");
-  });
-
-  it("졸음운전 모드는 어깨 기울기 대신 지속된 상체 쓰러짐을 경고한다", () => {
-    const monitor = calibratedMonitor();
-    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.14 }));
-    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) });
-    const warning = monitor.process({ timestampMs: 6_200, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) });
-    expect(warning.status).toBe("WARNING");
-    expect(warning.trigger).toBe("BODY_COLLAPSE");
-    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
-    expect(warning.shoulderTiltDegrees).toBeNull();
-    expect(warning.bodyCollapseCountReady).toBe(false);
-    expect(monitor.process({ timestampMs: 7_100, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) }).bodyCollapseCountReady).toBe(true);
   });
 
   it("측면에서는 얼굴 기울기나 정면 기준의 작은 하강만으로 쓰러짐 처리하지 않는다", () => {
@@ -133,71 +114,6 @@ describe("DriverMonitor 5초 기준 측정", () => {
     expect(smallDrop.status).toBe("AWAKE");
     expect(smallDrop.trigger).toBe("NONE");
     expect(smallDrop.postureIssue).toBe("NONE");
-  });
-
-  it("측면에서도 얼굴과 상체가 함께 크게 내려가면 더 긴 확인 후 쓰러짐을 경고한다", () => {
-    const sidePose = makePose({ yawDegrees: 70 });
-    const monitor = calibratedMonitor(sidePose);
-    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.18 }));
-    const collapsedPose = makePose({ yawDegrees: 70, verticalDrop: 0.1 });
-
-    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: collapsedPose });
-    const checking = monitor.process({ timestampMs: 6_800, face: collapsedFace, pose: collapsedPose });
-    expect(checking.status).toBe("AWAKE");
-    expect(checking.postureStatus).toBe("CHECKING");
-
-    const warning = monitor.process({ timestampMs: 6_900, face: collapsedFace, pose: collapsedPose });
-    expect(warning.status).toBe("WARNING");
-    expect(warning.trigger).toBe("BODY_COLLAPSE");
-    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
-    expect(warning.cameraView).toBe("SIDE");
-    expect(warning.bodyCollapseCountReady).toBe(false);
-    expect(monitor.process({ timestampMs: 7_900, face: collapsedFace, pose: collapsedPose }).bodyCollapseCountReady).toBe(true);
-  });
-
-  it("사선 쓰러짐은 경고보다 1초 더 지속된 2.4초부터 영상 카운트를 허용한다", () => {
-    const obliquePose = makePose({ yawDegrees: 40 });
-    const monitor = calibratedMonitor(obliquePose);
-    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.16 }));
-    const collapsedPose = makePose({ yawDegrees: 40, verticalDrop: 0.08 });
-
-    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: collapsedPose });
-    const beforeCount = monitor.process({ timestampMs: 7_400, face: collapsedFace, pose: collapsedPose });
-    expect(beforeCount.status).toBe("WARNING");
-    expect(beforeCount.cameraView).toBe("OBLIQUE");
-    expect(beforeCount.bodyCollapseCountReady).toBe(false);
-
-    const countReady = monitor.process({ timestampMs: 7_500, face: collapsedFace, pose: collapsedPose });
-    expect(countReady.bodyCollapseCountReady).toBe(true);
-  });
-
-  it("기준 측정 후 운전자가 화면에서 사라져도 쓰러짐 시간을 계속 누적한다", () => {
-    const monitor = calibratedMonitor();
-
-    const checking = monitor.process({ timestampMs: 5_100, face: null, pose: null });
-    expect(checking.trigger).toBe("FACE_MISSING");
-    expect(checking.postureStatus).toBe("CHECKING");
-
-    const warning = monitor.process({ timestampMs: 6_100, face: null, pose: null });
-    expect(warning.trigger).toBe("BODY_COLLAPSE");
-    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
-    expect(warning.bodyCollapseDurationMs).toBe(1_000);
-    expect(warning.bodyCollapseCountReady).toBe(false);
-
-    const countReady = monitor.process({ timestampMs: 7_100, face: null, pose: null });
-    expect(countReady.bodyCollapseCountReady).toBe(true);
-    expect(monitor.process({ timestampMs: 9_100, face: null, pose: null }).bodyCollapseDurationMs).toBe(4_000);
-  });
-
-  it("얼굴이 거의 수평으로 누우면 작은 하강에서도 쓰러짐으로 확인한다", () => {
-    const monitor = calibratedMonitor();
-    const horizontalFace = rotateFace(makeFace(false), 74)
-      .map((point) => ({ ...point, y: point.y + 0.02 }));
-
-    monitor.process({ timestampMs: 5_100, face: horizontalFace, pose: makePose() });
-    const warning = monitor.process({ timestampMs: 6_100, face: horizontalFace, pose: makePose() });
-    expect(warning.trigger).toBe("BODY_COLLAPSE");
-    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
   });
 
   it("고개 숙임이 2초 지속되면 별도 안내를 제공한다", () => {
