@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { chooseKoreanVoice, getVoiceProfile, type VoiceProfileId } from "./voiceProfiles";
+import { DEFAULT_VOICE_PROFILE, chooseKoreanVoice } from "./voiceProfiles";
 
 interface NativeSpeechStatus {
   ready: boolean;
@@ -16,13 +16,13 @@ interface NativeSpeechPlugin {
 
 const NativeSpeech = registerPlugin<NativeSpeechPlugin>("NativeSpeech");
 
-export async function speakKorean(text: string, profileId: VoiceProfileId = "FEMALE"): Promise<void> {
-  const profile = getVoiceProfile(profileId);
+export async function speakKorean(text: string): Promise<void> {
+  const profile = DEFAULT_VOICE_PROFILE;
   if (Capacitor.getPlatform() === "android") {
     await NativeSpeech.speak({ text, rate: profile.rate, pitch: profile.pitch });
     return;
   }
-  await speakWithBrowser(text, profileId);
+  await speakWithBrowser(text);
 }
 
 export async function stopKoreanSpeech(): Promise<void> {
@@ -45,7 +45,7 @@ export async function getKoreanSpeechStatus(): Promise<NativeSpeechStatus> {
   };
 }
 
-function speakWithBrowser(text: string, profileId: VoiceProfileId): Promise<void> {
+function speakWithBrowser(text: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!("speechSynthesis" in window)) {
       reject(new Error("이 브라우저는 음성 안내를 지원하지 않습니다."));
@@ -53,10 +53,10 @@ function speakWithBrowser(text: string, profileId: VoiceProfileId): Promise<void
     }
 
     const synthesis = window.speechSynthesis;
-    const profile = getVoiceProfile(profileId);
+    const profile = DEFAULT_VOICE_PROFILE;
     synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const koreanVoice = chooseKoreanVoice(synthesis.getVoices(), profileId);
+    const koreanVoice = chooseKoreanVoice(synthesis.getVoices());
     if (koreanVoice) utterance.voice = koreanVoice;
     utterance.lang = "ko-KR";
     utterance.rate = profile.rate;

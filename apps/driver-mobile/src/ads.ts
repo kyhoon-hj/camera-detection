@@ -4,6 +4,7 @@ import {
   type AdOptions,
   BannerAdPosition,
   BannerAdSize,
+  type RewardAdOptions,
   type BannerAdOptions,
 } from "@capacitor-community/admob";
 
@@ -11,6 +12,8 @@ const TEST_ANDROID_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
 const TEST_ANDROID_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
 const TEST_IOS_BANNER_ID = "ca-app-pub-3940256099942544/2934735716";
 const TEST_IOS_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/4411468910";
+const TEST_ANDROID_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
+const TEST_IOS_REWARDED_ID = "ca-app-pub-3940256099942544/1712485313";
 
 let initialized = false;
 
@@ -46,6 +49,23 @@ export async function showMenuInterstitialAd(): Promise<void> {
   }
 }
 
+export async function showRewardedDownloadAd(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  try {
+    await initializeAdMob();
+    const options: RewardAdOptions = {
+      adId: getRewardedAdId(),
+      isTesting: true,
+    };
+    await AdMob.prepareRewardVideoAd(options);
+    await AdMob.showRewardVideoAd();
+    return true;
+  } catch (cause) {
+    console.warn("Failed to show rewarded download ad", cause);
+    return false;
+  }
+}
+
 export async function removeBottomBannerAd(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
@@ -73,4 +93,11 @@ function getInterstitialAdId(): string {
     return import.meta.env.VITE_ADMOB_IOS_INTERSTITIAL_ID || TEST_IOS_INTERSTITIAL_ID;
   }
   return import.meta.env.VITE_ADMOB_ANDROID_INTERSTITIAL_ID || TEST_ANDROID_INTERSTITIAL_ID;
+}
+
+function getRewardedAdId(): string {
+  if (Capacitor.getPlatform() === "ios") {
+    return import.meta.env.VITE_ADMOB_IOS_REWARDED_ID || TEST_IOS_REWARDED_ID;
+  }
+  return import.meta.env.VITE_ADMOB_ANDROID_REWARDED_ID || TEST_ANDROID_REWARDED_ID;
 }

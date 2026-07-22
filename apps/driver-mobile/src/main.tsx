@@ -1,12 +1,14 @@
 import { Capacitor } from "@capacitor/core";
-import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject, type WheelEvent as ReactWheelEvent } from "react";
+import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { removeBottomBannerAd, showBottomBannerAd, showMenuInterstitialAd } from "./ads";
+import { removeBottomBannerAd, showBottomBannerAd, showMenuInterstitialAd, showRewardedDownloadAd } from "./ads";
+import { FIRST_RUN_NOTICE_ACKNOWLEDGED, FIRST_RUN_NOTICE_STORAGE_KEY, shouldShowFirstRunNotice } from "./firstRunNotice";
 import { DriverMonitor, type MonitorSnapshot } from "./monitor";
 import { getMeditationGuidance } from "./meditation";
 import { REMOVE_ADS_PRODUCT_ID, purchaseRemoveAds, restoreRemoveAdsPurchase } from "./purchases";
 import { getKoreanSpeechStatus, speakKorean, stopKoreanSpeech } from "./speech";
-import { VOICE_PROFILES, getVoiceProfile, normalizeVoiceProfile, type VoiceProfileId } from "./voiceProfiles";
+import { DEFAULT_VOICE_PROFILE } from "./voiceProfiles";
 import { SignInterpreterScreen } from "./SignInterpreterScreen";
 import {
   MobileVisionEngine,
@@ -22,7 +24,21 @@ import {
   type WidgetPosition,
   type WidgetSettings,
 } from "./widgetSettings";
-import { WAKE_UP_VIDEO_PATHS, chooseWakeUpVideo, getWakeUpDecision } from "./wakeUpVideos";
+import {
+  WAKE_UP_LIBRARY_STORAGE_KEY,
+  addDownloadedWakeUpVideo,
+  applyDownloadedWakeUpVideo,
+  getAppliedWakeUpVideoPath,
+  getForcedWakeUpReason,
+  getWakeUpCountActivity,
+  getWakeUpDecision,
+  getWakeUpVideoProfile,
+  loadWakeUpLibraryState,
+  orderWakeUpVideoProfiles,
+  type WakeUpLibraryState,
+  type WakeUpReason,
+  type WakeUpVideoId,
+} from "./wakeUpVideos";
 import "./styles.css";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -49,7 +65,6 @@ interface TimelineSample {
 }
 const isNativeApp = Capacitor.isNativePlatform();
 const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
-const VOICE_STORAGE_KEY = "suha.voice-profile.v1";
 const ADS_REMOVED_STORAGE_KEY = "suha.ads-removed.v1";
 
 function loadWidgetSettings(): WidgetSettings {
@@ -58,10 +73,6 @@ function loadWidgetSettings(): WidgetSettings {
   } catch {
     return DEFAULT_WIDGET_SETTINGS;
   }
-}
-
-function loadVoiceProfile(): VoiceProfileId {
-  return normalizeVoiceProfile(localStorage.getItem(VOICE_STORAGE_KEY));
 }
 
 function loadAdsRemoved(): boolean {
@@ -81,6 +92,8 @@ const initialSnapshot: MonitorSnapshot = {
   headDown: false,
   headDownDurationMs: 0,
   combinedDurationMs: 0,
+  bodyCollapseDurationMs: 0,
+  bodyCollapseCountReady: false,
   postureStatus: "WAITING",
   postureIssue: "NONE",
   postureScore: null,
@@ -100,6 +113,9 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wakeUpVideoRef = useRef<HTMLVideoElement>(null);
+  const initialWakeUpLibraryRef = useRef<WakeUpLibraryState | null>(null);
+  initialWakeUpLibraryRef.current ??= loadWakeUpLibraryState(localStorage.getItem(WAKE_UP_LIBRARY_STORAGE_KEY));
+  const appliedWakeUpVideoPathRef = useRef(getAppliedWakeUpVideoPath(initialWakeUpLibraryRef.current));
   const streamRef = useRef<MediaStream | null>(null);
   const engineRef = useRef<MobileVisionEngine | null>(null);
   const monitorRef = useRef(new DriverMonitor());
@@ -116,6 +132,8 @@ function App() {
   const headDownAlertActiveRef = useRef(false);
   const headDownCountActiveRef = useRef(false);
   const eyeClosureAlertCountRef = useRef(0);
+  const headDownAlertCountRef = useRef(0);
+  const bodyCollapseAlertCountRef = useRef(0);
   const sessionEyeClosureCountRef = useRef(0);
   const sessionHeadDownCountRef = useRef(0);
   const postureBlinkActiveRef = useRef(false);
@@ -129,7 +147,7 @@ function App() {
   const sessionStartedAtRef = useRef(0);
   const lastTimelineSampleRef = useRef(0);
   const wakeUpVideoPlayingRef = useRef(false);
-  const lastWakeUpVideoRef = useRef<string | null>(null);
+  const forcedWakeUpActiveRef = useRef(false);
   const meditationCueRef = useRef("");
   const activeModuleRef = useRef<AppModule>("HOME");
   const drowsyNoticeAcceptedRef = useRef(false);
@@ -137,9 +155,9 @@ function App() {
   const [runState, setRunState] = useState<RunState>("READY");
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [error, setError] = useState("");
+  const [showFirstRunNotice, setShowFirstRunNotice] = useState(() => shouldShowFirstRunNotice(localStorage.getItem(FIRST_RUN_NOTICE_STORAGE_KEY)));
   const [cameraPermission, setCameraPermission] = useState<CameraPermission>("CHECKING");
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [voiceProfile, setVoiceProfile] = useState(loadVoiceProfile);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState("");
@@ -147,6 +165,11 @@ function App() {
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [activeModule, setActiveModule] = useState<AppModule>("HOME");
   const [widgetSettings, setWidgetSettings] = useState(loadWidgetSettings);
+  const [wakeUpLibrary, setWakeUpLibrary] = useState<WakeUpLibraryState>(() => initialWakeUpLibraryRef.current!);
+  const [selectedWakeUpVideoId, setSelectedWakeUpVideoId] = useState<WakeUpVideoId>(() => initialWakeUpLibraryRef.current!.appliedId);
+  const [pendingWakeUpApplyId, setPendingWakeUpApplyId] = useState<WakeUpVideoId | null>(null);
+  const [wakeUpDownloadBusy, setWakeUpDownloadBusy] = useState(false);
+  const [, setWakeUpLibraryFeedback] = useState("");
   const [meditationSeconds, setMeditationSeconds] = useState(300);
   const [meditationRunning, setMeditationRunning] = useState(false);
   const [showDrowsyNotice, setShowDrowsyNotice] = useState(false);
@@ -157,15 +180,15 @@ function App() {
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
   const [wakeUpVideoPlaying, setWakeUpVideoPlaying] = useState(false);
   const [wakeUpVideoNeedsTap, setWakeUpVideoNeedsTap] = useState(false);
-  const [eyeClosureAlertCount, setEyeClosureAlertCount] = useState(0);
+  const [, setEyeClosureAlertCount] = useState(0);
   const [sessionEyeClosureCount, setSessionEyeClosureCount] = useState(0);
   const [sessionHeadDownCount, setSessionHeadDownCount] = useState(0);
   const [postureBlinkCount, setPostureBlinkCount] = useState(0);
   const [postureHeadDownCount, setPostureHeadDownCount] = useState(0);
   const [postureSeatAwayCount, setPostureSeatAwayCount] = useState(0);
   const [timelineSamples, setTimelineSamples] = useState<TimelineSample[]>([]);
-  const [wakeUpVideoSrc, setWakeUpVideoSrc] = useState<string>(WAKE_UP_VIDEO_PATHS[0]);
-  const [wakeUpVideoReason, setWakeUpVideoReason] = useState<"EYES" | "HEAD" | "BODY">("EYES");
+  const [wakeUpVideoSrc, setWakeUpVideoSrc] = useState<string>(appliedWakeUpVideoPathRef.current);
+  const [wakeUpVideoReason, setWakeUpVideoReason] = useState<WakeUpReason>("EYES");
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -185,6 +208,8 @@ function App() {
     wakeUpVideoPlayingRef.current = false;
     eyeClosureAlertActiveRef.current = false;
     eyeClosureAlertCountRef.current = 0;
+    headDownAlertCountRef.current = 0;
+    bodyCollapseAlertCountRef.current = 0;
     setWakeUpVideoPlaying(false);
     setWakeUpVideoNeedsTap(false);
     setEyeClosureAlertCount(0);
@@ -215,6 +240,7 @@ function App() {
     postureHeadDownActiveRef.current = false;
     postureSeatAwayActiveRef.current = false;
     bodyCollapseActiveRef.current = false;
+    forcedWakeUpActiveRef.current = false;
   }, [resetWakeUpVideo]);
 
   const stop = useCallback(() => {
@@ -253,21 +279,24 @@ function App() {
         const next = monitorRef.current.process(frame);
         setSnapshot(next);
         setError("");
-        const eyeClosureAlertActive = activeModuleRef.current === "DROWSINESS"
-          && (next.status === "WARNING" || next.status === "ALARM")
-          && next.trigger === "EYES_ONLY";
-        const headDownAlertActive = activeModuleRef.current === "DROWSINESS"
-          && (next.status === "WARNING" || next.status === "ALARM")
-          && (next.trigger === "HEAD_ONLY" || next.trigger === "EYES_AND_HEAD" || next.trigger === "BODY_COLLAPSE");
-        const headDownCountActive = activeModuleRef.current === "DROWSINESS"
-          && (next.status === "WARNING" || next.status === "ALARM")
-          && (next.trigger === "HEAD_ONLY" || next.trigger === "EYES_AND_HEAD");
+        const wakeUpCountActivity = getWakeUpCountActivity(next);
+        const drowsinessCounting = activeModuleRef.current === "DROWSINESS";
+        const eyeClosureAlertActive = drowsinessCounting && wakeUpCountActivity.eye;
+        const headDownAlertActive = drowsinessCounting && wakeUpCountActivity.head;
+        const headDownCountActive = headDownAlertActive;
+        const bodyCollapseActive = drowsinessCounting && wakeUpCountActivity.body;
+        const forcedWakeUpReason = drowsinessCounting ? getForcedWakeUpReason(next) : null;
+        if (forcedWakeUpReason === null) forcedWakeUpActiveRef.current = false;
         const wakeUpDecision = getWakeUpDecision({
           eyeAlertActive: eyeClosureAlertActive,
           eyeAlertWasActive: eyeClosureAlertActiveRef.current,
           headAlertActive: headDownAlertActive,
           headAlertWasActive: headDownAlertActiveRef.current,
+          bodyAlertActive: bodyCollapseActive,
+          bodyAlertWasActive: bodyCollapseActiveRef.current,
           eyeClosureCount: eyeClosureAlertCountRef.current,
+          headDownCount: headDownAlertCountRef.current,
+          bodyCollapseCount: bodyCollapseAlertCountRef.current,
         });
         if (wakeUpDecision.eyeClosureCount !== eyeClosureAlertCountRef.current) {
           eyeClosureAlertCountRef.current = wakeUpDecision.eyeClosureCount;
@@ -275,6 +304,8 @@ function App() {
           sessionEyeClosureCountRef.current += 1;
           setSessionEyeClosureCount(sessionEyeClosureCountRef.current);
         }
+        headDownAlertCountRef.current = wakeUpDecision.headDownCount;
+        bodyCollapseAlertCountRef.current = wakeUpDecision.bodyCollapseCount;
         if (headDownCountActive && !headDownCountActiveRef.current) {
           sessionHeadDownCountRef.current += 1;
           setSessionHeadDownCount(sessionHeadDownCountRef.current);
@@ -297,17 +328,28 @@ function App() {
           postureSeatAwayCountRef.current += 1;
           setPostureSeatAwayCount(postureSeatAwayCountRef.current);
         }
-        const bodyCollapseActive = activeModuleRef.current === "DROWSINESS"
-          && (next.status === "WARNING" || next.status === "ALARM")
-          && next.trigger === "BODY_COLLAPSE";
         if (bodyCollapseActive && !bodyCollapseActiveRef.current) {
           bodyCollapseCountRef.current += 1;
         }
-        if (wakeUpDecision.reason !== null && !wakeUpVideoPlayingRef.current) {
-          const selectedVideo = chooseWakeUpVideo(lastWakeUpVideoRef.current);
-          lastWakeUpVideoRef.current = selectedVideo;
+        const wakeUpReason = wakeUpDecision.reason
+          ?? (forcedWakeUpReason !== null && !forcedWakeUpActiveRef.current ? forcedWakeUpReason : null);
+        if (wakeUpReason !== null && !wakeUpVideoPlayingRef.current) {
+          const selectedVideo = appliedWakeUpVideoPathRef.current;
           setWakeUpVideoSrc(selectedVideo);
-          setWakeUpVideoReason(wakeUpDecision.reason === "HEAD" && next.trigger === "BODY_COLLAPSE" ? "BODY" : wakeUpDecision.reason);
+          setWakeUpVideoReason(wakeUpReason);
+          activeModuleRef.current = "DROWSINESS";
+          setActiveModule("DROWSINESS");
+          setActiveTab("MONITOR");
+          forcedWakeUpActiveRef.current = true;
+          eyeClosureAlertCountRef.current = 0;
+          headDownAlertCountRef.current = 0;
+          bodyCollapseAlertCountRef.current = 0;
+          sessionEyeClosureCountRef.current = 0;
+          sessionHeadDownCountRef.current = 0;
+          bodyCollapseCountRef.current = 0;
+          setEyeClosureAlertCount(0);
+          setSessionEyeClosureCount(0);
+          setSessionHeadDownCount(0);
           wakeUpVideoPlayingRef.current = true;
           setWakeUpVideoNeedsTap(false);
           setWakeUpVideoPlaying(true);
@@ -411,6 +453,7 @@ function App() {
     postureSeatAwayCountRef.current = 0;
     bodyCollapseCountRef.current = 0;
     bodyCollapseActiveRef.current = false;
+    forcedWakeUpActiveRef.current = false;
     sessionStartedAtRef.current = performance.now();
     lastTimelineSampleRef.current = 0;
     setPostureBlinkCount(0);
@@ -474,8 +517,10 @@ function App() {
 
   const finishWakeUpVideo = useCallback(() => {
     resetWakeUpVideo();
-    // A continuously closed eye must reopen before it can count as a new event.
+    // An ongoing condition must clear before it can count toward the next cycle.
     eyeClosureAlertActiveRef.current = true;
+    headDownAlertActiveRef.current = true;
+    bodyCollapseActiveRef.current = true;
     lastInferenceRef.current = 0;
     lastVideoTimeRef.current = -1;
     lastVideoProgressRef.current = performance.now();
@@ -547,6 +592,7 @@ function App() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState !== "visible" && runState === "RUNNING") {
+        if (wakeUpVideoPlayingRef.current) return;
         stop();
         setError("앱이 백그라운드로 전환되어 카메라를 안전하게 종료했습니다. 다시 시작해 주세요.");
         return;
@@ -576,11 +622,11 @@ function App() {
     if (now - lastAlertRef.current < interval) return;
     lastAlertRef.current = now;
     beep(audioRef.current, snapshot.status === "ALARM");
-    void speakKorean(snapshot.message, voiceProfile).catch((cause) => {
+    void speakKorean(snapshot.message).catch((cause) => {
       const message = cause instanceof Error ? cause.message : "음성 안내를 재생하지 못했습니다.";
       setVoiceFeedback(`${message} Android 설정에서 한국어 TTS를 확인해 주세요.`);
     });
-  }, [activeModule, runState, snapshot.message, snapshot.status, soundEnabled, voiceProfile, wakeUpVideoPlaying]);
+  }, [activeModule, runState, snapshot.message, snapshot.status, soundEnabled, wakeUpVideoPlaying]);
 
   const meditationPhase = Math.floor(meditationSeconds / 4) % 2 === 0 ? "내쉬기" : "들이쉬기";
   const meditationGuidance = useMemo(() => getMeditationGuidance({
@@ -596,8 +642,8 @@ function App() {
     const cue = meditationGuidance.voiceCue;
     if (activeModule !== "MEDITATION" || !soundEnabled || !cue || cue === meditationCueRef.current) return;
     meditationCueRef.current = cue;
-    void speakKorean(cue, voiceProfile).catch(() => undefined);
-  }, [activeModule, meditationGuidance.voiceCue, soundEnabled, voiceProfile]);
+    void speakKorean(cue).catch(() => undefined);
+  }, [activeModule, meditationGuidance.voiceCue, soundEnabled]);
 
   useEffect(() => {
     if (!meditationRunning || activeModule !== "MEDITATION" || !meditationGuidance.timerActive) return;
@@ -612,6 +658,15 @@ function App() {
     }, 1_000);
     return () => window.clearInterval(timer);
   }, [activeModule, meditationGuidance.timerActive, meditationRunning]);
+
+  useEffect(() => {
+    if (!showFirstRunNotice) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showFirstRunNotice]);
 
   useEffect(() => {
     // React StrictMode intentionally runs effect setup/cleanup twice in development.
@@ -727,29 +782,95 @@ function App() {
     }
   };
 
-  const selectVoiceProfile = (profileId: VoiceProfileId) => {
-    setVoiceProfile(profileId);
-    localStorage.setItem(VOICE_STORAGE_KEY, profileId);
-    setSoundEnabled(true);
-    setVoiceFeedback(`${getVoiceProfile(profileId).label} 음성으로 설정했습니다.`);
-    void speakKorean(getVoiceProfile(profileId).sample, profileId).catch(() => {
-      setVoiceFeedback("선택한 음성 미리듣기를 재생하지 못했습니다. 기기의 한국어 TTS 설정을 확인해 주세요.");
-    });
-  };
-
   const testVoice = async () => {
     setSoundEnabled(true);
     setVoiceFeedback("한국어 음성 엔진을 확인하고 있습니다…");
     try {
       const status = await getKoreanSpeechStatus();
       if (status.error) throw new Error(status.error);
-      await speakKorean(getVoiceProfile(voiceProfile).sample, voiceProfile);
-      setVoiceFeedback(`${getVoiceProfile(voiceProfile).label} 음성 테스트를 재생했습니다.`);
+      await speakKorean(DEFAULT_VOICE_PROFILE.sample);
+      setVoiceFeedback("기본 안내 음성 테스트를 재생했습니다.");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "한국어 음성 엔진을 사용할 수 없습니다.";
       setVoiceFeedback(`${message} Android 설정 → 일반 관리 → 글자 읽어주기에서 한국어 음성을 설치해 주세요.`);
     }
   };
+
+  const acknowledgeFirstRunNotice = () => {
+    localStorage.setItem(FIRST_RUN_NOTICE_STORAGE_KEY, FIRST_RUN_NOTICE_ACKNOWLEDGED);
+    setShowFirstRunNotice(false);
+  };
+
+  const persistWakeUpLibrary = useCallback((next: WakeUpLibraryState) => {
+    localStorage.setItem(WAKE_UP_LIBRARY_STORAGE_KEY, JSON.stringify(next));
+    setWakeUpLibrary(next);
+  }, []);
+
+  const selectWakeUpVideo = useCallback((id: WakeUpVideoId) => {
+    const profile = getWakeUpVideoProfile(id);
+    const downloaded = wakeUpLibrary.downloadedIds.includes(id);
+    setSelectedWakeUpVideoId(id);
+    if (!downloaded) {
+      setPendingWakeUpApplyId(null);
+      setWakeUpLibraryFeedback(`${profile.name} 영상을 받으려면 아래 다운로드 버튼을 눌러 주세요.`);
+      return;
+    }
+    if (wakeUpLibrary.appliedId === id) {
+      setPendingWakeUpApplyId(null);
+      setWakeUpLibraryFeedback(`${profile.name} 영상이 현재 적용되어 있습니다.`);
+      return;
+    }
+    if (pendingWakeUpApplyId === id) {
+      const next = applyDownloadedWakeUpVideo(wakeUpLibrary, id);
+      persistWakeUpLibrary(next);
+      appliedWakeUpVideoPathRef.current = profile.path;
+      setWakeUpVideoSrc(profile.path);
+      setPendingWakeUpApplyId(null);
+      setWakeUpLibraryFeedback(`${profile.name} 영상이 졸음 경고에 적용되었습니다.`);
+      return;
+    }
+    setPendingWakeUpApplyId(id);
+    setWakeUpLibraryFeedback(`${profile.name} 영상을 한 번 더 터치하면 적용됩니다.`);
+  }, [pendingWakeUpApplyId, persistWakeUpLibrary, wakeUpLibrary]);
+
+  const downloadSelectedWakeUpVideo = useCallback(async () => {
+    const profile = getWakeUpVideoProfile(selectedWakeUpVideoId);
+    if (wakeUpDownloadBusy) return;
+    const downloaded = wakeUpLibrary.downloadedIds.includes(profile.id);
+    if (downloaded) {
+      if (wakeUpLibrary.appliedId === profile.id) return;
+      const next = applyDownloadedWakeUpVideo(wakeUpLibrary, profile.id);
+      persistWakeUpLibrary(next);
+      appliedWakeUpVideoPathRef.current = profile.path;
+      setWakeUpVideoSrc(profile.path);
+      setPendingWakeUpApplyId(null);
+      setWakeUpLibraryFeedback(`${profile.name} 영상이 졸음 경고에 적용되었습니다.`);
+      return;
+    }
+    setWakeUpDownloadBusy(true);
+    setWakeUpLibraryFeedback("광고를 시청하면 영상 다운로드가 시작됩니다.");
+    try {
+      const rewarded = await showRewardedDownloadAd();
+      if (!rewarded) {
+        setWakeUpLibraryFeedback("광고 시청이 완료되지 않아 다운로드를 시작하지 않았습니다.");
+        return;
+      }
+      const response = await fetch(profile.path, { cache: "force-cache" });
+      if (!response.ok) throw new Error("영상 파일을 받지 못했습니다.");
+      if ("caches" in window) {
+        const cache = await window.caches.open("suha-wake-up-videos-v1");
+        await cache.put(profile.path, response.clone());
+      }
+      const next = addDownloadedWakeUpVideo(wakeUpLibrary, profile.id);
+      persistWakeUpLibrary(next);
+      setPendingWakeUpApplyId(profile.id);
+      setWakeUpLibraryFeedback(`${profile.name} 다운로드 완료 · 영상 카드를 한 번 더 터치하면 적용됩니다.`);
+    } catch (cause) {
+      setWakeUpLibraryFeedback(cause instanceof Error ? cause.message : "영상 다운로드 중 문제가 발생했습니다.");
+    } finally {
+      setWakeUpDownloadBusy(false);
+    }
+  }, [persistWakeUpLibrary, selectedWakeUpVideoId, wakeUpDownloadBusy, wakeUpLibrary]);
 
   const calibrating = snapshot.status === "CALIBRATING";
   const countdown = Math.max(1, Math.ceil(snapshot.calibrationRemainingMs / 1_000));
@@ -761,10 +882,13 @@ function App() {
 
   return (
     <main className={`app module-${activeModule.toLowerCase()} ${isNativeApp ? "native-app" : ""} status-${activeModule === "MEDITATION" ? "awake" : snapshot.status.toLowerCase()}`}>
+      {showFirstRunNotice && createPortal(<FirstRunNotice onConfirm={acknowledgeFirstRunNotice} />, document.body)}
       <header className="topbar">
         <div className="brand-lockup">
-          {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="홈으로 이동">‹</button>}
-          <div className="brand" aria-label="졸음운전"><img src="/icon-192.png" alt="" /><span>졸음운전<small>AI SAFETY</small></span></div>
+          {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="이전 화면">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
+          </button>}
+          <div className="brand" aria-label="졸방"><img src="/icon-192.png" alt="" /><span>졸방</span></div>
         </div>
         <button className="header-icon" onClick={() => void (async () => {
           if (activeModule !== "DROWSINESS" && activeModule !== "POSTURE") {
@@ -777,7 +901,16 @@ function App() {
         })()} aria-label="설정 열기">⚙</button>
       </header>
 
-      {activeModule === "HOME" && <HomeScreen onOpen={openModule} widgetSettings={widgetSettings} />}
+      {activeModule === "HOME" && <HomeScreen
+        onOpen={openModule}
+        widgetSettings={widgetSettings}
+        wakeUpLibrary={wakeUpLibrary}
+        selectedWakeUpVideoId={selectedWakeUpVideoId}
+        pendingWakeUpApplyId={pendingWakeUpApplyId}
+        downloadBusy={wakeUpDownloadBusy}
+        onSelectWakeUpVideo={selectWakeUpVideo}
+        onDownloadWakeUpVideo={() => void downloadSelectedWakeUpVideo()}
+      />}
       {activeModule === "MEDITATION" && (
         <MeditationScreen
           seconds={meditationSeconds}
@@ -801,8 +934,10 @@ function App() {
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
 
       <nav className="mode-switcher" aria-label="감지 모드 선택">
-        <button className={activeModule === "DROWSINESS" ? "active" : ""} onClick={() => openModule("DROWSINESS")}>졸음 감지</button>
-        <span aria-hidden="true">⇄</span>
+        <button className={activeModule === "DROWSINESS" ? "active" : ""} onClick={() => openModule("DROWSINESS")}>졸음운전 방지 모드</button>
+        <span className="mode-switch-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>
+        </span>
         <button className={activeModule === "POSTURE" ? "active" : ""} onClick={() => openModule("POSTURE")}>자세 교정</button>
       </nav>
 
@@ -815,27 +950,24 @@ function App() {
       <section className={`camera-stage ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label={activeModule === "POSTURE" ? "자세 교정 카메라" : "운전자 카메라"}>
         <video ref={videoRef} playsInline muted />
         <canvas ref={canvasRef} />
-        <video
-          ref={wakeUpVideoRef}
-          className={`wake-up-video ${wakeUpVideoPlaying ? "playing" : ""}`}
-          src={wakeUpVideoSrc}
-          playsInline
-          preload="auto"
-          aria-label="졸음운전 깨우기 경고 영상"
-          onEnded={finishWakeUpVideo}
-          onError={() => {
-            finishWakeUpVideo();
-            setError("경고 영상을 재생하지 못했습니다. 카메라 감지를 계속합니다.");
-          }}
-        />
-        {wakeUpVideoPlaying && (
-          <div className="wake-up-video-status">
-            <span>{wakeUpVideoReason === "HEAD" ? "고개 숙임 감지" : wakeUpVideoReason === "BODY" ? "상체 쓰러짐 감지" : `눈 감김 ${eyeClosureAlertCount}회 감지`}</span>
-            {wakeUpVideoNeedsTap
-              ? <button onClick={() => void playWakeUpVideo()}>경고 영상 재생</button>
-              : <strong>안전 경고 영상 재생 중</strong>}
-          </div>
-        )}
+        <div className={`wake-up-overlay ${wakeUpVideoPlaying ? "playing" : ""}`} aria-hidden={!wakeUpVideoPlaying}>
+          <video
+            ref={wakeUpVideoRef}
+            className="wake-up-video"
+            src={wakeUpVideoSrc}
+            playsInline
+            preload="auto"
+            aria-label="졸음운전 깨우기 경고 영상"
+            onEnded={finishWakeUpVideo}
+            onError={() => {
+              finishWakeUpVideo();
+              setError("경고 영상을 재생하지 못했습니다. 카메라 감지를 계속합니다.");
+            }}
+          />
+          {wakeUpVideoPlaying && wakeUpVideoNeedsTap && (
+            <button className="wake-up-video-play-button" onClick={() => void playWakeUpVideo()}>영상 재생</button>
+          )}
+        </div>
         {runState !== "RUNNING" && (
           <div className="camera-placeholder">
             <div className="face-guide"><span /><span /></div>
@@ -883,7 +1015,7 @@ function App() {
           </div>
           <div className="privacy-chip">기기 내 분석</div>
         </div>
-        <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "HEAD" ? "고개 숙임이 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "BODY" ? "상체 쓰러짐이 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 3회 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
+        <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "COMBINED" ? "눈 감김과 고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "HEAD" ? "고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "BODY" ? "상체 쓰러짐이 지속 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 지속 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
 
         <div className="detection-labels" aria-label={`${activeModule === "POSTURE" ? "자세 교정" : "졸음운전"} 감지 항목`}>
           {activeModule === "POSTURE" ? <>
@@ -965,13 +1097,7 @@ function App() {
       {activeTab==="SETTINGS"&&<section className="mobile-settings" aria-label="앱 설정">
         <div className="settings-heading"><span className="eyebrow">APP SETTINGS</span><h1>설정</h1><p>운전 중에는 조작하지 말고 출발 전에 설정해 주세요.</p></div>
         <button className="setting-row" onClick={()=>setSoundEnabled(value=>!value)} aria-pressed={soundEnabled}><span><b>경보음과 음성 안내</b><small>주의·위험 상태를 한국어로 알립니다.</small></span><i className={soundEnabled?"on":""}>{soundEnabled?"켜짐":"꺼짐"}</i></button>
-        <div className="voice-profile-setting" role="group" aria-label="안내 음성 선택">
-          <div className="voice-profile-heading"><span><b>안내 음성</b><small>선택하면 바로 미리듣기가 재생됩니다.</small></span><i>{getVoiceProfile(voiceProfile).label}</i></div>
-          <div className="voice-profile-grid">
-            {VOICE_PROFILES.map((profile) => <button key={profile.id} className={voiceProfile === profile.id ? "selected" : ""} onClick={() => selectVoiceProfile(profile.id)} aria-pressed={voiceProfile === profile.id}><span>{profile.id === "FEMALE" ? "♀" : profile.id === "MALE" ? "♂" : profile.id === "CHILD" ? "○" : "✦"}</span><b>{profile.label}</b><small>{profile.description}</small></button>)}
-          </div>
-        </div>
-        <button className="setting-row" onClick={()=>void testVoice()}><span><b>선택 음성 다시 듣기</b><small>현재 선택한 목소리와 한국어 TTS 상태를 확인합니다.</small></span><i>재생</i></button>
+        <button className="setting-row" onClick={()=>void testVoice()}><span><b>안내 음성 테스트</b><small>기본 한국어 음성과 TTS 상태를 확인합니다.</small></span><i>재생</i></button>
         <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>{activeModule === "POSTURE" ? "얼굴과 자세 기준을 5초간 다시 측정합니다." : "눈과 고개 움직임 기준을 5초간 다시 측정합니다."}</small></span><i>재측정</i></button>
         <button className="setting-row remove-ads-row" onClick={() => { setPurchaseFeedback(""); setShowRemoveAdsDialog(true); }}><span><b>광고 제거</b><small>{adsRemoved ? "광고 제거가 적용되어 있습니다." : "배너와 메뉴 이동 전면 광고를 제거합니다."}</small></span><i className={adsRemoved ? "on" : ""}>{adsRemoved ? "적용됨" : "구매"}</i></button>
         <button className="setting-row" onClick={() => void openModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
@@ -1179,27 +1305,173 @@ function DrowsySafetyNotice({ onConfirm, onCancel }: { onConfirm(): void; onCanc
   </div>;
 }
 
-function HomeScreen({ onOpen, widgetSettings }: { onOpen(module: AppModule): void; widgetSettings: WidgetSettings }) {
+function FirstRunNotice({ onConfirm }: { onConfirm(): void }) {
+  return <div className="first-run-notice-backdrop">
+    <section className="first-run-notice" role="dialog" aria-modal="true" aria-labelledby="first-run-notice-title" aria-describedby="first-run-notice-description">
+      <div className="first-run-notice-logo"><img src="/icon-192.png" alt="졸음운전 앱 로고" /></div>
+      <span className="first-run-notice-badge">꼭 필독</span>
+      <h2 id="first-run-notice-title">안심하고 이용해 주세요</h2>
+      <div id="first-run-notice-description" className="first-run-notice-copy">
+        <p>저희 앱은 카메라로 촬영된 영상을 <b>저장하거나 서버로 전송하지 않습니다.</b></p>
+        <p>영상은 운전자 상태를 확인하기 위해 화면에만 표시되며, 별도의 파일로 저장되지 않습니다.</p>
+      </div>
+      <div className="first-run-notice-assurance"><i>✓</i><span><b>기기 내에서만 분석</b><small>카메라 영상 비저장 · 서버 미전송</small></span></div>
+      <p className="first-run-notice-closing">더 나은 서비스를 제공하기 위해 계속 노력하겠습니다.</p>
+      <button onClick={onConfirm}>확인하고 시작하기</button>
+    </section>
+  </div>;
+}
+
+function HomeScreen({
+  onOpen,
+  widgetSettings,
+  wakeUpLibrary,
+  selectedWakeUpVideoId,
+  pendingWakeUpApplyId,
+  downloadBusy,
+  onSelectWakeUpVideo,
+  onDownloadWakeUpVideo,
+}: {
+  onOpen(module: AppModule): void;
+  widgetSettings: WidgetSettings;
+  wakeUpLibrary: WakeUpLibraryState;
+  selectedWakeUpVideoId: WakeUpVideoId;
+  pendingWakeUpApplyId: WakeUpVideoId | null;
+  downloadBusy: boolean;
+  onSelectWakeUpVideo(id: WakeUpVideoId): void;
+  onDownloadWakeUpVideo(): void;
+}) {
+  const wakeProfileScrollRef = useRef<HTMLDivElement>(null);
+  const wakeProfileDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; moved: boolean } | null>(null);
+  const suppressWakeProfileClickRef = useRef(false);
+  const orderedProfiles = orderWakeUpVideoProfiles(wakeUpLibrary.downloadedIds);
+  const appliedProfile = getWakeUpVideoProfile(wakeUpLibrary.appliedId);
+  const selectedDownloaded = wakeUpLibrary.downloadedIds.includes(selectedWakeUpVideoId);
+  const selectedApplied = wakeUpLibrary.appliedId === selectedWakeUpVideoId;
+
+  const beginWakeProfileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    wakeProfileDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: event.currentTarget.scrollLeft,
+      moved: false,
+    };
+  };
+
+  const moveWakeProfileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = wakeProfileDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const distance = event.clientX - drag.startX;
+    if (Math.abs(distance) > 12) {
+      drag.moved = true;
+      event.currentTarget.classList.add("is-dragging");
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (drag.moved) event.currentTarget.scrollLeft = drag.startScrollLeft - distance;
+  };
+
+  const endWakeProfileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = wakeProfileDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    suppressWakeProfileClickRef.current = drag.moved;
+    wakeProfileDragRef.current = null;
+    event.currentTarget.classList.remove("is-dragging");
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  const scrollWakeProfilesWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    const element = event.currentTarget;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const next = Math.max(0, Math.min(element.scrollWidth - element.clientWidth, element.scrollLeft + delta));
+    if (next === element.scrollLeft) return;
+    event.preventDefault();
+    element.scrollLeft = next;
+  };
+
   return <section className="mobile-home" aria-label="졸음운전 홈">
-    <div className="home-hero">
-      <div className="home-kicker"><i />오늘도 안전운전</div>
-      <h1>당신의 하루를<br /><b>더 편안하게.</b></h1>
-      <p>안전과 건강, 소통을 하나의 AI로 돌봐요.</p>
-      <div className="hero-signal"><i /><span><b>기기 내 AI</b><small>카메라 영상은 저장되지 않아요</small></span></div>
-    </div>
-    <div className="home-bento">
+    <section className="wake-library" aria-label="졸음 깨우기 영상 보관함">
+      <header className="wake-library-heading">
+        <div><span>WAKE-UP VIDEO</span><h1>졸음운전 영상</h1><p>졸음운전 모드 중 졸음 현상이 있으면 재생됩니다.</p></div>
+        <em>{wakeUpLibrary.downloadedIds.length}/{orderedProfiles.length} 보유</em>
+      </header>
+      <div
+        ref={wakeProfileScrollRef}
+        className="wake-profile-scroll"
+        role="list"
+        aria-label="깨우기 영상 목록"
+        onPointerDown={beginWakeProfileDrag}
+        onPointerMove={moveWakeProfileDrag}
+        onPointerUp={endWakeProfileDrag}
+        onPointerCancel={endWakeProfileDrag}
+        onWheel={scrollWakeProfilesWithWheel}
+        onClickCapture={(event) => {
+          if (!suppressWakeProfileClickRef.current) return;
+          suppressWakeProfileClickRef.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
+        {orderedProfiles.map((profile) => {
+          const downloaded = wakeUpLibrary.downloadedIds.includes(profile.id);
+          const applied = wakeUpLibrary.appliedId === profile.id;
+          const selected = selectedWakeUpVideoId === profile.id;
+          const awaitingApply = selected && pendingWakeUpApplyId === profile.id;
+          return <button
+            key={profile.id}
+            type="button"
+            role="listitem"
+            className={`wake-profile-card ${selected ? "selected" : ""} ${downloaded ? "downloaded" : "locked"} ${applied ? "applied" : ""}`}
+            aria-pressed={selected}
+            onClick={() => onSelectWakeUpVideo(profile.id)}
+          >
+            <span className="wake-profile-thumb">
+              <video src={`${profile.path}#t=0.12`} muted playsInline preload="metadata" aria-hidden="true" />
+              {applied && <i className="wake-profile-applied-mark">✓</i>}
+              {!downloaded && <i className="wake-profile-lock" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6z" /></svg>
+              </i>}
+            </span>
+            <strong>{profile.name}</strong>
+            <small>{applied ? "적용됨" : awaitingApply ? "한 번 더 터치" : downloaded ? "다운로드됨" : selected ? "선택됨 · 광고로 받기" : "광고로 받기"}</small>
+          </button>;
+        })}
+        <article className="wake-profile-card coming-soon" role="listitem" aria-label="새 졸음운전 영상 추후 업데이트 예정">
+          <span className="wake-profile-thumb wake-coming-thumb" aria-hidden="true">
+            <i>···</i>
+          </span>
+          <strong>COMING SOON</strong>
+          <small>새 영상 업데이트 예정</small>
+        </article>
+      </div>
+      <div className="wake-library-action">
+        <button
+          type="button"
+          onClick={onDownloadWakeUpVideo}
+          disabled={downloadBusy || selectedApplied}
+          className={selectedApplied ? "applied" : ""}
+        >
+          {downloadBusy ? "광고 불러오는 중…" : selectedApplied ? "적용됨" : selectedDownloaded ? "적용하기" : "광고 시청 후 다운로드"}
+        </button>
+      </div>
+    </section>
+    <div className="home-bento home-puzzle">
       <button className="suha-card drive" onClick={() => onOpen("DROWSINESS")}>
-        <span className="card-icon"><i /></span><div><small>DRIVE SAFE</small><b>졸음운전 감지</b><p>눈과 고개 움직임을 살펴<br />안전한 운전을 도와요.</p></div><em>시작하기 <span>→</span></em>
+        <video key={`drive-${appliedProfile.id}`} className="home-card-art" src={`${appliedProfile.path}#t=0.12`} poster="/media/sleepy-driver.png" muted playsInline preload="metadata" aria-hidden="true" />
+        <span className="home-card-tint" aria-hidden="true" />
+        <span className="card-icon"><i /></span><div><small>DRIVE SAFE</small><b>졸음운전 방지</b><p>눈과 고개 움직임을 살펴<br />안전한 운전을 도와요.</p></div><em>시작하기 <span>→</span></em>
       </button>
       <button className="suha-card posture" onClick={() => onOpen("POSTURE")}>
-        <span className="card-symbol">◇</span><small>POSTURE</small><b>자세 교정</b><p>바른 자세를<br />함께 찾아요.</p><em>열기 →</em>
+        <small>POSTURE</small><b>자세 교정</b><p>바른 자세를<br />함께 찾아요.</p>
       </button>
       <button className="suha-card sign" onClick={() => onOpen("SIGN")}>
-        <span className="card-symbol">⌁</span><small>KSL CARE</small><b>수어 통역</b><p>수어와 음성을<br />서로 이어줘요.</p><em>열기 →</em>
+        <small>KSL CARE</small><b>수어 통역</b><p>수어와 음성을<br />서로 이어줘요.</p>
       </button>
-      <button className="suha-card meditation" onClick={() => onOpen("MEDITATION")}><span className="breath-mark">◌</span><div><small>MINDFUL BREATH</small><b>잠시, 호흡할까요?</b><p>5분 호흡 명상으로 마음을 가볍게.</p></div><em>시작 →</em></button>
     </div>
-    <button className="home-utility" onClick={() => onOpen("WIDGET")}><span><i>▣</i><b>통역 위젯</b><small>{widgetSettings.enabled ? `표시 중 · ${widgetPositionLabel(widgetSettings.position)}` : "현재 숨김"}</small></span><em>설정</em></button>
+    <div className="home-meditation-row">
+      <button className="suha-card meditation" onClick={() => onOpen("MEDITATION")}><span className="breath-mark">◌</span><div><small>MINDFUL BREATH</small><b>잠시, 호흡할까요?</b><p>5분 호흡 명상으로 마음을 가볍게.</p></div></button>
+    </div>
+    <button className="home-utility" onClick={() => onOpen("WIDGET")}><span><i>▣</i><b>통역 위젯</b><small>{widgetSettings.enabled ? `표시 중 · ${widgetPositionLabel(widgetSettings.position)}` : "현재 숨김"}</small></span></button>
   </section>;
 }
 
