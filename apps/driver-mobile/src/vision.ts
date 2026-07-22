@@ -192,6 +192,7 @@ export function drawLandmarks(
   video: HTMLVideoElement,
   frame: DetectionFrame,
   alert: boolean,
+  showPostureGuides = true,
 ): void {
   const width = video.videoWidth;
   const height = video.videoHeight;
@@ -224,7 +225,7 @@ export function drawLandmarks(
     context.setLineDash([3, 5]);
     drawPath(context, frame.face, [10, 152], width, height);
   }
-  if (frame.pose !== null) {
+  if (showPostureGuides && frame.pose !== null) {
     context.lineWidth = bodyLine;
     context.strokeStyle = subtle;
     context.setLineDash([5, 6]);
@@ -239,12 +240,14 @@ export function drawLandmarks(
     context.fillStyle = accent;
     for (const index of [11, 12]) drawPoint(context, frame.pose[index], width, height, Math.max(1.8, width / 420));
   }
-  if (frame.face !== null && frame.pose !== null) {
+  if (showPostureGuides && frame.face !== null && frame.pose !== null) {
     drawNeckGuide(context, frame.face, frame.pose, width, height, subtle);
   }
 
-  const angles = calculatePostureOverlayAngles(frame.face, frame.pose, width, height);
-  drawAngleLabels(context, frame.face, frame.pose, angles, width, height, alert);
+  if (showPostureGuides) {
+    const angles = calculatePostureOverlayAngles(frame.face, frame.pose, width, height);
+    drawAngleLabels(context, frame.face, frame.pose, angles, width, height, alert);
+  }
   context.restore();
 }
 

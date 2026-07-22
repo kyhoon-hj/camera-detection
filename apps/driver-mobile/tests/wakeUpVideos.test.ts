@@ -33,4 +33,21 @@ describe("wake-up video rotation", () => {
     });
     expect(decision).toEqual({ eyeClosureCount: 0, reason: "HEAD" });
   });
+
+  it("requires three new eye events again after a video resets the count", () => {
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      let count = 0;
+      for (let event = 1; event <= 3; event += 1) {
+        const decision = getWakeUpDecision({
+          eyeAlertActive: true,
+          eyeAlertWasActive: false,
+          headAlertActive: false,
+          headAlertWasActive: false,
+          eyeClosureCount: count,
+        });
+        count = decision.eyeClosureCount;
+        expect(decision.reason).toBe(event === 3 ? "EYES" : null);
+      }
+    }
+  });
 });

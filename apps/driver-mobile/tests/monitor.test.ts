@@ -4,7 +4,7 @@ import { CALIBRATION_DURATION_MS, DriverMonitor, type Landmark, type VisionFrame
 describe("DriverMonitor 5초 기준 측정", () => {
   it("유효한 얼굴과 자세를 5초간 모은 뒤에만 감지를 시작한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     let snapshot = monitor.process(frame(0));
     expect(snapshot.status).toBe("CALIBRATING");
 
@@ -21,7 +21,7 @@ describe("DriverMonitor 5초 기준 측정", () => {
 
   it("측정 중 얼굴이나 어깨를 오래 잃으면 5초 측정을 다시 시작한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     for (let time = 0; time <= 2_500; time += 100) monitor.process(frame(time));
 
     monitor.process({ timestampMs: 2_600, face: null, pose: null });
@@ -41,11 +41,12 @@ describe("DriverMonitor 5초 기준 측정", () => {
     const warning = monitor.process(frame(6_700, true));
     expect(warning.status).toBe("WARNING");
     expect(warning.trigger).toBe("EYES_ONLY");
+    expect(warning.message).toBe("눈 감김이 감지되었습니다.");
   });
 
   it("70도 측면 촬영도 3D 어깨축으로 보정하고 수치를 제공한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     let snapshot = monitor.process(frame(0, false, makePose({ yawDegrees: 70 })));
     for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
       snapshot = monitor.process(frame(time, false, makePose({ yawDegrees: 70 })));
@@ -61,7 +62,7 @@ describe("DriverMonitor 5초 기준 측정", () => {
 
   it("측면에서도 실제 어깨 기울기와 거북목 이동을 기준 자세 대비 감지한다", () => {
     const monitor = new DriverMonitor();
-    monitor.begin();
+    monitor.begin("POSTURE");
     for (let time = 0; time <= CALIBRATION_DURATION_MS; time += 100) {
       monitor.process(frame(time, false, makePose({ yawDegrees: 70 })));
     }
@@ -83,6 +84,38 @@ describe("DriverMonitor 5초 기준 측정", () => {
     expect(forward.postureStatus).toBe("WARNING");
     expect(forward.postureIssue).toBe("FORWARD_HEAD");
     expect(forward.forwardHeadPercent).toBeGreaterThan(20);
+  });
+
+  it("졸음운전 모드는 어깨가 없어도 얼굴 기준 측정을 완료한다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("DROWSINESS");
+    let snapshot = monitor.process({ timestampMs: 0, face: makeFace(false), pose: null });
+    for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
+      snapshot = monitor.process({ timestampMs: time, face: makeFace(false), pose: null });
+    }
+    expect(snapshot.status).toBe("AWAKE");
+  });
+
+  it("졸음운전 모드는 어깨 기울기 대신 지속된 상체 쓰러짐을 경고한다", () => {
+    const monitor = calibratedMonitor();
+    const collapsedFace = makeFace(false).map((point) => ({ ...point, y: point.y + 0.14 }));
+    monitor.process({ timestampMs: 5_100, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) });
+    const warning = monitor.process({ timestampMs: 6_200, face: collapsedFace, pose: makePose({ rightShoulderDrop: 0.08 }) });
+    expect(warning.status).toBe("WARNING");
+    expect(warning.trigger).toBe("BODY_COLLAPSE");
+    expect(warning.postureIssue).toBe("BODY_COLLAPSE");
+    expect(warning.shoulderTiltDegrees).toBeNull();
+  });
+
+  it("고개 숙임이 2초 지속되면 별도 안내를 제공한다", () => {
+    const monitor = calibratedMonitor();
+    const loweredHead = makeFace(false);
+    loweredHead[1] = { ...loweredHead[1], y: loweredHead[1].y + 0.08 };
+    monitor.process({ timestampMs: 5_100, face: loweredHead, pose: makePose() });
+    const warning = monitor.process({ timestampMs: 7_100, face: loweredHead, pose: makePose() });
+    expect(warning.status).toBe("WARNING");
+    expect(warning.trigger).toBe("HEAD_ONLY");
+    expect(warning.message).toBe("고개 숙임이 감지되었습니다.");
   });
 });
 

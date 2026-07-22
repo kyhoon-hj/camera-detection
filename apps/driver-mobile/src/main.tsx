@@ -137,7 +137,7 @@ function App() {
   const [wakeUpVideoNeedsTap, setWakeUpVideoNeedsTap] = useState(false);
   const [eyeClosureAlertCount, setEyeClosureAlertCount] = useState(0);
   const [wakeUpVideoSrc, setWakeUpVideoSrc] = useState<string>(WAKE_UP_VIDEO_PATHS[0]);
-  const [wakeUpVideoReason, setWakeUpVideoReason] = useState<"EYES" | "HEAD">("EYES");
+  const [wakeUpVideoReason, setWakeUpVideoReason] = useState<"EYES" | "HEAD" | "BODY">("EYES");
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -225,7 +225,7 @@ function App() {
           && next.trigger === "EYES_ONLY";
         const headDownAlertActive = activeModuleRef.current === "DROWSINESS"
           && (next.status === "WARNING" || next.status === "ALARM")
-          && (next.trigger === "HEAD_ONLY" || next.trigger === "EYES_AND_HEAD");
+          && (next.trigger === "HEAD_ONLY" || next.trigger === "EYES_AND_HEAD" || next.trigger === "BODY_COLLAPSE");
         const wakeUpDecision = getWakeUpDecision({
           eyeAlertActive: eyeClosureAlertActive,
           eyeAlertWasActive: eyeClosureAlertActiveRef.current,
@@ -241,7 +241,7 @@ function App() {
           const selectedVideo = chooseWakeUpVideo(lastWakeUpVideoRef.current);
           lastWakeUpVideoRef.current = selectedVideo;
           setWakeUpVideoSrc(selectedVideo);
-          setWakeUpVideoReason(wakeUpDecision.reason);
+          setWakeUpVideoReason(wakeUpDecision.reason === "HEAD" && next.trigger === "BODY_COLLAPSE" ? "BODY" : wakeUpDecision.reason);
           wakeUpVideoPlayingRef.current = true;
           setWakeUpVideoNeedsTap(false);
           setWakeUpVideoPlaying(true);
@@ -250,7 +250,7 @@ function App() {
         eyeClosureAlertActiveRef.current = eyeClosureAlertActive;
         headDownAlertActiveRef.current = headDownAlertActive;
         const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "ALARM" || next.status === "WARNING");
-        drawLandmarks(canvas, video, frame, showWarning);
+        drawLandmarks(canvas, video, frame, showWarning, activeModuleRef.current === "POSTURE");
       } catch (cause) {
         if (cause instanceof VisionFrameUnavailableError) {
           animationRef.current = requestAnimationFrame(runDetection);
@@ -352,7 +352,7 @@ function App() {
       await engine.initialize();
       engineRef.current = engine;
       cpuRecoveryUsedRef.current = engine.activeDelegate === "CPU";
-      monitorRef.current.begin();
+      monitorRef.current.begin(activeModuleRef.current === "POSTURE" ? "POSTURE" : "DROWSINESS");
       lastInferenceRef.current = 0;
       lastVideoTimeRef.current = -1;
       lastVideoProgressRef.current = performance.now();
@@ -371,6 +371,8 @@ function App() {
 
   const finishWakeUpVideo = useCallback(() => {
     resetWakeUpVideo();
+    // A continuously closed eye must reopen before it can count as a new event.
+    eyeClosureAlertActiveRef.current = true;
     lastInferenceRef.current = 0;
     lastVideoTimeRef.current = -1;
     lastVideoProgressRef.current = performance.now();
@@ -723,7 +725,7 @@ function App() {
         />
         {wakeUpVideoPlaying && (
           <div className="wake-up-video-status">
-            <span>{wakeUpVideoReason === "HEAD" ? "고개 숙임 감지" : `눈 감김 ${eyeClosureAlertCount}회 감지`}</span>
+            <span>{wakeUpVideoReason === "HEAD" ? "고개 숙임 감지" : wakeUpVideoReason === "BODY" ? "상체 쓰러짐 감지" : `눈 감김 ${eyeClosureAlertCount}회 감지`}</span>
             {wakeUpVideoNeedsTap
               ? <button onClick={() => void playWakeUpVideo()}>경고 영상 재생</button>
               : <strong>안전 경고 영상 재생 중</strong>}
@@ -735,7 +737,9 @@ function App() {
             <strong>{runState === "LOADING" ? "카메라 허용을 기다리고 있습니다" : activeModule === "POSTURE" ? "자세 교정 준비" : "운전자 감지 준비"}</strong>
             <p>{runState === "LOADING" && cameraPermission !== "GRANTED"
               ? "브라우저의 카메라 권한 창에서 ‘허용’을 선택해 주세요. 허용 후 자동으로 시작합니다."
-              : "휴대폰을 고정하고 얼굴과 양쪽 어깨가 보이게 맞춰 주세요."}</p>
+              : activeModule === "POSTURE"
+                ? "휴대폰을 고정하고 얼굴과 양쪽 어깨가 보이게 맞춰 주세요."
+                : "휴대폰을 고정하고 얼굴과 상체가 화면 중앙에 보이게 맞춰 주세요."}</p>
             <div className={`permission-state ${cameraPermission.toLowerCase()}`}>{permissionLabel}</div>
           </div>
         )}
@@ -744,18 +748,18 @@ function App() {
             <div className="calibration-position-guide" aria-hidden="true">
               <span className="calibration-face-target"><i /></span>
               <span className="calibration-center-line" />
-              <span className="calibration-shoulder-target"><i /><i /></span>
+              {activeModule === "POSTURE" && <span className="calibration-shoulder-target"><i /><i /></span>}
             </div>
             <div className="calibration-copy">
               <div className={`countdown ${snapshot.calibrationStable ? "stable" : "lost"}`}>
                 {snapshot.calibrationStable ? countdown : "!"}
               </div>
               <div>
-                <strong>{snapshot.calibrationStable ? "위치를 유지해 주세요" : "얼굴과 어깨를 가이드에 맞춰 주세요"}</strong>
+                <strong>{snapshot.calibrationStable ? "위치를 유지해 주세요" : activeModule === "POSTURE" ? "얼굴과 어깨를 가이드에 맞춰 주세요" : "얼굴을 가이드 중앙에 맞춰 주세요"}</strong>
                 <p>{snapshot.message}</p>
               </div>
               <div className="progress-track"><i style={{ width: `${snapshot.calibrationProgress * 100}%` }} /></div>
-              <small>{snapshot.calibrationStable ? "움직이지 말고 5초만 유지해 주세요" : "얼굴 전체와 양쪽 어깨가 화면에 보여야 합니다"}</small>
+              <small>{snapshot.calibrationStable ? "움직이지 말고 5초만 유지해 주세요" : activeModule === "POSTURE" ? "얼굴 전체와 양쪽 어깨가 화면에 보여야 합니다" : "얼굴 전체와 상체가 화면에 보여야 합니다"}</small>
             </div>
           </div>
         )}
@@ -774,12 +778,12 @@ function App() {
           </div>
           <div className="privacy-chip">기기 내 분석</div>
         </div>
-        <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "HEAD" ? "고개 숙임이 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 3회 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
+        <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "HEAD" ? "고개 숙임이 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "BODY" ? "상체 쓰러짐이 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 3회 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
 
         <div className="summary-metrics">
           <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong></article>
           <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
-          <article><span>자세</span><strong>{snapshot.postureScore === null ? "—" : `${snapshot.postureScore}점`}</strong></article>
+          <article><span>{activeModule === "POSTURE" ? "자세" : "상체"}</span><strong>{activeModule === "POSTURE" ? (snapshot.postureScore === null ? "—" : `${snapshot.postureScore}점`) : snapshot.postureIssue === "BODY_COLLAPSE" ? "쓰러짐" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
         </div>
         <button className="details-toggle" onClick={() => setDetailsExpanded((value) => !value)} aria-expanded={detailsExpanded}>
           {detailsExpanded ? "상세 정보 접기" : "상세 정보 보기"}<span>{detailsExpanded ? "⌃" : "⌄"}</span>
@@ -796,7 +800,7 @@ function App() {
             <strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong>
             <small>{formatDuration(snapshot.headDownDurationMs)}</small>
           </article>
-          <article className="posture-card">
+          {activeModule === "POSTURE" ? <article className="posture-card">
             <div className="posture-title">
               <div><span>3D 앉은 자세</span><strong>{postureLabel}</strong></div>
               <b>{snapshot.postureScore === null ? "—" : `${snapshot.postureScore}점`}</b>
@@ -809,7 +813,15 @@ function App() {
               <label><span>앞쪽 이동</span><b>{formatPercent(snapshot.forwardHeadPercent)}</b></label>
             </div>
             <small className="confidence">3D 추정 신뢰도 {Math.round(snapshot.postureConfidence * 100)}% · 5프레임 흔들림 보정</small>
-          </article>
+          </article> : <article className="posture-card">
+            <div className="posture-title"><div><span>졸음·쓰러짐 감지</span><strong>{snapshot.postureIssue === "BODY_COLLAPSE" ? "상체 쓰러짐" : "상체 안정"}</strong></div></div>
+            <p>{snapshot.postureMessage}</p>
+            <div className="posture-metrics">
+              <label><span>머리 기울기</span><b>{formatDegrees(snapshot.headLeanDegrees)}</b></label>
+              <label><span>아래쪽 이동</span><b>{formatPercent(snapshot.forwardHeadPercent)}</b></label>
+            </div>
+            <small className="confidence">어깨 수평은 졸음 판정에 사용하지 않습니다.</small>
+          </article>}
         </div>}
       </section>
 
@@ -833,7 +845,7 @@ function App() {
           </div>
         </div>
         <button className="setting-row" onClick={()=>void testVoice()}><span><b>선택 음성 다시 듣기</b><small>현재 선택한 목소리와 한국어 TTS 상태를 확인합니다.</small></span><i>재생</i></button>
-        <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>얼굴과 자세 기준을 5초간 다시 측정합니다.</small></span><i>재측정</i></button>
+        <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>{activeModule === "POSTURE" ? "얼굴과 자세 기준을 5초간 다시 측정합니다." : "눈과 고개 움직임 기준을 5초간 다시 측정합니다."}</small></span><i>재측정</i></button>
         <button className="setting-row remove-ads-row" onClick={() => { setPurchaseFeedback(""); setShowRemoveAdsDialog(true); }}><span><b>광고 제거</b><small>{adsRemoved ? "광고 제거가 적용되어 있습니다." : "배너와 메뉴 이동 전면 광고를 제거합니다."}</small></span><i className={adsRemoved ? "on" : ""}>{adsRemoved ? "적용됨" : "구매"}</i></button>
         <button className="setting-row" onClick={() => void openModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
         {!isNativeApp&&<button className="setting-row" onClick={()=>void install()} aria-expanded={showInstallHelp}><span><b>홈 화면에 앱 설치</b><small>전체 화면에서 빠르게 실행할 수 있습니다.</small></span><i>설치</i></button>}
