@@ -36,6 +36,10 @@ button { font: inherit; }
 .camera-stage video, .camera-stage canvas { position: absolute; width: 100%; height: 100%; object-fit: cover; }
 .camera-stage video { transform: scaleX(-1); }
 .camera-stage canvas { z-index: 1; }
+.camera-stage .wake-up-video{z-index:5;transform:none;object-fit:contain;background:#050706;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s ease}
+.camera-stage .wake-up-video.playing{opacity:1;visibility:visible;pointer-events:auto}
+.wake-up-video-status{position:absolute;z-index:6;left:12px;right:12px;top:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid rgba(255,214,164,.42);border-radius:12px;color:#fff3e2;background:rgba(29,14,7,.76);font-size:10px;font-weight:800;backdrop-filter:blur(10px)}
+.wake-up-video-status span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wake-up-video-status strong{font-size:10px}.wake-up-video-status button{flex:0 0 auto;min-height:34px;padding:0 12px;border:0;border-radius:9px;color:#3c1d09;background:#ffd49d;font-size:10px;font-weight:850;cursor:pointer}
 .camera-placeholder, .calibration-overlay { position: absolute; z-index: 3; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; text-align: center; background: radial-gradient(circle at center, rgba(21,53,43,.8), rgba(4,11,9,.96)); }
 .camera-placeholder strong, .calibration-overlay strong { margin-top: 17px; font-size: 19px; }
 .camera-placeholder p, .calibration-overlay p { max-width: 330px; margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }

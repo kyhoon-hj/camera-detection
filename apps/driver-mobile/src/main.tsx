@@ -89,6 +89,7 @@ const initialSnapshot: MonitorSnapshot = {
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wakeUpVideoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const engineRef = useRef<MobileVisionEngine | null>(null);
   const monitorRef = useRef(new DriverMonitor());
@@ -101,6 +102,9 @@ function App() {
   const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const lastAlertRef = useRef(0);
+  const eyeClosureAlertActiveRef = useRef(false);
+  const eyeClosureAlertCountRef = useRef(0);
+  const wakeUpVideoPlayingRef = useRef(false);
   const meditationCueRef = useRef("");
   const activeModuleRef = useRef<AppModule>("HOME");
   const drowsyNoticeAcceptedRef = useRef(false);
@@ -125,6 +129,9 @@ function App() {
   const [showRemoveAdsDialog, setShowRemoveAdsDialog] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
+  const [wakeUpVideoPlaying, setWakeUpVideoPlaying] = useState(false);
+  const [wakeUpVideoNeedsTap, setWakeUpVideoNeedsTap] = useState(false);
+  const [eyeClosureAlertCount, setEyeClosureAlertCount] = useState(0);
 
   const requestWakeLock = useCallback(async () => {
     try {
@@ -133,6 +140,20 @@ function App() {
     } catch {
       wakeLockRef.current = null;
     }
+  }, []);
+
+  const resetWakeUpVideo = useCallback(() => {
+    const alertVideo = wakeUpVideoRef.current;
+    if (alertVideo) {
+      alertVideo.pause();
+      alertVideo.currentTime = 0;
+    }
+    wakeUpVideoPlayingRef.current = false;
+    eyeClosureAlertActiveRef.current = false;
+    eyeClosureAlertCountRef.current = 0;
+    setWakeUpVideoPlaying(false);
+    setWakeUpVideoNeedsTap(false);
+    setEyeClosureAlertCount(0);
   }, []);
 
   const stopResources = useCallback(() => {
@@ -153,7 +174,8 @@ function App() {
     lastVideoProgressRef.current = 0;
     recoveryRef.current = false;
     cpuRecoveryUsedRef.current = false;
-  }, []);
+    resetWakeUpVideo();
+  }, [resetWakeUpVideo]);
 
   const stop = useCallback(() => {
     stopResources();
@@ -165,6 +187,10 @@ function App() {
 
   const runDetection = useCallback(() => {
     if (!mountedRef.current || streamRef.current === null) return;
+    if (wakeUpVideoPlayingRef.current) {
+      animationRef.current = requestAnimationFrame(runDetection);
+      return;
+    }
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const engine = engineRef.current;
@@ -187,6 +213,21 @@ function App() {
         const next = monitorRef.current.process(frame);
         setSnapshot(next);
         setError("");
+        const eyeClosureAlertActive = activeModuleRef.current === "DROWSINESS"
+          && (next.status === "WARNING" || next.status === "ALARM")
+          && (next.trigger === "EYES_ONLY" || next.trigger === "EYES_AND_HEAD");
+        if (eyeClosureAlertActive && !eyeClosureAlertActiveRef.current) {
+          const count = eyeClosureAlertCountRef.current + 1;
+          eyeClosureAlertCountRef.current = count;
+          setEyeClosureAlertCount(count);
+          if (count >= 2) {
+            wakeUpVideoPlayingRef.current = true;
+            setWakeUpVideoNeedsTap(false);
+            setWakeUpVideoPlaying(true);
+            void stopKoreanSpeech();
+          }
+        }
+        eyeClosureAlertActiveRef.current = eyeClosureAlertActive;
         const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "ALARM" || next.status === "WARNING");
         drawLandmarks(canvas, video, frame, showWarning);
       } catch (cause) {
@@ -251,6 +292,7 @@ function App() {
       setRunState("ERROR");
       return false;
     }
+    resetWakeUpVideo();
     setRunState("LOADING");
     setError("");
     try {
@@ -304,7 +346,34 @@ function App() {
       setRunState("ERROR");
       return false;
     }
-  }, [requestWakeLock, runDetection, soundEnabled, stopResources]);
+  }, [requestWakeLock, resetWakeUpVideo, runDetection, soundEnabled, stopResources]);
+
+  const finishWakeUpVideo = useCallback(() => {
+    resetWakeUpVideo();
+    lastInferenceRef.current = 0;
+    lastVideoTimeRef.current = -1;
+    lastVideoProgressRef.current = performance.now();
+    setError("");
+  }, [resetWakeUpVideo]);
+
+  const playWakeUpVideo = useCallback(async () => {
+    const alertVideo = wakeUpVideoRef.current;
+    if (!alertVideo) return;
+    try {
+      await alertVideo.play();
+      setWakeUpVideoNeedsTap(false);
+    } catch {
+      setWakeUpVideoNeedsTap(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!wakeUpVideoPlaying) return;
+    const alertVideo = wakeUpVideoRef.current;
+    if (!alertVideo) return;
+    alertVideo.currentTime = 0;
+    void playWakeUpVideo();
+  }, [playWakeUpVideo, wakeUpVideoPlaying]);
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -371,7 +440,7 @@ function App() {
   }, [runState, stop]);
 
   useEffect(() => {
-    if (activeModule === "MEDITATION" || !soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "AWAKE") return;
+    if (wakeUpVideoPlaying || activeModule === "MEDITATION" || !soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "AWAKE") return;
     const now = Date.now();
     const interval = snapshot.status === "ALARM" ? 2_500 : 7_000;
     if (now - lastAlertRef.current < interval) return;
@@ -381,7 +450,7 @@ function App() {
       const message = cause instanceof Error ? cause.message : "음성 안내를 재생하지 못했습니다.";
       setVoiceFeedback(`${message} Android 설정에서 한국어 TTS를 확인해 주세요.`);
     });
-  }, [activeModule, runState, snapshot.message, snapshot.status, soundEnabled, voiceProfile]);
+  }, [activeModule, runState, snapshot.message, snapshot.status, soundEnabled, voiceProfile, wakeUpVideoPlaying]);
 
   const meditationPhase = Math.floor(meditationSeconds / 4) % 2 === 0 ? "내쉬기" : "들이쉬기";
   const meditationGuidance = useMemo(() => getMeditationGuidance({
@@ -609,6 +678,27 @@ function App() {
       <section className={`camera-stage ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label={activeModule === "POSTURE" ? "자세 교정 카메라" : "운전자 카메라"}>
         <video ref={videoRef} playsInline muted />
         <canvas ref={canvasRef} />
+        <video
+          ref={wakeUpVideoRef}
+          className={`wake-up-video ${wakeUpVideoPlaying ? "playing" : ""}`}
+          src="/media/wake-up-driver.mp4"
+          playsInline
+          preload="auto"
+          aria-label="졸음운전 깨우기 경고 영상"
+          onEnded={finishWakeUpVideo}
+          onError={() => {
+            finishWakeUpVideo();
+            setError("경고 영상을 재생하지 못했습니다. 카메라 감지를 계속합니다.");
+          }}
+        />
+        {wakeUpVideoPlaying && (
+          <div className="wake-up-video-status">
+            <span>눈 감김 {eyeClosureAlertCount}회 감지</span>
+            {wakeUpVideoNeedsTap
+              ? <button onClick={() => void playWakeUpVideo()}>경고 영상 재생</button>
+              : <strong>안전 경고 영상 재생 중</strong>}
+          </div>
+        )}
         {runState !== "RUNNING" && (
           <div className="camera-placeholder">
             <div className="face-guide"><span /><span /></div>
@@ -645,7 +735,7 @@ function App() {
           </div>
           <div className="privacy-chip">기기 내 분석</div>
         </div>
-        <p className="main-message">{error || snapshot.message}</p>
+        <p className="main-message">{error || (wakeUpVideoPlaying ? "눈 감김이 2회 감지되어 안전 경고 영상을 재생합니다." : snapshot.message)}</p>
 
         <div className="summary-metrics">
           <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong></article>
