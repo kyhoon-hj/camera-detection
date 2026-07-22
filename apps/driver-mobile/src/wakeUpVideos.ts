@@ -93,36 +93,30 @@ export const WAKE_UP_COUNT_THRESHOLDS = {
   eyeDurationMs: 2_000,
   combinedDurationMs: 1_500,
   headDurationMs: 2_000,
-  bodyAdditionalDurationMs: 1_000,
   forceDurationMs: 4_000,
   eventCount: 2,
 } as const;
 
-export type WakeUpReason = "EYES" | "HEAD" | "COMBINED" | "BODY";
+export type WakeUpReason = "EYES" | "HEAD" | "COMBINED";
 
 export interface WakeUpDecisionInput {
   eyeAlertActive: boolean;
   eyeAlertWasActive: boolean;
   headAlertActive: boolean;
   headAlertWasActive: boolean;
-  bodyAlertActive: boolean;
-  bodyAlertWasActive: boolean;
   eyeClosureCount: number;
   headDownCount: number;
-  bodyCollapseCount: number;
 }
 
 export function getWakeUpCountActivity(input: {
   closedDurationMs: number;
   headDownDurationMs: number;
   combinedDurationMs: number;
-  bodyCollapseCountReady: boolean;
-}): { eye: boolean; head: boolean; body: boolean } {
+}): { eye: boolean; head: boolean } {
   const combinedReady = input.combinedDurationMs >= WAKE_UP_COUNT_THRESHOLDS.combinedDurationMs;
   return {
     eye: combinedReady || input.closedDurationMs >= WAKE_UP_COUNT_THRESHOLDS.eyeDurationMs,
     head: combinedReady || input.headDownDurationMs >= WAKE_UP_COUNT_THRESHOLDS.headDurationMs,
-    body: input.bodyCollapseCountReady,
   };
 }
 
@@ -130,46 +124,37 @@ export function getForcedWakeUpReason(input: {
   closedDurationMs: number;
   headDownDurationMs: number;
   combinedDurationMs: number;
-  bodyCollapseDurationMs: number;
 }): WakeUpReason | null {
   const threshold = WAKE_UP_COUNT_THRESHOLDS.forceDurationMs;
   return input.combinedDurationMs >= threshold
     ? "COMBINED"
-    : input.bodyCollapseDurationMs >= threshold
-      ? "BODY"
-      : input.closedDurationMs >= threshold
-        ? "EYES"
-        : input.headDownDurationMs >= threshold
-          ? "HEAD"
-          : null;
+    : input.closedDurationMs >= threshold
+      ? "EYES"
+      : input.headDownDurationMs >= threshold
+        ? "HEAD"
+        : null;
 }
 
 export function getWakeUpDecision(input: WakeUpDecisionInput): {
   eyeClosureCount: number;
   headDownCount: number;
-  bodyCollapseCount: number;
   reason: WakeUpReason | null;
 } {
   const newEyeEvent = input.eyeAlertActive && !input.eyeAlertWasActive;
   const newHeadEvent = input.headAlertActive && !input.headAlertWasActive;
-  const newBodyEvent = input.bodyAlertActive && !input.bodyAlertWasActive;
   const eyeClosureCount = input.eyeClosureCount + (newEyeEvent ? 1 : 0);
   const headDownCount = input.headDownCount + (newHeadEvent ? 1 : 0);
-  const bodyCollapseCount = input.bodyCollapseCount + (newBodyEvent ? 1 : 0);
   const eventThreshold = WAKE_UP_COUNT_THRESHOLDS.eventCount;
   const combinedEvent = newEyeEvent && newHeadEvent;
   return {
     eyeClosureCount,
     headDownCount,
-    bodyCollapseCount,
-    reason: newBodyEvent && bodyCollapseCount >= eventThreshold
-      ? "BODY"
-      : combinedEvent && (eyeClosureCount >= eventThreshold || headDownCount >= eventThreshold)
-        ? "COMBINED"
-        : newHeadEvent && headDownCount >= eventThreshold
-          ? "HEAD"
-          : newEyeEvent && eyeClosureCount >= eventThreshold
-            ? "EYES"
-            : null,
+    reason: combinedEvent && (eyeClosureCount >= eventThreshold || headDownCount >= eventThreshold)
+      ? "COMBINED"
+      : newHeadEvent && headDownCount >= eventThreshold
+        ? "HEAD"
+        : newEyeEvent && eyeClosureCount >= eventThreshold
+          ? "EYES"
+          : null,
   };
 }

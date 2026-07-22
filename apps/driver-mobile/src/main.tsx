@@ -67,6 +67,16 @@ interface TimelineSample {
 const isNativeApp = Capacitor.isNativePlatform();
 const WIDGET_STORAGE_KEY = "suha.translation-widget.v1";
 const ADS_REMOVED_STORAGE_KEY = "suha.ads-removed.v1";
+const ACTIVE_MONITOR_MODULE_STORAGE_KEY = "suha.active-monitor-module.v1";
+
+function loadActiveMonitorModule(): AppModule {
+  try {
+    const saved = sessionStorage.getItem(ACTIVE_MONITOR_MODULE_STORAGE_KEY);
+    return saved === "DROWSINESS" || saved === "POSTURE" ? saved : "HOME";
+  } catch {
+    return "HOME";
+  }
+}
 
 function loadWidgetSettings(): WidgetSettings {
   try {
@@ -111,6 +121,8 @@ const initialSnapshot: MonitorSnapshot = {
 };
 
 function App() {
+  const initialActiveModuleRef = useRef<AppModule | null>(null);
+  initialActiveModuleRef.current ??= loadActiveMonitorModule();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wakeUpVideoRef = useRef<HTMLVideoElement>(null);
@@ -134,7 +146,6 @@ function App() {
   const headDownCountActiveRef = useRef(false);
   const eyeClosureAlertCountRef = useRef(0);
   const headDownAlertCountRef = useRef(0);
-  const bodyCollapseAlertCountRef = useRef(0);
   const sessionEyeClosureCountRef = useRef(0);
   const sessionHeadDownCountRef = useRef(0);
   const postureBlinkActiveRef = useRef(false);
@@ -143,14 +154,12 @@ function App() {
   const postureBlinkCountRef = useRef(0);
   const postureHeadDownCountRef = useRef(0);
   const postureSeatAwayCountRef = useRef(0);
-  const bodyCollapseActiveRef = useRef(false);
-  const bodyCollapseCountRef = useRef(0);
   const sessionStartedAtRef = useRef(0);
   const lastTimelineSampleRef = useRef(0);
   const wakeUpVideoPlayingRef = useRef(false);
   const forcedWakeUpActiveRef = useRef(false);
   const meditationCueRef = useRef("");
-  const activeModuleRef = useRef<AppModule>("HOME");
+  const activeModuleRef = useRef<AppModule>(initialActiveModuleRef.current);
   const drowsyNoticeAcceptedRef = useRef(false);
   const mountedRef = useRef(true);
   const [runState, setRunState] = useState<RunState>("READY");
@@ -164,7 +173,7 @@ function App() {
   const [voiceFeedback, setVoiceFeedback] = useState("");
   const [activeTab, setActiveTab] = useState<MobileTab>("MONITOR");
   const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const [activeModule, setActiveModule] = useState<AppModule>("HOME");
+  const [activeModule, setActiveModule] = useState<AppModule>(initialActiveModuleRef.current);
   const [widgetSettings, setWidgetSettings] = useState(loadWidgetSettings);
   const [wakeUpLibrary, setWakeUpLibrary] = useState<WakeUpLibraryState>(() => initialWakeUpLibraryRef.current!);
   const [selectedWakeUpVideoId, setSelectedWakeUpVideoId] = useState<WakeUpVideoId>(() => initialWakeUpLibraryRef.current!.appliedId);
@@ -210,7 +219,6 @@ function App() {
     eyeClosureAlertActiveRef.current = false;
     eyeClosureAlertCountRef.current = 0;
     headDownAlertCountRef.current = 0;
-    bodyCollapseAlertCountRef.current = 0;
     setWakeUpVideoPlaying(false);
     setWakeUpVideoNeedsTap(false);
     setEyeClosureAlertCount(0);
@@ -240,7 +248,6 @@ function App() {
     postureBlinkActiveRef.current = false;
     postureHeadDownActiveRef.current = false;
     postureSeatAwayActiveRef.current = false;
-    bodyCollapseActiveRef.current = false;
     forcedWakeUpActiveRef.current = false;
   }, [resetWakeUpVideo]);
 
@@ -285,7 +292,6 @@ function App() {
         const eyeClosureAlertActive = drowsinessCounting && wakeUpCountActivity.eye;
         const headDownAlertActive = drowsinessCounting && wakeUpCountActivity.head;
         const headDownCountActive = headDownAlertActive;
-        const bodyCollapseActive = drowsinessCounting && wakeUpCountActivity.body;
         const forcedWakeUpReason = drowsinessCounting ? getForcedWakeUpReason(next) : null;
         if (forcedWakeUpReason === null) forcedWakeUpActiveRef.current = false;
         const wakeUpDecision = getWakeUpDecision({
@@ -293,11 +299,8 @@ function App() {
           eyeAlertWasActive: eyeClosureAlertActiveRef.current,
           headAlertActive: headDownAlertActive,
           headAlertWasActive: headDownAlertActiveRef.current,
-          bodyAlertActive: bodyCollapseActive,
-          bodyAlertWasActive: bodyCollapseActiveRef.current,
           eyeClosureCount: eyeClosureAlertCountRef.current,
           headDownCount: headDownAlertCountRef.current,
-          bodyCollapseCount: bodyCollapseAlertCountRef.current,
         });
         if (wakeUpDecision.eyeClosureCount !== eyeClosureAlertCountRef.current) {
           eyeClosureAlertCountRef.current = wakeUpDecision.eyeClosureCount;
@@ -306,7 +309,6 @@ function App() {
           setSessionEyeClosureCount(sessionEyeClosureCountRef.current);
         }
         headDownAlertCountRef.current = wakeUpDecision.headDownCount;
-        bodyCollapseAlertCountRef.current = wakeUpDecision.bodyCollapseCount;
         if (headDownCountActive && !headDownCountActiveRef.current) {
           sessionHeadDownCountRef.current += 1;
           setSessionHeadDownCount(sessionHeadDownCountRef.current);
@@ -329,9 +331,6 @@ function App() {
           postureSeatAwayCountRef.current += 1;
           setPostureSeatAwayCount(postureSeatAwayCountRef.current);
         }
-        if (bodyCollapseActive && !bodyCollapseActiveRef.current) {
-          bodyCollapseCountRef.current += 1;
-        }
         const wakeUpReason = wakeUpDecision.reason
           ?? (forcedWakeUpReason !== null && !forcedWakeUpActiveRef.current ? forcedWakeUpReason : null);
         if (wakeUpReason !== null && !wakeUpVideoPlayingRef.current) {
@@ -344,10 +343,8 @@ function App() {
           forcedWakeUpActiveRef.current = true;
           eyeClosureAlertCountRef.current = 0;
           headDownAlertCountRef.current = 0;
-          bodyCollapseAlertCountRef.current = 0;
           sessionEyeClosureCountRef.current = 0;
           sessionHeadDownCountRef.current = 0;
-          bodyCollapseCountRef.current = 0;
           setEyeClosureAlertCount(0);
           setSessionEyeClosureCount(0);
           setSessionHeadDownCount(0);
@@ -362,7 +359,6 @@ function App() {
         postureBlinkActiveRef.current = postureBlinkActive;
         postureHeadDownActiveRef.current = postureHeadDownActive;
         postureSeatAwayActiveRef.current = postureSeatAwayActive;
-        bodyCollapseActiveRef.current = bodyCollapseActive;
         const timelineMode = activeModuleRef.current === "POSTURE" ? "POSTURE" : "DROWSINESS";
         if (next.status !== "CALIBRATING" && now - lastTimelineSampleRef.current >= 1_000) {
           lastTimelineSampleRef.current = now;
@@ -376,7 +372,7 @@ function App() {
             risk,
             eyeCount: timelineMode === "POSTURE" ? postureBlinkCountRef.current : sessionEyeClosureCountRef.current,
             headCount: timelineMode === "POSTURE" ? postureHeadDownCountRef.current : sessionHeadDownCountRef.current,
-            auxiliaryCount: timelineMode === "POSTURE" ? postureSeatAwayCountRef.current : bodyCollapseCountRef.current,
+            auxiliaryCount: timelineMode === "POSTURE" ? postureSeatAwayCountRef.current : 0,
           };
           setTimelineSamples((samples) => [...samples, sample].slice(-300));
         }
@@ -452,8 +448,6 @@ function App() {
     postureBlinkCountRef.current = 0;
     postureHeadDownCountRef.current = 0;
     postureSeatAwayCountRef.current = 0;
-    bodyCollapseCountRef.current = 0;
-    bodyCollapseActiveRef.current = false;
     forcedWakeUpActiveRef.current = false;
     sessionStartedAtRef.current = performance.now();
     lastTimelineSampleRef.current = 0;
@@ -521,7 +515,6 @@ function App() {
     // An ongoing condition must clear before it can count toward the next cycle.
     eyeClosureAlertActiveRef.current = true;
     headDownAlertActiveRef.current = true;
-    bodyCollapseActiveRef.current = true;
     lastInferenceRef.current = 0;
     lastVideoTimeRef.current = -1;
     lastVideoProgressRef.current = performance.now();
@@ -682,6 +675,18 @@ function App() {
   }, [stopResources]);
 
   useEffect(() => {
+    try {
+      if (activeModule === "DROWSINESS" || activeModule === "POSTURE") {
+        sessionStorage.setItem(ACTIVE_MONITOR_MODULE_STORAGE_KEY, activeModule);
+      } else {
+        sessionStorage.removeItem(ACTIVE_MONITOR_MODULE_STORAGE_KEY);
+      }
+    } catch {
+      // Some embedded browsers can disable session storage; the app still works without it.
+    }
+  }, [activeModule]);
+
+  useEffect(() => {
     if (adsRemoved) void removeBottomBannerAd();
     else void showBottomBannerAd();
     return () => {
@@ -744,14 +749,20 @@ function App() {
   }, [completeRemoveAdsPurchase]);
 
   const goHome = useCallback(() => {
+    if (runState === "RUNNING" && !window.confirm("감지를 종료하고 홈 화면으로 이동할까요?")) return;
     stop();
     setMeditationRunning(false);
     setShowDrowsyNotice(false);
     drowsyNoticeAcceptedRef.current = false;
     activeModuleRef.current = "HOME";
+    try {
+      sessionStorage.removeItem(ACTIVE_MONITOR_MODULE_STORAGE_KEY);
+    } catch {
+      // Ignore storage restrictions in embedded browsers.
+    }
     meditationCueRef.current = "";
     setActiveModule("HOME");
-  }, [stop]);
+  }, [runState, stop]);
 
   const toggleMeditation = useCallback(async () => {
     if (meditationRunning) {
@@ -934,6 +945,7 @@ function App() {
   const postureLabel = getPostureLabel(snapshot.postureStatus, snapshot.postureIssue);
   const postureBaselineDeviated = snapshot.postureStatus === "WARNING";
   const shoulderDeviated = snapshot.postureIssue === "SHOULDER_TILT";
+  const drowsinessActivity = getWakeUpCountActivity(snapshot);
   const permissionLabel = getPermissionLabel(cameraPermission);
 
   return (
@@ -1024,27 +1036,27 @@ function App() {
               ? "브라우저의 카메라 권한 창에서 ‘허용’을 선택해 주세요. 허용 후 자동으로 시작합니다."
               : activeModule === "POSTURE"
                 ? "휴대폰을 고정하고 얼굴과 양쪽 어깨가 보이게 맞춰 주세요."
-                : "휴대폰을 고정하고 얼굴과 상체가 화면 중앙에 보이게 맞춰 주세요."}</p>
+                : "휴대폰을 실제 사용할 위치에 고정하고 현재 각도에서 얼굴이 보이게 해 주세요."}</p>
             <div className={`permission-state ${cameraPermission.toLowerCase()}`}>{permissionLabel}</div>
           </div>
         )}
         {calibrating && (
           <div className={`calibration-overlay ${snapshot.calibrationStable ? "stable" : "searching"}`}>
-            <div className="calibration-position-guide" aria-hidden="true">
+            {activeModule === "POSTURE" && <div className="calibration-position-guide" aria-hidden="true">
               <span className="calibration-face-target"><i /></span>
               <span className="calibration-center-line" />
-              {activeModule === "POSTURE" && <span className="calibration-shoulder-target"><i /><i /></span>}
-            </div>
+              <span className="calibration-shoulder-target"><i /><i /></span>
+            </div>}
             <div className="calibration-copy">
               <div className={`countdown ${snapshot.calibrationStable ? "stable" : "lost"}`}>
                 {snapshot.calibrationStable ? countdown : "!"}
               </div>
               <div>
-                <strong>{snapshot.calibrationStable ? "위치를 유지해 주세요" : activeModule === "POSTURE" ? "얼굴과 어깨를 가이드에 맞춰 주세요" : "얼굴을 가이드 중앙에 맞춰 주세요"}</strong>
+                <strong>{snapshot.calibrationStable ? "현재 위치를 유지해 주세요" : activeModule === "POSTURE" ? "얼굴과 어깨를 가이드에 맞춰 주세요" : "평소 운전 자세를 유지해 주세요"}</strong>
                 <p>{snapshot.message}</p>
               </div>
               <div className="progress-track"><i style={{ width: `${snapshot.calibrationProgress * 100}%` }} /></div>
-              <small>{snapshot.calibrationStable ? "움직이지 말고 5초만 유지해 주세요" : activeModule === "POSTURE" ? "얼굴 전체와 양쪽 어깨가 화면에 보여야 합니다" : "얼굴 전체와 상체가 화면에 보여야 합니다"}</small>
+              <small>{activeModule === "POSTURE" ? "얼굴 전체와 양쪽 어깨가 화면에 보여야 합니다" : "정면·사선·측면 모두 현재 보이는 모습을 기준으로 측정합니다"}</small>
             </div>
           </div>
         )}
@@ -1063,7 +1075,7 @@ function App() {
           </div>
           <div className="privacy-chip">기기 내 분석</div>
         </div>
-        <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "COMBINED" ? "눈 감김과 고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "HEAD" ? "고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "BODY" ? "상체 쓰러짐이 지속 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 지속 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
+        <p className="main-message">{error || (wakeUpVideoPlaying ? (wakeUpVideoReason === "COMBINED" ? "눈 감김과 고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : wakeUpVideoReason === "HEAD" ? "고개 숙임이 지속 감지되어 안전 경고 영상을 재생합니다." : "눈 감김이 지속 감지되어 안전 경고 영상을 재생합니다.") : snapshot.message)}</p>
 
         <div className="detection-labels" aria-label={`${activeModule === "POSTURE" ? "자세 교정" : "졸음운전"} 감지 항목`}>
           {activeModule === "POSTURE" ? <>
@@ -1077,7 +1089,7 @@ function App() {
           </>}
         </div>
 
-        <div className="summary-metrics">
+        <div className={`summary-metrics ${activeModule === "POSTURE" ? "" : "two"}`}>
           {activeModule === "POSTURE" ? <>
             <article className="posture-count-card"><span>눈 깜박임</span><strong>{postureBlinkCount}회</strong><small>이번 측정</small></article>
             <article className="posture-count-card"><span>고개 숙임</span><strong>{postureHeadDownCount}회</strong><small>{snapshot.headDown ? "숙임 확인 중" : "고개 안정"}</small></article>
@@ -1085,7 +1097,6 @@ function App() {
           </> : <>
             <article><span>눈</span><strong>{snapshot.eyeAspectRatio === null ? "—" : snapshot.eyesClosed ? "감김" : "정상"}</strong><small className="session-count">감지 {sessionEyeClosureCount}회</small></article>
             <article><span>고개</span><strong>{snapshot.headDown ? "숙임" : snapshot.faceVisible ? "정상" : "—"}</strong><small className="session-count">감지 {sessionHeadDownCount}회</small></article>
-            <article><span>상체</span><strong>{snapshot.postureIssue === "BODY_COLLAPSE" ? "쓰러짐" : snapshot.faceVisible ? "정상" : "—"}</strong></article>
           </>}
         </div>
         <DetectionTimeline

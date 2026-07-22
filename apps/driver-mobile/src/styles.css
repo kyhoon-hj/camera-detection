@@ -354,6 +354,7 @@ body{background:radial-gradient(circle at 82% -8%,rgba(51,213,153,.13),transpare
 .mode-switcher{border-bottom-color:#153128;background:#081511}.mode-switcher button{color:#728d82}.mode-switcher button.active{color:#eaf7f2}.mode-switcher span{border-color:#24463a;color:#8da89e;background:#0e211a}
 .mode-switcher .mode-switch-icon svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .camera-stage{border:1px solid #18362c;background:#020705;box-shadow:0 18px 55px rgba(0,0,0,.32)}
+.module-drowsiness .camera-stage,.module-posture .camera-stage{aspect-ratio:6/5;max-height:56dvh;margin-top:8px}
 .camera-placeholder{background:radial-gradient(circle at center,#142e25,#07100d 72%)}.camera-placeholder strong{color:#e3f2ed}.camera-placeholder p{color:#819a90}.permission-state{border-color:#24443a;color:#94aea4;background:rgba(8,24,18,.86)}
 .privacy-chip{color:#7bd7b1;background:#102a20}.main-message,.status-panel:not(:has(.metric-grid)) .main-message{color:#91aaa0;background:transparent}
 .summary-metrics article,.metric-grid article,.posture-metrics label{border-color:#17352b;background:#0b1b15}.summary-metrics span,.metric-grid span,.metric-grid small,.metric-grid .confidence{color:#708d82}.summary-metrics strong,.metric-grid strong,.posture-metrics label b{color:#e1f1eb}.posture-card>p{color:#8ba59b}
