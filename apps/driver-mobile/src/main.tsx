@@ -128,6 +128,7 @@ function App() {
   const [meditationSeconds, setMeditationSeconds] = useState(300);
   const [meditationRunning, setMeditationRunning] = useState(false);
   const [showDrowsyNotice, setShowDrowsyNotice] = useState(false);
+  const [showSignComingSoon, setShowSignComingSoon] = useState(false);
   const [adsRemoved, setAdsRemoved] = useState(loadAdsRemoved);
   const [showRemoveAdsDialog, setShowRemoveAdsDialog] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
@@ -529,6 +530,10 @@ function App() {
 
   const openModule = useCallback(async (module: AppModule) => {
     if (module === activeModuleRef.current) return;
+    if (module === "SIGN") {
+      setShowSignComingSoon(true);
+      return;
+    }
     if (!adsRemoved) await showMenuInterstitialAd();
     if (module !== "DROWSINESS" && module !== "POSTURE") stop();
     activeModuleRef.current = module;
@@ -684,6 +689,7 @@ function App() {
       )}
       {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => void openModule("WIDGET")} />}
       {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
+      {showSignComingSoon && <SignComingSoonDialog onClose={() => setShowSignComingSoon(false)} />}
 
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
 
@@ -889,6 +895,18 @@ function RemoveAdsDialog({ adsRemoved, busy, feedback, onBuy, onClose, onRestore
         <button onClick={onRestore} disabled={busy}>구매 복원</button>
       </div>
       <button className="purchase-close" onClick={onClose}>닫기</button>
+    </section>
+  </div>;
+}
+
+function SignComingSoonDialog({ onClose }: { onClose(): void }) {
+  return <div className="coming-soon-backdrop" onClick={onClose}>
+    <section className="coming-soon-dialog" role="dialog" aria-modal="true" aria-labelledby="sign-coming-soon-title" onClick={(event) => event.stopPropagation()}>
+      <span className="coming-soon-mark" aria-hidden="true">⌁</span>
+      <small>KSL CARE</small>
+      <h2 id="sign-coming-soon-title">현재 준비 중입니다</h2>
+      <p>더 정확하고 편안한 수어 통역 기능을 준비하고 있습니다.</p>
+      <button onClick={onClose}>확인</button>
     </section>
   </div>;
 }
