@@ -710,14 +710,23 @@ function App() {
           </div>
         )}
         {calibrating && (
-          <div className="calibration-overlay">
-            <div className={`countdown ${snapshot.calibrationStable ? "stable" : "lost"}`}>
-              {snapshot.calibrationStable ? countdown : "!"}
+          <div className={`calibration-overlay ${snapshot.calibrationStable ? "stable" : "searching"}`}>
+            <div className="calibration-position-guide" aria-hidden="true">
+              <span className="calibration-face-target"><i /></span>
+              <span className="calibration-center-line" />
+              <span className="calibration-shoulder-target"><i /><i /></span>
             </div>
-            <strong>평상시 모습 측정 중</strong>
-            <p>{snapshot.message}</p>
-            <div className="progress-track"><i style={{ width: `${snapshot.calibrationProgress * 100}%` }} /></div>
-            <small>{snapshot.calibrationStable ? "움직이지 말고 5초만 유지해 주세요" : "얼굴·눈·양쪽 어깨 확인 중"}</small>
+            <div className="calibration-copy">
+              <div className={`countdown ${snapshot.calibrationStable ? "stable" : "lost"}`}>
+                {snapshot.calibrationStable ? countdown : "!"}
+              </div>
+              <div>
+                <strong>{snapshot.calibrationStable ? "위치를 유지해 주세요" : "얼굴과 어깨를 가이드에 맞춰 주세요"}</strong>
+                <p>{snapshot.message}</p>
+              </div>
+              <div className="progress-track"><i style={{ width: `${snapshot.calibrationProgress * 100}%` }} /></div>
+              <small>{snapshot.calibrationStable ? "움직이지 말고 5초만 유지해 주세요" : "얼굴 전체와 양쪽 어깨가 화면에 보여야 합니다"}</small>
+            </div>
           </div>
         )}
         {runState === "RUNNING" && !calibrating && (
