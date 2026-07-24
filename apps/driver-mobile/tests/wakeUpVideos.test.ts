@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WAKE_UP_VIDEO_PATHS, WAKE_UP_VIDEO_PROFILES, getForcedWakeUpReason, getWakeUpCountActivity, getWakeUpDecision } from "../src/wakeUpVideos";
+import { WAKE_UP_VIDEO_PATHS, WAKE_UP_VIDEO_PROFILES, advanceAlertLatch, getForcedWakeUpReason, getWakeUpCountActivity, getWakeUpDecision } from "../src/wakeUpVideos";
 
 describe("wake-up video rules", () => {
   it("contains no duplicate video paths", () => {
@@ -10,11 +10,11 @@ describe("wake-up video rules", () => {
     expect(WAKE_UP_VIDEO_PROFILES.map((profile) => profile.path)).toEqual(WAKE_UP_VIDEO_PATHS);
   });
 
-  it("경고 이후 눈 감김 2초 또는 동시 감지 1.5초부터 카운트한다", () => {
+  it("눈 감김, 고개 숙임 또는 동시 감지가 2초부터 카운트된다", () => {
     expect(getWakeUpCountActivity({ closedDurationMs: 1_999, headDownDurationMs: 0, combinedDurationMs: 0 }).eye).toBe(false);
     expect(getWakeUpCountActivity({ closedDurationMs: 2_000, headDownDurationMs: 0, combinedDurationMs: 0 }).eye).toBe(true);
-    expect(getWakeUpCountActivity({ closedDurationMs: 0, headDownDurationMs: 0, combinedDurationMs: 1_499 })).toEqual({ eye: false, head: false });
-    expect(getWakeUpCountActivity({ closedDurationMs: 0, headDownDurationMs: 0, combinedDurationMs: 1_500 })).toEqual({ eye: true, head: true });
+    expect(getWakeUpCountActivity({ closedDurationMs: 0, headDownDurationMs: 0, combinedDurationMs: 1_999 })).toEqual({ eye: false, head: false });
+    expect(getWakeUpCountActivity({ closedDurationMs: 0, headDownDurationMs: 0, combinedDurationMs: 2_000 })).toEqual({ eye: true, head: true });
   });
 
   it("고개 숙임 2초부터 카운트한다", () => {
@@ -28,6 +28,14 @@ describe("wake-up video rules", () => {
     expect(getForcedWakeUpReason({ ...safe, closedDurationMs: 4_000 })).toBe("EYES");
     expect(getForcedWakeUpReason({ ...safe, headDownDurationMs: 4_000 })).toBe("HEAD");
     expect(getForcedWakeUpReason({ ...safe, closedDurationMs: 4_000, headDownDurationMs: 4_000, combinedDurationMs: 4_000 })).toBe("COMBINED");
+  });
+
+  it("정상 상태가 1초 지속된 뒤에만 다음 경고를 새 사건으로 허용한다", () => {
+    const active = advanceAlertLatch({ active: false, clearedAtMs: null }, true, 0);
+    const recovering = advanceAlertLatch(active, false, 100);
+    expect(recovering).toEqual({ active: true, clearedAtMs: 100 });
+    expect(advanceAlertLatch(recovering, false, 1_099).active).toBe(true);
+    expect(advanceAlertLatch(recovering, false, 1_100)).toEqual({ active: false, clearedAtMs: null });
   });
 
   it("두 번째 눈 감김 카운트에서 영상을 시작한다", () => {

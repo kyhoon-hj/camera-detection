@@ -4,11 +4,13 @@ import {
   type AdOptions,
   BannerAdPosition,
   BannerAdSize,
+  InterstitialAdPluginEvents,
   RewardAdPluginEvents,
   type RewardAdOptions,
   type BannerAdOptions,
   type AdMobRewardItem,
 } from "@capacitor-community/admob";
+import { lockCurrentOrientation, unlockOrientation } from "./displayControl";
 
 const TEST_ANDROID_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
 const TEST_ANDROID_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
@@ -17,6 +19,8 @@ const TEST_IOS_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/4411468910";
 const TEST_ANDROID_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
 const TEST_IOS_REWARDED_ID = "ca-app-pub-3940256099942544/1712485313";
 const REWARDED_DOWNLOAD_TIMEOUT_MS = 120_000;
+const INTERSTITIAL_DISMISS_TIMEOUT_MS = 120_000;
+const ORIENTATION_SETTLE_MS = 220;
 
 let initialized = false;
 
@@ -39,16 +43,41 @@ export async function showBottomBannerAd(): Promise<void> {
 
 export async function showMenuInterstitialAd(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
+  const listeners: PluginListenerHandle[] = [];
+  let finishDismissal: (() => void) | null = null;
+  let orientationLocked = false;
   try {
     await initializeAdMob();
+    const dismissed = new Promise<void>((resolve) => {
+      finishDismissal = resolve;
+    });
+    const finish = () => {
+      const resolve = finishDismissal;
+      finishDismissal = null;
+      resolve?.();
+    };
+    const [dismissedHandle, failedHandle] = await Promise.all([
+      AdMob.addListener(InterstitialAdPluginEvents.Dismissed, finish),
+      AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, finish),
+    ]);
+    listeners.push(dismissedHandle, failedHandle);
     const options: AdOptions = {
       adId: getInterstitialAdId(),
       isTesting: isAdMobTesting(),
+      immersiveMode: true,
     };
     await AdMob.prepareInterstitial(options);
+    await lockCurrentOrientation();
+    orientationLocked = true;
+    await delay(ORIENTATION_SETTLE_MS);
     await AdMob.showInterstitial();
+    await Promise.race([dismissed, delay(INTERSTITIAL_DISMISS_TIMEOUT_MS)]);
   } catch (cause) {
     console.warn("Failed to show AdMob interstitial", cause);
+  } finally {
+    finishDismissal = null;
+    await Promise.allSettled(listeners.map((listener) => listener.remove()));
+    if (orientationLocked) await unlockOrientation().catch(() => undefined);
   }
 }
 
@@ -152,4 +181,8 @@ function isAdMobTesting(): boolean {
 
 function hasReward(reward: AdMobRewardItem | null | undefined): boolean {
   return reward !== null && reward !== undefined && Number.isFinite(reward.amount) && reward.amount > 0;
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }

@@ -3,11 +3,11 @@ import { getMeditationGuidance } from "../src/meditation";
 import type { MonitorSnapshot } from "../src/monitor";
 
 const snapshot: MonitorSnapshot = {
-  status: "AWAKE", trigger: "NONE", message: "정상", faceVisible: true, poseVisible: true,
+  status: "NORMAL", trigger: "NONE", message: "정상", faceVisible: true, poseVisible: true,
   eyeAspectRatio: 0.09, baselineEyeAspectRatio: 0.12, eyesClosed: false, closedDurationMs: 0,
-  headDown: false, headDownDurationMs: 0, combinedDurationMs: 0, bodyCollapseDurationMs: 0, bodyCollapseCountReady: false, postureStatus: "GOOD",
+  headDown: false, headDownDurationMs: 0, baselineDeviated: false, baselineGuide: null, combinedDurationMs: 0, bodyCollapseDurationMs: 0, bodyCollapseCountReady: false, postureStatus: "GOOD",
   postureIssue: "NONE", postureScore: 96, postureConfidence: 0.9,
-  postureMessage: "3D 개인 기준 자세가 안정적입니다.", shoulderTiltDegrees: 0, headLeanDegrees: 0,
+  postureMessage: "3D 개인 기준 자세가 안정적입니다.", shoulderTiltDegrees: 0, headLeanDegrees: 0, torsoLeanDegrees: 0,
   forwardHeadPercent: 0, cameraViewAngleDegrees: 0, cameraView: "FRONT", calibrationProgress: 1,
   calibrationRemainingMs: 0, calibrationStable: true,
 };
