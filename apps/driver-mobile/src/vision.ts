@@ -5,7 +5,7 @@ import {
   type FaceLandmarkerResult,
   type PoseLandmarkerResult,
 } from "@mediapipe/tasks-vision";
-import type { Landmark, VisionFrame } from "./monitor";
+import type { BaselineGuide, Landmark, VisionFrame } from "./monitor";
 
 export type VisionDelegate = "GPU" | "CPU";
 
@@ -24,6 +24,36 @@ export interface VideoFrameState {
 export interface DetectionFrame extends VisionFrame {
   faceResult: FaceLandmarkerResult;
   poseResult: PoseLandmarkerResult;
+}
+
+export function stabilizeOverlayFrame<T extends VisionFrame>(current: T, previous: VisionFrame | null): T {
+  if (previous === null) return current;
+  return {
+    ...current,
+    timestampMs: current.timestampMs,
+    face: stabilizeLandmarks(current.face, previous.face, 0.0025, 0.38),
+    pose: stabilizeLandmarks(current.pose, previous.pose, 0.0035, 0.34),
+  };
+}
+
+function stabilizeLandmarks(
+  current: Landmark[] | null,
+  previous: Landmark[] | null,
+  deadZone: number,
+  response: number,
+): Landmark[] | null {
+  if (current === null || previous === null || current.length !== previous.length) return current;
+  return current.map((point, index) => {
+    const prior = previous[index];
+    const movement = Math.hypot(point.x - prior.x, point.y - prior.y, point.z - prior.z);
+    if (movement <= deadZone) return { ...point, x: prior.x, y: prior.y, z: prior.z };
+    return {
+      ...point,
+      x: prior.x + (point.x - prior.x) * response,
+      y: prior.y + (point.y - prior.y) * response,
+      z: prior.z + (point.z - prior.z) * response,
+    };
+  });
 }
 
 export class VisionFrameUnavailableError extends Error {
@@ -159,6 +189,7 @@ const FACE_OVAL_PATH = [
 export interface PostureOverlayAngles {
   headTiltDegrees: number | null;
   shoulderTiltDegrees: number | null;
+  torsoTiltDegrees: number | null;
 }
 
 export function calculatePostureOverlayAngles(
@@ -171,6 +202,14 @@ export function calculatePostureOverlayAngles(
   const chin = face?.[152];
   const leftShoulder = pose?.[11];
   const rightShoulder = pose?.[12];
+  const leftHip = pose?.[23];
+  const rightHip = pose?.[24];
+  const shoulderCenter = leftShoulder && rightShoulder
+    ? midpoint(toCanvasPoint(leftShoulder, width, height), toCanvasPoint(rightShoulder, width, height))
+    : null;
+  const hipCenter = leftHip && rightHip
+    ? midpoint(toCanvasPoint(leftHip, width, height), toCanvasPoint(rightHip, width, height))
+    : null;
   return {
     headTiltDegrees: forehead && chin
       ? roundAngle(Math.atan2(
@@ -184,6 +223,12 @@ export function calculatePostureOverlayAngles(
         Math.abs((rightShoulder.x - leftShoulder.x) * width),
       ) * 180 / Math.PI)
       : null,
+    torsoTiltDegrees: shoulderCenter && hipCenter
+      ? roundAngle(Math.atan2(
+        Math.abs(hipCenter.x - shoulderCenter.x),
+        Math.abs(hipCenter.y - shoulderCenter.y),
+      ) * 180 / Math.PI)
+      : null,
   };
 }
 
@@ -193,6 +238,8 @@ export function drawLandmarks(
   frame: DetectionFrame,
   alert: boolean,
   showPostureGuides = true,
+  baselineGuide: BaselineGuide | null = null,
+  baselineDeviated = false,
 ): void {
   const width = video.videoWidth;
   const height = video.videoHeight;
@@ -208,9 +255,15 @@ export function drawLandmarks(
   context.lineCap = "round";
   context.lineJoin = "round";
   const accent = alert ? "rgba(255, 181, 91, .92)" : "rgba(79, 231, 176, .9)";
+  const shoulderColor = alert ? "rgba(255, 107, 74, .98)" : "rgba(255, 78, 78, .98)";
+  const torsoColor = alert ? "rgba(255, 214, 74, .98)" : "rgba(255, 224, 46, .98)";
   const subtle = alert ? "rgba(255, 205, 143, .62)" : "rgba(181, 255, 229, .64)";
   const fineLine = Math.max(1, width / 960);
   const bodyLine = Math.max(1.2, width / 760);
+
+  if (baselineGuide !== null) {
+    drawBaselineGuide(context, baselineGuide, width, height, baselineDeviated);
+  }
 
   if (frame.face !== null) {
     context.lineWidth = fineLine;
@@ -229,16 +282,22 @@ export function drawLandmarks(
     context.lineWidth = bodyLine;
     context.strokeStyle = subtle;
     context.setLineDash([5, 6]);
-    drawPath(context, frame.pose, [11, 23], width, height);
-    drawPath(context, frame.pose, [12, 24], width, height);
+    if (frame.pose.length > 24) {
+      drawPath(context, frame.pose, [11, 23], width, height);
+      drawPath(context, frame.pose, [12, 24], width, height);
+    }
 
-    context.strokeStyle = accent;
+    context.strokeStyle = shoulderColor;
     context.setLineDash([]);
     drawPath(context, frame.pose, [11, 12], width, height);
-    drawShoulderReference(context, frame.pose, width, height, accent, subtle);
+    drawArmAndHandGuides(context, frame.pose, width, height, accent);
+    drawShoulderReference(context, frame.pose, width, height, shoulderColor, subtle);
+    if (frame.pose.length > 24) drawTorsoAxis(context, frame.face, frame.pose, width, height, torsoColor);
 
     context.fillStyle = accent;
-    for (const index of [11, 12]) drawPoint(context, frame.pose[index], width, height, Math.max(1.8, width / 420));
+    for (const index of frame.pose.length > 24 ? [11, 12, 23, 24] : [11, 12]) {
+      drawPoint(context, frame.pose[index], width, height, Math.max(1.8, width / 420));
+    }
   }
   if (showPostureGuides && frame.face !== null && frame.pose !== null) {
     drawNeckGuide(context, frame.face, frame.pose, width, height, subtle);
@@ -248,6 +307,51 @@ export function drawLandmarks(
     const angles = calculatePostureOverlayAngles(frame.face, frame.pose, width, height);
     drawAngleLabels(context, frame.face, frame.pose, angles, width, height, alert);
   }
+  context.restore();
+}
+
+function drawBaselineGuide(
+  context: CanvasRenderingContext2D,
+  guide: BaselineGuide,
+  width: number,
+  height: number,
+  deviated: boolean,
+): void {
+  const color = deviated ? "rgba(255, 183, 77, .95)" : "rgba(109, 231, 187, .55)";
+  const faceX = normalizedXToMirroredCanvas(guide.faceX, width);
+  const faceY = guide.faceY * height;
+  const shoulderX = normalizedXToMirroredCanvas(guide.shoulderX, width);
+  const shoulderY = guide.shoulderY * height;
+  const hipX = normalizedXToMirroredCanvas(guide.hipX, width);
+  const hipY = guide.hipY * height;
+  const shoulderHalf = Math.max(28, guide.shoulderWidth * width * 0.5);
+  const faceRadiusX = Math.max(22, guide.faceWidth * width * 0.55);
+  const faceRadiusY = Math.max(30, guide.faceHeight * height * 0.55);
+
+  context.save();
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  context.lineWidth = Math.max(1.5, width / 520);
+  context.setLineDash([Math.max(5, width / 100), Math.max(5, width / 100)]);
+  context.beginPath();
+  context.ellipse(faceX, faceY, faceRadiusX, faceRadiusY, 0, 0, Math.PI * 2);
+  context.stroke();
+  if (guide.showShoulders) {
+    context.beginPath();
+    context.moveTo(shoulderX - shoulderHalf, shoulderY);
+    context.lineTo(shoulderX + shoulderHalf, shoulderY);
+    context.stroke();
+  }
+  if (guide.showTorso) {
+    context.beginPath();
+    context.moveTo(shoulderX, shoulderY);
+    context.lineTo(hipX, hipY);
+    context.stroke();
+  }
+  context.setLineDash([]);
+  context.font = `700 ${Math.max(12, width / 48)}px sans-serif`;
+  context.textAlign = "center";
+  context.fillText("처음 위치", faceX, Math.max(18, faceY - faceRadiusY - 10));
   context.restore();
 }
 
@@ -300,6 +404,107 @@ function drawNeckGuide(
   context.stroke();
 }
 
+function drawArmAndHandGuides(
+  context: CanvasRenderingContext2D,
+  pose: Landmark[],
+  width: number,
+  height: number,
+  color: string,
+): void {
+  const sides = [
+    { arm: [11, 13, 15], hand: [15, 17, 19, 21] },
+    { arm: [12, 14, 16], hand: [16, 18, 20, 22] },
+  ];
+  context.save();
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  context.lineWidth = Math.max(2, width / 480);
+  context.setLineDash([]);
+  for (const side of sides) {
+    const armVisible = side.arm.every((index) => pose[index] && (pose[index].visibility ?? 1) >= 0.25);
+    if (!armVisible) continue;
+    drawPath(context, pose, side.arm, width, height);
+    for (const index of side.arm.slice(1)) {
+      drawPoint(context, pose[index], width, height, Math.max(2.4, width / 340));
+    }
+    const visibleHand = side.hand.filter((index) => pose[index] && (pose[index].visibility ?? 1) >= 0.2);
+    if (visibleHand.length < 3) continue;
+    context.globalAlpha = 0.82;
+    for (const index of visibleHand.slice(1)) drawPath(context, pose, [side.hand[0], index], width, height);
+    const palm = visibleHand.slice(1).map((index) => toCanvasPoint(pose[index], width, height));
+    if (palm.length >= 3) {
+      context.beginPath();
+      context.moveTo(palm[0].x, palm[0].y);
+      palm.slice(1).forEach((point) => context.lineTo(point.x, point.y));
+      context.closePath();
+      context.globalAlpha = 0.12;
+      context.fill();
+      context.globalAlpha = 0.82;
+      context.stroke();
+    }
+    for (const index of visibleHand) drawPoint(context, pose[index], width, height, Math.max(2, width / 390));
+    context.globalAlpha = 1;
+  }
+  context.restore();
+}
+
+function drawTorsoAxis(
+  context: CanvasRenderingContext2D,
+  face: Landmark[] | null,
+  pose: Landmark[],
+  width: number,
+  height: number,
+  color: string,
+): void {
+  const shoulderCenter = midpoint(toCanvasPoint(pose[11], width, height), toCanvasPoint(pose[12], width, height));
+  const neckStart = face !== null
+    ? faceOvalExitToward(face, shoulderCenter, width, height)
+    : shoulderCenter;
+  const measuredHipCenter = midpoint(toCanvasPoint(pose[23], width, height), toCanvasPoint(pose[24], width, height));
+  const availableHeight = Math.max(1, height * 0.96 - shoulderCenter.y);
+  const measuredHeight = Math.max(1, measuredHipCenter.y - shoulderCenter.y);
+  const visibleRatio = Math.min(1, availableHeight / measuredHeight);
+  const hipCenter = {
+    x: shoulderCenter.x + (measuredHipCenter.x - shoulderCenter.x) * visibleRatio,
+    y: shoulderCenter.y + (measuredHipCenter.y - shoulderCenter.y) * visibleRatio,
+  };
+  context.strokeStyle = color;
+  context.lineWidth = Math.max(2.6, width / 420);
+  context.setLineDash([]);
+  context.lineJoin = "round";
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(neckStart.x, neckStart.y);
+  context.lineTo(shoulderCenter.x, shoulderCenter.y);
+  context.lineTo(hipCenter.x, hipCenter.y);
+  context.stroke();
+}
+
+function faceOvalExitToward(
+  face: Landmark[],
+  target: { x: number; y: number },
+  width: number,
+  height: number,
+): { x: number; y: number } {
+  const points = FACE_OVAL_PATH.map((index) => toCanvasPoint(face[index], width, height));
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const center = { x: (minX + maxX) * 0.5, y: (minY + maxY) * 0.5 };
+  const radiusX = Math.max(1, (maxX - minX) * 0.5);
+  const radiusY = Math.max(1, (maxY - minY) * 0.5);
+  const dx = target.x - center.x;
+  const dy = target.y - center.y;
+  const scale = 1 / Math.max(Math.sqrt((dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY)), 1e-6);
+  return {
+    x: center.x + dx * scale,
+    y: center.y + dy * scale,
+  };
+}
+
 function drawAngleLabels(
   context: CanvasRenderingContext2D,
   face: Landmark[] | null,
@@ -317,6 +522,12 @@ function drawAngleLabels(
   if (pose && angles.shoulderTiltDegrees !== null) {
     const center = midpoint(toCanvasPoint(pose[11], width, height), toCanvasPoint(pose[12], width, height));
     labels.push({ text: `어깨 ${angles.shoulderTiltDegrees.toFixed(1)}°`, x: center.x + 8, y: center.y + 18 });
+  }
+  if (pose && pose.length > 24 && angles.torsoTiltDegrees !== null) {
+    const shoulderCenter = midpoint(toCanvasPoint(pose[11], width, height), toCanvasPoint(pose[12], width, height));
+    const hipCenter = midpoint(toCanvasPoint(pose[23], width, height), toCanvasPoint(pose[24], width, height));
+    const center = midpoint(shoulderCenter, hipCenter);
+    labels.push({ text: `상체 축 ${angles.torsoTiltDegrees.toFixed(1)}°`, x: center.x + 8, y: center.y });
   }
   const fontSize = Math.max(9, Math.min(13, width / 55));
   context.font = `600 ${fontSize}px system-ui, sans-serif`;
@@ -345,7 +556,7 @@ function drawPath(
   context.beginPath();
   path.forEach((index, position) => {
     const point = landmarks[index];
-    const x = (1 - point.x) * width;
+    const x = normalizedXToMirroredCanvas(point.x, width);
     const y = point.y * height;
     if (position === 0) context.moveTo(x, y);
     else context.lineTo(x, y);
@@ -361,12 +572,16 @@ function drawPoint(
   radius: number,
 ): void {
   context.beginPath();
-  context.arc((1 - point.x) * width, point.y * height, radius, 0, Math.PI * 2);
+  context.arc(normalizedXToMirroredCanvas(point.x, width), point.y * height, radius, 0, Math.PI * 2);
   context.fill();
 }
 
 function toCanvasPoint(point: Landmark, width: number, height: number): { x: number; y: number } {
-  return { x: (1 - point.x) * width, y: point.y * height };
+  return { x: normalizedXToMirroredCanvas(point.x, width), y: point.y * height };
+}
+
+export function normalizedXToMirroredCanvas(normalizedX: number, canvasWidth: number): number {
+  return (1 - normalizedX) * canvasWidth;
 }
 
 function midpoint(a: { x: number; y: number }, b: { x: number; y: number }): { x: number; y: number } {

@@ -12,6 +12,9 @@ export const WAKE_UP_VIDEO_PATHS = [
   "/media/drowsy-video-10.mp4",
 ] as const;
 
+// Study Mode uses a dedicated upbeat clip after a normally completed session.
+export const STUDY_PRAISE_VIDEO_PATH = WAKE_UP_VIDEO_PATHS[10];
+
 export type WakeUpVideoId = "video-0" | "video-1" | "video-2" | "video-3" | "video-4" | "video-5" | "video-6" | "video-7" | "video-8" | "video-9" | "video-10";
 
 export interface WakeUpVideoProfile {
@@ -91,13 +94,28 @@ export function orderWakeUpVideoProfiles(downloadedIds: readonly WakeUpVideoId[]
 
 export const WAKE_UP_COUNT_THRESHOLDS = {
   eyeDurationMs: 2_000,
-  combinedDurationMs: 1_500,
+  combinedDurationMs: 2_000,
   headDurationMs: 2_000,
   forceDurationMs: 4_000,
   eventCount: 2,
+  recoveryDurationMs: 1_000,
 } as const;
 
 export type WakeUpReason = "EYES" | "HEAD" | "COMBINED";
+
+export interface AlertLatchState {
+  active: boolean;
+  clearedAtMs: number | null;
+}
+
+export function advanceAlertLatch(state: AlertLatchState, active: boolean, nowMs: number): AlertLatchState {
+  if (active) return { active: true, clearedAtMs: null };
+  if (!state.active) return { active: false, clearedAtMs: null };
+  const clearedAtMs = state.clearedAtMs ?? nowMs;
+  return nowMs - clearedAtMs >= WAKE_UP_COUNT_THRESHOLDS.recoveryDurationMs
+    ? { active: false, clearedAtMs: null }
+    : { active: true, clearedAtMs };
+}
 
 export interface WakeUpDecisionInput {
   eyeAlertActive: boolean;

@@ -4,6 +4,8 @@ import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type Poi
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { removeBottomBannerAd, showBottomBannerAd, showMenuInterstitialAd, showRewardedDownloadAd } from "./ads";
+import { cameraErrorMessage, requestUserCamera, waitForUsableVideoFrame } from "./cameraAccess";
+import { applyNativeSafeAreaInsets } from "./displayControl";
 import { FIRST_RUN_NOTICE_ACKNOWLEDGED, FIRST_RUN_NOTICE_STORAGE_KEY, shouldShowFirstRunNotice } from "./firstRunNotice";
 import { DriverMonitor, type MonitorSnapshot } from "./monitor";
 import { getMeditationGuidance } from "./meditation";
@@ -11,6 +13,23 @@ import { REMOVE_ADS_PRODUCT_ID, purchaseRemoveAds, restoreRemoveAdsPurchase } fr
 import { getKoreanSpeechStatus, speakKorean, stopKoreanSpeech } from "./speech";
 import { DEFAULT_VOICE_PROFILE } from "./voiceProfiles";
 import { SignInterpreterScreen } from "./SignInterpreterScreen";
+import { StudyModeScreen } from "./StudyModeScreen";
+import { STUDY_REWARDS_STORAGE_KEY, loadStudyRewardState, studyRewardPath } from "./studyRewards";
+import {
+  STUDY_ENDING_LIBRARY_STORAGE_KEY,
+  STUDY_ENDING_VIDEO_PROFILES,
+  STUDY_WARNING_LIBRARY_STORAGE_KEY,
+  STUDY_WARNING_VIDEO_PROFILES,
+  addDownloadedStudyVideo,
+  applyDownloadedStudyVideo,
+  getStudyEndingVideoProfile,
+  getStudyWarningVideoProfile,
+  loadStudyEndingLibraryState,
+  loadStudyWarningLibraryState,
+  type StudyEndingVideoId,
+  type StudyVideoLibraryState,
+  type StudyWarningVideoId,
+} from "./studyVideoProfiles";
 import {
   MobileVisionEngine,
   VisionFrameUnavailableError,
@@ -28,6 +47,7 @@ import {
 import {
   WAKE_UP_LIBRARY_STORAGE_KEY,
   addDownloadedWakeUpVideo,
+  advanceAlertLatch,
   applyDownloadedWakeUpVideo,
   getAppliedWakeUpVideoPath,
   getForcedWakeUpReason,
@@ -54,12 +74,12 @@ interface WakeLockSentinelLike extends EventTarget {
 type RunState = "READY" | "LOADING" | "RUNNING" | "ERROR";
 type CameraPermission = "CHECKING" | "PROMPT" | "GRANTED" | "DENIED" | "UNAVAILABLE";
 type MobileTab = "MONITOR" | "SETTINGS";
-type AppModule = "HOME" | "DROWSINESS" | "POSTURE" | "MEDITATION" | "SIGN" | "WIDGET";
+type AppModule = "HOME" | "DROWSINESS" | "STUDY" | "POSTURE" | "MEDITATION" | "SIGN" | "WIDGET";
 type TimelineMode = "DROWSINESS" | "POSTURE";
 
 interface TimelineSample {
   elapsedSeconds: number;
-  risk: 0 | 1 | 2;
+  risk: 0 | 1 | 2 | 3;
   eyeCount: number;
   headCount: number;
   auxiliaryCount: number;
@@ -71,6 +91,9 @@ const ACTIVE_MONITOR_MODULE_STORAGE_KEY = "suha.active-monitor-module.v1";
 
 function loadActiveMonitorModule(): AppModule {
   try {
+    if (new URLSearchParams(window.location.search).get("mode")?.toLowerCase() === "study") {
+      return "STUDY";
+    }
     const saved = sessionStorage.getItem(ACTIVE_MONITOR_MODULE_STORAGE_KEY);
     return saved === "DROWSINESS" || saved === "POSTURE" ? saved : "HOME";
   } catch {
@@ -102,6 +125,8 @@ const initialSnapshot: MonitorSnapshot = {
   closedDurationMs: 0,
   headDown: false,
   headDownDurationMs: 0,
+  baselineDeviated: false,
+  baselineGuide: null,
   combinedDurationMs: 0,
   bodyCollapseDurationMs: 0,
   bodyCollapseCountReady: false,
@@ -112,6 +137,7 @@ const initialSnapshot: MonitorSnapshot = {
   postureMessage: "기준 측정 전입니다.",
   shoulderTiltDegrees: null,
   headLeanDegrees: null,
+  torsoLeanDegrees: null,
   forwardHeadPercent: null,
   cameraViewAngleDegrees: null,
   cameraView: "UNKNOWN",
@@ -143,11 +169,13 @@ function App() {
   const lastAlertRef = useRef(0);
   const eyeClosureAlertActiveRef = useRef(false);
   const headDownAlertActiveRef = useRef(false);
-  const headDownCountActiveRef = useRef(false);
+  const eyeAlertClearedAtRef = useRef<number | null>(null);
+  const headAlertClearedAtRef = useRef<number | null>(null);
   const eyeClosureAlertCountRef = useRef(0);
   const headDownAlertCountRef = useRef(0);
   const sessionEyeClosureCountRef = useRef(0);
   const sessionHeadDownCountRef = useRef(0);
+  const sessionVideoWarningCountRef = useRef(0);
   const postureBlinkActiveRef = useRef(false);
   const postureHeadDownActiveRef = useRef(false);
   const postureSeatAwayActiveRef = useRef(false);
@@ -180,10 +208,25 @@ function App() {
   const [pendingWakeUpApplyId, setPendingWakeUpApplyId] = useState<WakeUpVideoId | null>(null);
   const [wakeUpDownloadBusy, setWakeUpDownloadBusy] = useState(false);
   const [, setWakeUpLibraryFeedback] = useState("");
+  const [studyWarningLibrary, setStudyWarningLibrary] = useState<StudyVideoLibraryState<StudyWarningVideoId>>(
+    () => loadStudyWarningLibraryState(localStorage.getItem(STUDY_WARNING_LIBRARY_STORAGE_KEY)),
+  );
+  const [selectedStudyWarningVideoId, setSelectedStudyWarningVideoId] = useState<StudyWarningVideoId>(
+    () => loadStudyWarningLibraryState(localStorage.getItem(STUDY_WARNING_LIBRARY_STORAGE_KEY)).appliedId,
+  );
+  const [studyWarningDownloadBusy, setStudyWarningDownloadBusy] = useState(false);
+  const [studyEndingLibrary, setStudyEndingLibrary] = useState<StudyVideoLibraryState<StudyEndingVideoId>>(
+    () => loadStudyEndingLibraryState(localStorage.getItem(STUDY_ENDING_LIBRARY_STORAGE_KEY)),
+  );
+  const [selectedStudyEndingVideoId, setSelectedStudyEndingVideoId] = useState<StudyEndingVideoId>(
+    () => loadStudyEndingLibraryState(localStorage.getItem(STUDY_ENDING_LIBRARY_STORAGE_KEY)).appliedId,
+  );
+  const [studyEndingDownloadBusy, setStudyEndingDownloadBusy] = useState(false);
   const [meditationSeconds, setMeditationSeconds] = useState(300);
   const [meditationRunning, setMeditationRunning] = useState(false);
   const [showDrowsyNotice, setShowDrowsyNotice] = useState(false);
   const [showSignComingSoon, setShowSignComingSoon] = useState(false);
+  const [comingSoonModule, setComingSoonModule] = useState<"SIGN" | "POSTURE" | "MEDITATION">("SIGN");
   const [adsRemoved, setAdsRemoved] = useState(loadAdsRemoved);
   const [showRemoveAdsDialog, setShowRemoveAdsDialog] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
@@ -217,6 +260,8 @@ function App() {
     }
     wakeUpVideoPlayingRef.current = false;
     eyeClosureAlertActiveRef.current = false;
+    eyeAlertClearedAtRef.current = null;
+    headAlertClearedAtRef.current = null;
     eyeClosureAlertCountRef.current = 0;
     headDownAlertCountRef.current = 0;
     setWakeUpVideoPlaying(false);
@@ -244,7 +289,8 @@ function App() {
     cpuRecoveryUsedRef.current = false;
     resetWakeUpVideo();
     headDownAlertActiveRef.current = false;
-    headDownCountActiveRef.current = false;
+    eyeAlertClearedAtRef.current = null;
+    headAlertClearedAtRef.current = null;
     postureBlinkActiveRef.current = false;
     postureHeadDownActiveRef.current = false;
     postureSeatAwayActiveRef.current = false;
@@ -291,7 +337,6 @@ function App() {
         const drowsinessCounting = activeModuleRef.current === "DROWSINESS";
         const eyeClosureAlertActive = drowsinessCounting && wakeUpCountActivity.eye;
         const headDownAlertActive = drowsinessCounting && wakeUpCountActivity.head;
-        const headDownCountActive = headDownAlertActive;
         const forcedWakeUpReason = drowsinessCounting ? getForcedWakeUpReason(next) : null;
         if (forcedWakeUpReason === null) forcedWakeUpActiveRef.current = false;
         const wakeUpDecision = getWakeUpDecision({
@@ -308,8 +353,8 @@ function App() {
           sessionEyeClosureCountRef.current += 1;
           setSessionEyeClosureCount(sessionEyeClosureCountRef.current);
         }
-        headDownAlertCountRef.current = wakeUpDecision.headDownCount;
-        if (headDownCountActive && !headDownCountActiveRef.current) {
+        if (wakeUpDecision.headDownCount !== headDownAlertCountRef.current) {
+          headDownAlertCountRef.current = wakeUpDecision.headDownCount;
           sessionHeadDownCountRef.current += 1;
           setSessionHeadDownCount(sessionHeadDownCountRef.current);
         }
@@ -326,7 +371,7 @@ function App() {
         }
         const postureSeatAwayActive = postureMonitoring
           && next.trigger === "FACE_MISSING"
-          && (next.status === "WARNING" || next.status === "ALARM");
+          && (next.status === "WARNING" || next.status === "DANGER");
         if (postureSeatAwayActive && !postureSeatAwayActiveRef.current) {
           postureSeatAwayCountRef.current += 1;
           setPostureSeatAwayCount(postureSeatAwayCountRef.current);
@@ -348,36 +393,46 @@ function App() {
           setEyeClosureAlertCount(0);
           setSessionEyeClosureCount(0);
           setSessionHeadDownCount(0);
+          sessionVideoWarningCountRef.current += 1;
           wakeUpVideoPlayingRef.current = true;
           setWakeUpVideoNeedsTap(false);
           setWakeUpVideoPlaying(true);
           void stopKoreanSpeech();
         }
-        eyeClosureAlertActiveRef.current = eyeClosureAlertActive;
-        headDownAlertActiveRef.current = headDownAlertActive;
-        headDownCountActiveRef.current = headDownCountActive;
+        updateAlertLatch(eyeClosureAlertActiveRef, eyeAlertClearedAtRef, eyeClosureAlertActive, now);
+        updateAlertLatch(headDownAlertActiveRef, headAlertClearedAtRef, headDownAlertActive, now);
         postureBlinkActiveRef.current = postureBlinkActive;
         postureHeadDownActiveRef.current = postureHeadDownActive;
         postureSeatAwayActiveRef.current = postureSeatAwayActive;
         const timelineMode = activeModuleRef.current === "POSTURE" ? "POSTURE" : "DROWSINESS";
         if (next.status !== "CALIBRATING" && now - lastTimelineSampleRef.current >= 1_000) {
           lastTimelineSampleRef.current = now;
-          const risk: 0 | 1 | 2 = next.status === "ALARM"
-            ? 2
-            : next.status === "WARNING" || next.status === "NO_FACE" || next.postureStatus === "WARNING"
-              ? 1
-              : 0;
+          const risk: TimelineSample["risk"] = next.status === "DANGER"
+            ? 3
+            : next.status === "WARNING" || next.postureStatus === "WARNING"
+              ? 2
+              : next.status === "CAUTION" || next.status === "NO_FACE"
+                ? 1
+                : 0;
           const sample: TimelineSample = {
             elapsedSeconds: Math.max(0, (now - sessionStartedAtRef.current) / 1_000),
             risk,
             eyeCount: timelineMode === "POSTURE" ? postureBlinkCountRef.current : sessionEyeClosureCountRef.current,
             headCount: timelineMode === "POSTURE" ? postureHeadDownCountRef.current : sessionHeadDownCountRef.current,
-            auxiliaryCount: timelineMode === "POSTURE" ? postureSeatAwayCountRef.current : 0,
+            auxiliaryCount: timelineMode === "POSTURE" ? postureSeatAwayCountRef.current : sessionVideoWarningCountRef.current,
           };
           setTimelineSamples((samples) => [...samples, sample].slice(-300));
         }
-        const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "ALARM" || next.status === "WARNING");
-        drawLandmarks(canvas, video, frame, showWarning, activeModuleRef.current === "POSTURE");
+        const showWarning = activeModuleRef.current !== "MEDITATION" && (next.status === "DANGER" || next.status === "WARNING");
+        drawLandmarks(
+          canvas,
+          video,
+          frame,
+          showWarning,
+          activeModuleRef.current === "POSTURE",
+          activeModuleRef.current === "DROWSINESS" ? next.baselineGuide : null,
+          next.baselineDeviated,
+        );
       } catch (cause) {
         if (cause instanceof VisionFrameUnavailableError) {
           animationRef.current = requestAnimationFrame(runDetection);
@@ -443,6 +498,7 @@ function App() {
     resetWakeUpVideo();
     sessionEyeClosureCountRef.current = 0;
     sessionHeadDownCountRef.current = 0;
+    sessionVideoWarningCountRef.current = 0;
     setSessionEyeClosureCount(0);
     setSessionHeadDownCount(0);
     postureBlinkCountRef.current = 0;
@@ -603,19 +659,19 @@ function App() {
     if (runState !== "RUNNING") return;
     const handleOrientationChange = () => {
       stop();
-      setError("화면 방향이 변경되어 카메라를 안전하게 종료했습니다. 휴대폰을 세로로 놓고 다시 시작해 주세요.");
+      setError("화면 방향이 변경되어 카메라를 안전하게 종료했습니다. 현재 방향에서 다시 시작해 기준 위치를 측정해 주세요.");
     };
     window.addEventListener("orientationchange", handleOrientationChange);
     return () => window.removeEventListener("orientationchange", handleOrientationChange);
   }, [runState, stop]);
 
   useEffect(() => {
-    if (wakeUpVideoPlaying || activeModule === "MEDITATION" || !soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "AWAKE") return;
+    if (wakeUpVideoPlaying || activeModule === "MEDITATION" || !soundEnabled || runState !== "RUNNING" || snapshot.status === "CALIBRATING" || snapshot.status === "NORMAL") return;
     const now = Date.now();
-    const interval = snapshot.status === "ALARM" ? 2_500 : 7_000;
+    const interval = snapshot.status === "DANGER" ? 2_500 : snapshot.status === "WARNING" ? 5_000 : 7_000;
     if (now - lastAlertRef.current < interval) return;
     lastAlertRef.current = now;
-    beep(audioRef.current, snapshot.status === "ALARM");
+    beep(audioRef.current, snapshot.status === "DANGER");
     void speakKorean(snapshot.message).catch((cause) => {
       const message = cause instanceof Error ? cause.message : "음성 안내를 재생하지 못했습니다.";
       setVoiceFeedback(`${message} Android 설정에서 한국어 TTS를 확인해 주세요.`);
@@ -654,15 +710,6 @@ function App() {
   }, [activeModule, meditationGuidance.timerActive, meditationRunning]);
 
   useEffect(() => {
-    if (!showFirstRunNotice) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [showFirstRunNotice]);
-
-  useEffect(() => {
     // React StrictMode intentionally runs effect setup/cleanup twice in development.
     // Reset the mounted flag on every setup so the detection loop remains active
     // after StrictMode's simulated unmount.
@@ -686,22 +733,42 @@ function App() {
     }
   }, [activeModule]);
 
+  const bannerSuppressed = activeModule === "STUDY" || showDrowsyNotice || showFirstRunNotice || showRemoveAdsDialog || showSignComingSoon;
+
   useEffect(() => {
-    if (adsRemoved) void removeBottomBannerAd();
+    if (!isNativeApp) return;
+    let updateTimer = 0;
+    const updateInsets = () => {
+      window.clearTimeout(updateTimer);
+      updateTimer = window.setTimeout(() => void applyNativeSafeAreaInsets(), 120);
+    };
+    void applyNativeSafeAreaInsets();
+    window.addEventListener("resize", updateInsets);
+    window.addEventListener("orientationchange", updateInsets);
+    return () => {
+      window.clearTimeout(updateTimer);
+      window.removeEventListener("resize", updateInsets);
+      window.removeEventListener("orientationchange", updateInsets);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (adsRemoved || bannerSuppressed) void removeBottomBannerAd();
     else void showBottomBannerAd();
     return () => {
       void removeBottomBannerAd();
     };
-  }, [adsRemoved]);
+  }, [adsRemoved, bannerSuppressed]);
 
   const openModule = useCallback(async (module: AppModule) => {
     if (module === activeModuleRef.current) return;
-    if (module === "SIGN") {
+    if (module === "SIGN" || module === "POSTURE" || module === "MEDITATION") {
+      setComingSoonModule(module);
       setShowSignComingSoon(true);
       return;
     }
     if (!adsRemoved) await showMenuInterstitialAd();
-    if (module !== "DROWSINESS" && module !== "POSTURE") stop();
+    if (module !== "DROWSINESS") stop();
     activeModuleRef.current = module;
     meditationCueRef.current = "";
     if (module === "DROWSINESS") {
@@ -710,7 +777,6 @@ function App() {
     }
     setActiveModule(module);
     if (module === "DROWSINESS") setActiveTab("MONITOR");
-    if (module === "POSTURE") setActiveTab("MONITOR");
   }, [adsRemoved, stop]);
 
   const completeRemoveAdsPurchase = useCallback(() => {
@@ -939,6 +1005,72 @@ function App() {
     }
   }, [persistWakeUpLibrary, selectedWakeUpVideoId, wakeUpDownloadBusy, wakeUpLibrary]);
 
+  const persistStudyWarningLibrary = useCallback((next: StudyVideoLibraryState<StudyWarningVideoId>) => {
+    localStorage.setItem(STUDY_WARNING_LIBRARY_STORAGE_KEY, JSON.stringify(next));
+    setStudyWarningLibrary(next);
+  }, []);
+
+  const persistStudyEndingLibrary = useCallback((next: StudyVideoLibraryState<StudyEndingVideoId>) => {
+    localStorage.setItem(STUDY_ENDING_LIBRARY_STORAGE_KEY, JSON.stringify(next));
+    setStudyEndingLibrary(next);
+  }, []);
+
+  const downloadOrApplySelectedStudyWarningVideo = useCallback(async () => {
+    if (studyWarningDownloadBusy) return;
+    const profile = getStudyWarningVideoProfile(selectedStudyWarningVideoId);
+    if (studyWarningLibrary.downloadedIds.includes(profile.id)) {
+      persistStudyWarningLibrary(applyDownloadedStudyVideo(studyWarningLibrary, profile.id));
+      return;
+    }
+    setStudyWarningDownloadBusy(true);
+    try {
+      const rewarded = await showRewardedDownloadAd();
+      if (!rewarded) return;
+      const response = await fetch(profile.path, { cache: "force-cache" });
+      if (!response.ok) throw new Error("열공 경고 영상을 받지 못했습니다.");
+      if ("caches" in window) {
+        const cache = await window.caches.open("suha-study-warning-v1");
+        await cache.put(profile.path, response.clone());
+      }
+      persistStudyWarningLibrary(addDownloadedStudyVideo(studyWarningLibrary, profile.id));
+    } finally {
+      setStudyWarningDownloadBusy(false);
+    }
+  }, [
+    persistStudyWarningLibrary,
+    selectedStudyWarningVideoId,
+    studyWarningDownloadBusy,
+    studyWarningLibrary,
+  ]);
+
+  const downloadOrApplySelectedStudyEndingVideo = useCallback(async () => {
+    if (studyEndingDownloadBusy) return;
+    const profile = getStudyEndingVideoProfile(selectedStudyEndingVideoId);
+    if (studyEndingLibrary.downloadedIds.includes(profile.id)) {
+      persistStudyEndingLibrary(applyDownloadedStudyVideo(studyEndingLibrary, profile.id));
+      return;
+    }
+    setStudyEndingDownloadBusy(true);
+    try {
+      const rewarded = await showRewardedDownloadAd();
+      if (!rewarded) return;
+      const response = await fetch(profile.path, { cache: "force-cache" });
+      if (!response.ok) throw new Error("공부 종료 영상을 받지 못했습니다.");
+      if ("caches" in window) {
+        const cache = await window.caches.open("suha-study-ending-v1");
+        await cache.put(profile.path, response.clone());
+      }
+      persistStudyEndingLibrary(addDownloadedStudyVideo(studyEndingLibrary, profile.id));
+    } finally {
+      setStudyEndingDownloadBusy(false);
+    }
+  }, [
+    persistStudyEndingLibrary,
+    selectedStudyEndingVideoId,
+    studyEndingDownloadBusy,
+    studyEndingLibrary,
+  ]);
+
   const calibrating = snapshot.status === "CALIBRATING";
   const countdown = Math.max(1, Math.ceil(snapshot.calibrationRemainingMs / 1_000));
   const statusLabel = getStatusLabel(snapshot.status);
@@ -953,12 +1085,15 @@ function App() {
       {showFirstRunNotice && createPortal(<FirstRunNotice onConfirm={acknowledgeFirstRunNotice} />, document.body)}
       <header className="topbar">
         <div className="brand-lockup">
-          {activeModule !== "HOME" && <button className="header-icon back" onClick={goHome} aria-label="이전 화면">
+          {activeModule !== "HOME" && activeModule !== "STUDY" && <button className="header-icon back" onClick={goHome} aria-label="이전 화면">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>
           </button>}
-          <div className="brand" aria-label="졸방"><img src="/icon-192.png" alt="" /><span>졸방</span></div>
+          {activeModule !== "STUDY" && <div className="brand" aria-label="졸방">
+            <img src="/icon-192.png" alt="" />
+            <span>졸방</span>
+          </div>}
         </div>
-        <button className="header-icon" onClick={() => void (async () => {
+        {activeModule !== "STUDY" && <button className="header-icon" onClick={() => void (async () => {
           if (activeModule !== "DROWSINESS" && activeModule !== "POSTURE") {
             if (!adsRemoved) await showMenuInterstitialAd();
             stop();
@@ -966,7 +1101,7 @@ function App() {
             setActiveModule("DROWSINESS");
           }
           setActiveTab("SETTINGS");
-        })()} aria-label="설정 열기">⚙</button>
+        })()} aria-label="설정 열기">⚙</button>}
       </header>
 
       {activeModule === "HOME" && <HomeScreen
@@ -978,6 +1113,16 @@ function App() {
         downloadBusy={wakeUpDownloadBusy}
         onSelectWakeUpVideo={selectWakeUpVideo}
         onDownloadWakeUpVideo={() => void downloadSelectedWakeUpVideo()}
+        studyWarningLibrary={studyWarningLibrary}
+        selectedStudyWarningVideoId={selectedStudyWarningVideoId}
+        studyWarningDownloadBusy={studyWarningDownloadBusy}
+        onSelectStudyWarningVideo={setSelectedStudyWarningVideoId}
+        onDownloadOrApplyStudyWarningVideo={() => void downloadOrApplySelectedStudyWarningVideo()}
+        studyEndingLibrary={studyEndingLibrary}
+        selectedStudyEndingVideoId={selectedStudyEndingVideoId}
+        studyEndingDownloadBusy={studyEndingDownloadBusy}
+        onSelectStudyEndingVideo={setSelectedStudyEndingVideoId}
+        onDownloadOrApplyStudyEndingVideo={() => void downloadOrApplySelectedStudyEndingVideo()}
       />}
       {activeModule === "MEDITATION" && (
         <MeditationScreen
@@ -995,9 +1140,15 @@ function App() {
           onReset={() => { setMeditationRunning(false); setMeditationSeconds(300); meditationCueRef.current = ""; }}
         />
       )}
+      {activeModule === "STUDY" && <StudyModeScreen
+        onExit={goHome}
+        alertVideoPath={getStudyWarningVideoProfile(studyWarningLibrary.appliedId).path}
+        endingVideoPath={getStudyEndingVideoProfile(studyEndingLibrary.appliedId).path}
+        adsRemoved={adsRemoved}
+      />}
       {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => void openModule("WIDGET")} />}
       {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
-      {showSignComingSoon && <SignComingSoonDialog onClose={() => setShowSignComingSoon(false)} />}
+      {showSignComingSoon && <SignComingSoonDialog module={comingSoonModule} onClose={() => setShowSignComingSoon(false)} />}
 
       {(activeModule === "DROWSINESS" || activeModule === "POSTURE") && <>
 
@@ -1035,7 +1186,7 @@ function App() {
             <p>{runState === "LOADING" && cameraPermission !== "GRANTED"
               ? "브라우저의 카메라 권한 창에서 ‘허용’을 선택해 주세요. 허용 후 자동으로 시작합니다."
               : activeModule === "POSTURE"
-                ? "휴대폰을 고정하고 얼굴과 양쪽 어깨가 보이게 맞춰 주세요."
+                ? "휴대폰을 고정하고 얼굴부터 허리까지 보이게 맞춰 주세요."
                 : "휴대폰을 실제 사용할 위치에 고정하고 현재 각도에서 얼굴이 보이게 해 주세요."}</p>
             <div className={`permission-state ${cameraPermission.toLowerCase()}`}>{permissionLabel}</div>
           </div>
@@ -1052,11 +1203,11 @@ function App() {
                 {snapshot.calibrationStable ? countdown : "!"}
               </div>
               <div>
-                <strong>{snapshot.calibrationStable ? "현재 위치를 유지해 주세요" : activeModule === "POSTURE" ? "얼굴과 어깨를 가이드에 맞춰 주세요" : "평소 운전 자세를 유지해 주세요"}</strong>
+                <strong>{snapshot.calibrationStable ? "현재 위치를 유지해 주세요" : activeModule === "POSTURE" ? "얼굴·양쪽 어깨·허리선을 화면에 맞춰 주세요" : "평소 운전 자세를 유지해 주세요"}</strong>
                 <p>{snapshot.message}</p>
               </div>
               <div className="progress-track"><i style={{ width: `${snapshot.calibrationProgress * 100}%` }} /></div>
-              <small>{activeModule === "POSTURE" ? "얼굴 전체와 양쪽 어깨가 화면에 보여야 합니다" : "정면·사선·측면 모두 현재 보이는 모습을 기준으로 측정합니다"}</small>
+              <small>{activeModule === "POSTURE" ? "어깨선과 목에서 허리로 이어지는 상체 축을 함께 측정합니다" : "정면·사선·측면 모두 현재 보이는 모습을 기준으로 측정합니다"}</small>
             </div>
           </div>
         )}
@@ -1067,6 +1218,7 @@ function App() {
         )}
         {activeModule === "DROWSINESS" && runState === "RUNNING" && !calibrating && (
           <div className="drowsy-camera-signals" aria-label="졸음운전 감지 상태">
+            <span className={snapshot.baselineDeviated ? "active baseline" : ""}><i />기준 자세 이탈</span>
             <span className={snapshot.eyesClosed ? "active" : ""}><i />눈 감김</span>
             <span className={snapshot.headDown ? "active" : ""}><i />고개 숙임</span>
           </div>
@@ -1102,6 +1254,25 @@ function App() {
             <article className="posture-count-card"><span>자리 이탈</span><strong>{postureSeatAwayCount}회</strong><small>{snapshot.trigger === "FACE_MISSING" ? "자리 확인 필요" : "자리 유지"}</small></article>
           </>
         </div>}
+        {runState !== "RUNNING" && !calibrating && (
+          <section className="monitor-start-guide" aria-label="기본 위치 설정 안내">
+            <div className="monitor-start-guide-heading"><span>START GUIDE</span><strong>기본 위치를 먼저 맞춰요</strong></div>
+            <p>휴대폰을 실제 사용할 위치에 고정한 뒤 시작을 누르면, 현재 화면을 기준으로 5초 측정 후 감지를 시작합니다.</p>
+            <div className="monitor-start-steps"><span><b>1</b>얼굴이 화면 중앙</span><span><b>2</b>눈·고개가 보임</span><span><b>3</b>흔들림 없이 유지</span></div>
+          </section>
+        )}
+        <nav className={`controls ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label="감지 제어">
+          {runState === "RUNNING" ? (
+            <>
+              <button className="primary stop portrait-stop" onClick={stop}><span className="stop-icon" />감지 종료</button>
+              <LandscapeStopButton onStop={stop} />
+            </>
+          ) : (
+            <button className="primary" onClick={() => void start()} disabled={runState === "LOADING" || cameraPermission === "UNAVAILABLE"}>
+              <span className="play-icon" />{runState === "LOADING" ? "준비 중…" : "기본 위치 설정 후 시작"}
+            </button>
+          )}
+        </nav>
         <DetectionTimeline
           samples={timelineSamples}
           mode={activeModule === "POSTURE" ? "POSTURE" : "DROWSINESS"}
@@ -1130,7 +1301,7 @@ function App() {
             <div className="posture-metrics">
               <label><span>촬영 각도</span><b>{formatView(snapshot.cameraView, snapshot.cameraViewAngleDegrees)}</b></label>
               <label><span>어깨 수평</span><b>{formatSignedDegrees(snapshot.shoulderTiltDegrees)}</b></label>
-              <label><span>머리 기울기</span><b>{formatDegrees(snapshot.headLeanDegrees)}</b></label>
+              <label><span>상체 축</span><b>{formatDegrees(snapshot.torsoLeanDegrees)}</b></label>
               <label><span>앞쪽 이동</span><b>{formatPercent(snapshot.forwardHeadPercent)}</b></label>
             </div>
             <small className="confidence">3D 추정 신뢰도 {Math.round(snapshot.postureConfidence * 100)}% · 5프레임 흔들림 보정</small>
@@ -1145,16 +1316,6 @@ function App() {
           </article>}
         </div>}
       </section>
-
-      <nav className={`controls ${activeTab!=="MONITOR"?"mobile-screen-hidden":""}`} aria-label="감지 제어">
-        {runState === "RUNNING" ? (
-          <button className="primary stop" onClick={stop}><span className="stop-icon" />감지 종료</button>
-        ) : (
-          <button className="primary" onClick={() => void start()} disabled={runState === "LOADING" || cameraPermission === "UNAVAILABLE"}>
-            <span className="play-icon" />{runState === "LOADING" ? "준비 중…" : "5초 측정 후 감지 시작"}
-          </button>
-        )}
-      </nav>
 
       {activeTab==="SETTINGS"&&<section className="mobile-settings" aria-label="앱 설정">
         <div className="settings-heading"><span className="eyebrow">APP SETTINGS</span><h1>설정</h1><p>운전 중에는 조작하지 말고 출발 전에 설정해 주세요.</p></div>
@@ -1193,14 +1354,22 @@ function App() {
   );
 }
 
+function LandscapeStopButton({ onStop }: { onStop(): void }) {
+  return <button
+    className="primary stop landscape-stop"
+    onClick={onStop}
+    aria-label="종료하기"
+  ><span className="stop-icon" /><span>종료하기</span></button>;
+}
+
 function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode: TimelineMode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const latestRisk = samples.at(-1)?.risk ?? 0;
-  const riskLabel = latestRisk === 2 ? "위험" : latestRisk === 1 ? "주의" : "정상";
-  const riskClass = latestRisk === 2 ? "danger" : latestRisk === 1 ? "warning" : "normal";
+  const riskLabel = latestRisk === 3 ? "위험" : latestRisk === 2 ? "경고" : latestRisk === 1 ? "주의" : "정상";
+  const riskClass = latestRisk === 3 ? "danger" : latestRisk === 2 ? "warning" : latestRisk === 1 ? "caution" : "normal";
   const eventLabels = mode === "POSTURE"
     ? ["눈 깜박임", "고개 숙임", "자리 이탈"]
-    : ["눈 감김", "고개 숙임", "쓰러짐"];
+    : ["눈 감김", "고개 숙임", "영상 경고"];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1210,32 +1379,51 @@ function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode:
       if (bounds.width <= 0) return;
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(bounds.width * ratio);
-      canvas.height = Math.round(160 * ratio);
+      const height = Math.max(120, bounds.height || 160);
+      canvas.height = Math.round(height * ratio);
       const context = canvas.getContext("2d");
       if (!context) return;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
       const width = bounds.width;
-      const height = 160;
       const top = 12;
-      const graphBottom = 116;
-      const eventRows = [132, 143, 154];
-      const yForRisk = (risk: TimelineSample["risk"]) => graphBottom - risk * 44;
+      const eventLaneTop = height - 38;
+      const graphBottom = eventLaneTop - 8;
+      const eventRows = [eventLaneTop + 8, eventLaneTop + 19, eventLaneTop + 30];
+      const stageHeight = (graphBottom - top) / 3;
+      const yForRisk = (risk: TimelineSample["risk"]) => graphBottom - risk * stageHeight;
       context.clearRect(0, 0, width, height);
 
-      context.fillStyle = "rgba(255,104,97,.035)";
-      context.fillRect(0, top, width, 34);
-      context.fillStyle = "rgba(255,183,77,.025)";
-      context.fillRect(0, 46, width, 44);
+      context.fillStyle = "rgba(255,104,97,.04)";
+      context.fillRect(0, top, width, stageHeight);
+      context.fillStyle = "rgba(255,151,57,.03)";
+      context.fillRect(0, top + stageHeight, width, stageHeight);
+      context.fillStyle = "rgba(255,214,84,.025)";
+      context.fillRect(0, top + stageHeight * 2, width, stageHeight);
       context.strokeStyle = "rgba(139,188,170,.13)";
       context.lineWidth = 1;
       context.setLineDash([3, 5]);
-      [28, 72, 116].forEach((y) => {
+      [0, 1, 2, 3].map((stage) => top + stageHeight * stage).forEach((y) => {
         context.beginPath();
         context.moveTo(0, y + .5);
         context.lineTo(width, y + .5);
         context.stroke();
       });
       context.setLineDash([]);
+
+      context.fillStyle = "rgba(126,200,173,.035)";
+      context.fillRect(0, eventLaneTop, width, height - eventLaneTop);
+      context.strokeStyle = "rgba(126,200,173,.18)";
+      context.beginPath();
+      context.moveTo(0, eventLaneTop + .5);
+      context.lineTo(width, eventLaneTop + .5);
+      context.stroke();
+      context.strokeStyle = "rgba(126,200,173,.07)";
+      for (const row of eventRows) {
+        context.beginPath();
+        context.moveTo(0, row + .5);
+        context.lineTo(width, row + .5);
+        context.stroke();
+      }
 
       if (samples.length === 0) return;
       const lastSecond = samples.at(-1)?.elapsedSeconds ?? 0;
@@ -1262,8 +1450,8 @@ function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode:
         const y = yForRisk(sample.risk);
         if (sample.risk > 0 || index === visibleSamples.length - 1) {
           context.beginPath();
-          context.fillStyle = sample.risk === 2 ? "#ff6861" : sample.risk === 1 ? "#ffb74d" : mode === "POSTURE" ? "#67c9ff" : "#45e5a4";
-          context.arc(x, y, sample.risk === 2 ? 4 : 3, 0, Math.PI * 2);
+          context.fillStyle = sample.risk === 3 ? "#ff6861" : sample.risk === 2 ? "#ff9739" : sample.risk === 1 ? "#ffd654" : mode === "POSTURE" ? "#67c9ff" : "#45e5a4";
+          context.arc(x, y, sample.risk === 3 ? 4 : 3, 0, Math.PI * 2);
           context.fill();
         }
         const previous = visibleSamples[index - 1];
@@ -1271,10 +1459,13 @@ function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode:
         const currentCounts = [sample.eyeCount, sample.headCount, sample.auxiliaryCount];
         currentCounts.forEach((count, eventIndex) => {
           if (count <= previousCounts[eventIndex]) return;
+          context.strokeStyle = ["#75d9ff", "#ffbe61", "#ff7470"][eventIndex];
+          context.lineWidth = 3;
+          context.lineCap = "round";
           context.beginPath();
-          context.fillStyle = ["#75d9ff", "#ffbe61", "#ff7470"][eventIndex];
-          context.arc(x, eventRows[eventIndex], 3, 0, Math.PI * 2);
-          context.fill();
+          context.moveTo(x, eventRows[eventIndex] - 3);
+          context.lineTo(x, eventRows[eventIndex] + 3);
+          context.stroke();
         });
       });
     };
@@ -1290,7 +1481,7 @@ function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode:
       <div className="timeline-status"><i className={riskClass} />현재 {riskLabel}</div>
     </header>
     <div className="timeline-chart">
-      <div className="timeline-axis" aria-hidden="true"><span>위험</span><span>주의</span><span>정상</span></div>
+      <div className="timeline-axis" aria-hidden="true"><span>위험</span><span>경고</span><span>주의</span><span>정상</span><small>감지<br />기록</small></div>
       <canvas ref={canvasRef} className="timeline-canvas" role="img" aria-label={`최근 5분 ${eventLabels.join(", ")} 상태 그래프`} />
     </div>
     <div className="timeline-footer">
@@ -1299,7 +1490,7 @@ function DetectionTimeline({ samples, mode }: { samples: TimelineSample[]; mode:
       </div>
       <small>최근 5분 · 1초 간격</small>
     </div>
-    {samples.length < 2 && <p className="timeline-empty">감지를 시작하면 시간에 따른 정상·주의·위험 변화가 여기에 기록됩니다.</p>}
+    {samples.length < 2 && <p className="timeline-empty">감지를 시작하면 정상·주의·경고·위험 변화가 여기에 기록됩니다.</p>}
   </section>;
 }
 
@@ -1336,13 +1527,18 @@ function RemoveAdsDialog({ adsRemoved, busy, feedback, onBuy, onClose, onRestore
   </div>;
 }
 
-function SignComingSoonDialog({ onClose }: { onClose(): void }) {
+function SignComingSoonDialog({ module, onClose }: { module: "SIGN" | "POSTURE" | "MEDITATION"; onClose(): void }) {
+  const content = module === "POSTURE"
+    ? { kicker: "POSTURE", description: "더 정확하고 편안한 자세 교정 기능을 준비하고 있습니다." }
+    : module === "MEDITATION"
+      ? { kicker: "MINDFUL BREATH", description: "편안하게 쉴 수 있는 호흡 안내 기능을 준비하고 있습니다." }
+      : { kicker: "KSL CARE", description: "더 정확하고 편안한 수어 통역 기능을 준비하고 있습니다." };
   return <div className="coming-soon-backdrop" onClick={onClose}>
-    <section className="coming-soon-dialog" role="dialog" aria-modal="true" aria-labelledby="sign-coming-soon-title" onClick={(event) => event.stopPropagation()}>
+    <section className="coming-soon-dialog" role="dialog" aria-modal="true" aria-labelledby="feature-coming-soon-title" onClick={(event) => event.stopPropagation()}>
       <span className="coming-soon-mark" aria-hidden="true">⌁</span>
-      <small>KSL CARE</small>
-      <h2 id="sign-coming-soon-title">현재 준비 중입니다</h2>
-      <p>더 정확하고 편안한 수어 통역 기능을 준비하고 있습니다.</p>
+      <small>{content.kicker}</small>
+      <h2 id="feature-coming-soon-title">현재 준비 중입니다</h2>
+      <p>{content.description}</p>
       <button onClick={onClose}>확인</button>
     </section>
   </div>;
@@ -1351,18 +1547,17 @@ function SignComingSoonDialog({ onClose }: { onClose(): void }) {
 function DrowsySafetyNotice({ onConfirm, onCancel }: { onConfirm(): void; onCancel(): void }) {
   return <div className="safety-modal-backdrop">
     <section className="safety-modal" role="dialog" aria-modal="true" aria-labelledby="drowsy-safety-title" aria-describedby="drowsy-safety-description">
-      <div className="safety-modal-icon" aria-hidden="true">!</div>
-      <span className="eyebrow">SAFETY FIRST</span>
-      <h2 id="drowsy-safety-title">졸음운전 안전 안내</h2>
-      <p id="drowsy-safety-description">이 기능을 사용하기 전에 아래 내용을 반드시 확인해 주세요.</p>
+      <div className="safety-modal-icon" aria-hidden="true">✓</div>
+      <span className="safety-kicker">안전 운전 약속</span>
+      <h2 id="drowsy-safety-title">안전하게 시작해요</h2>
+      <p id="drowsy-safety-description">출발 전에 3가지만 확인해 주세요.</p>
       <ul>
-        <li><b>운전 중에는 휴대전화를 조작하지 마세요.</b> 모든 설정은 출발 전에 완료해야 합니다.</li>
-        <li>본 앱은 졸음운전을 예방하거나 운전자의 안전을 보장하는 장치가 아닙니다.</li>
-        <li>피곤하거나 졸리면 즉시 휴게소·졸음쉼터 등 안전한 장소에 정차하고 충분히 휴식한 뒤 운전하세요.</li>
-        <li>앱의 경고보다 도로 상황과 운전자의 판단을 항상 우선하세요.</li>
+        <li><strong>휴대폰은 출발 전에 설정해요</strong><span>운전 중에는 화면을 만지지 마세요.</span></li>
+        <li><strong>졸리면 바로 쉬어가요</strong><span>안전한 곳에 정차하고 충분히 쉬세요.</span></li>
+        <li><strong>도로와 내 판단이 먼저예요</strong><span>앱 알림은 안전운전을 돕는 참고 기능이에요.</span></li>
       </ul>
-      <button className="safety-confirm" onClick={onConfirm}>확인했습니다</button>
-      <button className="safety-cancel" onClick={onCancel}>사용하지 않고 홈으로</button>
+      <button className="safety-confirm" onClick={onConfirm}>확인하고 시작</button>
+      <button className="safety-cancel" onClick={onCancel}>다음에 할게요</button>
     </section>
   </div>;
 }
@@ -1370,7 +1565,6 @@ function DrowsySafetyNotice({ onConfirm, onCancel }: { onConfirm(): void; onCanc
 function FirstRunNotice({ onConfirm }: { onConfirm(): void }) {
   return <div className="first-run-notice-backdrop">
     <section className="first-run-notice" role="dialog" aria-modal="true" aria-labelledby="first-run-notice-title" aria-describedby="first-run-notice-description">
-      <div className="first-run-notice-logo"><img src="/icon-192.png" alt="졸음운전 앱 로고" /></div>
       <span className="first-run-notice-badge">꼭 필독</span>
       <h2 id="first-run-notice-title">안심하고 이용해 주세요</h2>
       <div id="first-run-notice-description" className="first-run-notice-copy">
@@ -1393,6 +1587,16 @@ function HomeScreen({
   downloadBusy,
   onSelectWakeUpVideo,
   onDownloadWakeUpVideo,
+  studyWarningLibrary,
+  selectedStudyWarningVideoId,
+  studyWarningDownloadBusy,
+  onSelectStudyWarningVideo,
+  onDownloadOrApplyStudyWarningVideo,
+  studyEndingLibrary,
+  selectedStudyEndingVideoId,
+  studyEndingDownloadBusy,
+  onSelectStudyEndingVideo,
+  onDownloadOrApplyStudyEndingVideo,
 }: {
   onOpen(module: AppModule): void;
   widgetSettings: WidgetSettings;
@@ -1402,14 +1606,33 @@ function HomeScreen({
   downloadBusy: boolean;
   onSelectWakeUpVideo(id: WakeUpVideoId): void;
   onDownloadWakeUpVideo(): void;
+  studyWarningLibrary: StudyVideoLibraryState<StudyWarningVideoId>;
+  selectedStudyWarningVideoId: StudyWarningVideoId;
+  studyWarningDownloadBusy: boolean;
+  onSelectStudyWarningVideo(id: StudyWarningVideoId): void;
+  onDownloadOrApplyStudyWarningVideo(): void;
+  studyEndingLibrary: StudyVideoLibraryState<StudyEndingVideoId>;
+  selectedStudyEndingVideoId: StudyEndingVideoId;
+  studyEndingDownloadBusy: boolean;
+  onSelectStudyEndingVideo(id: StudyEndingVideoId): void;
+  onDownloadOrApplyStudyEndingVideo(): void;
 }) {
   const wakeProfileScrollRef = useRef<HTMLDivElement>(null);
   const wakeProfileDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; moved: boolean } | null>(null);
   const suppressWakeProfileClickRef = useRef(false);
+  const [homeMediaMode, setHomeMediaMode] = useState<"DROWSINESS" | "STUDY">("DROWSINESS");
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const selectedStudyReward = loadStudyRewardState(localStorage.getItem(STUDY_REWARDS_STORAGE_KEY)).selected;
   const orderedProfiles = orderWakeUpVideoProfiles(wakeUpLibrary.downloadedIds);
   const appliedProfile = getWakeUpVideoProfile(wakeUpLibrary.appliedId);
+  const appliedStudyWarningProfile = getStudyWarningVideoProfile(studyWarningLibrary.appliedId);
+  const appliedStudyEndingProfile = getStudyEndingVideoProfile(studyEndingLibrary.appliedId);
   const selectedDownloaded = wakeUpLibrary.downloadedIds.includes(selectedWakeUpVideoId);
   const selectedApplied = wakeUpLibrary.appliedId === selectedWakeUpVideoId;
+  const selectedStudyWarningDownloaded = studyWarningLibrary.downloadedIds.includes(selectedStudyWarningVideoId);
+  const selectedStudyWarningApplied = studyWarningLibrary.appliedId === selectedStudyWarningVideoId;
+  const selectedStudyEndingDownloaded = studyEndingLibrary.downloadedIds.includes(selectedStudyEndingVideoId);
+  const selectedStudyEndingApplied = studyEndingLibrary.appliedId === selectedStudyEndingVideoId;
 
   const beginWakeProfileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || event.button !== 0) return;
@@ -1453,11 +1676,146 @@ function HomeScreen({
 
   return <section className="mobile-home" aria-label="졸음운전 홈">
     <section className="wake-library" aria-label="졸음 깨우기 영상 보관함">
-      <header className="wake-library-heading">
+      <nav className="home-media-mode-switcher" aria-label="홈 영상 모드 선택">
+        <button
+          type="button"
+          className={`home-mode-card drive ${homeMediaMode === "DROWSINESS" ? "active" : ""}`}
+          aria-pressed={homeMediaMode === "DROWSINESS"}
+          onClick={() => setHomeMediaMode("DROWSINESS")}
+        >
+          <span className="home-mode-copy">
+            <small>DRIVE SAFE</small>
+            <strong>졸음운전 방지</strong>
+            <em>{appliedProfile.name}</em>
+          </span>
+          <span className="home-mode-profile-preview" aria-hidden="true">
+            <video key={`mode-drive-${appliedProfile.id}`} src={`${appliedProfile.path}#t=0.12`} muted playsInline preload="metadata" />
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`home-mode-card study ${homeMediaMode === "STUDY" ? "active" : ""}`}
+          aria-pressed={homeMediaMode === "STUDY"}
+          onClick={() => setHomeMediaMode("STUDY")}
+        >
+          <span className="home-mode-copy">
+            <small>STUDY FOCUS</small>
+            <strong>열공 모드</strong>
+            <em>{appliedStudyWarningProfile.name} · {appliedStudyEndingProfile.name}</em>
+          </span>
+          <span className="home-mode-profile-preview dual" aria-hidden="true">
+            <video key={`mode-study-warning-${appliedStudyWarningProfile.id}`} src={`${appliedStudyWarningProfile.path}#t=0.12`} muted playsInline preload="metadata" />
+            <video key={`mode-study-ending-${appliedStudyEndingProfile.id}`} src={`${appliedStudyEndingProfile.path}#t=0.12`} muted playsInline preload="metadata" />
+          </span>
+        </button>
+      </nav>
+      <button
+        type="button"
+        className={`home-mode-start-action ${homeMediaMode === "DROWSINESS" ? "drive" : "study"}`}
+        onClick={() => onOpen(homeMediaMode)}
+      >
+        <span className={`home-mode-start-icon ${homeMediaMode === "STUDY" ? "reward" : ""}`} aria-hidden="true">
+          {homeMediaMode === "STUDY" ? <img src={studyRewardPath(selectedStudyReward)} alt="" /> : "▶"}
+        </span>
+        <span>
+          <strong>{homeMediaMode === "DROWSINESS" ? "졸음운전 방지 시작" : "열공 모드 시작"}</strong>
+          <small>{homeMediaMode === "DROWSINESS"
+            ? `적용 중 · ${appliedProfile.name}`
+            : `경고 ${appliedStudyWarningProfile.name} · 종료 ${appliedStudyEndingProfile.name}`}</small>
+        </span>
+        <em aria-hidden="true">→</em>
+      </button>
+      {homeMediaMode === "STUDY" && <section className="study-media-library" aria-label="열공 모드 영상">
+        <section className="study-video-profile-group" aria-label="열공 경고 영상">
+          <header className="wake-library-heading">
+            <div><span>WARNING VIDEO</span><h1>경고 영상</h1><p>열공 중 경고 상황이 감지되면 재생됩니다.</p></div>
+            <em>{studyWarningLibrary.downloadedIds.length}/{STUDY_WARNING_VIDEO_PROFILES.length} 보유</em>
+          </header>
+          <div className="wake-profile-scroll study-video-profile-scroll" role="list">
+            {STUDY_WARNING_VIDEO_PROFILES.map((profile) => {
+              const downloaded = studyWarningLibrary.downloadedIds.includes(profile.id);
+              const selected = selectedStudyWarningVideoId === profile.id;
+              const applied = studyWarningLibrary.appliedId === profile.id;
+              return <button
+                key={profile.id}
+                type="button"
+                role="listitem"
+                className={`wake-profile-card study-video-profile-card ${selected ? "selected" : ""} ${downloaded ? "downloaded" : "locked"} ${applied ? "applied" : ""}`}
+                aria-pressed={selected}
+                onClick={() => onSelectStudyWarningVideo(profile.id)}
+              >
+                <span className="wake-profile-thumb">
+                  <video src={`${profile.path}#t=0.12`} muted playsInline preload="metadata" aria-hidden="true" />
+                  {applied && <i className="wake-profile-applied-mark">✓</i>}
+                  {!downloaded && <i className="wake-profile-lock" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6z" /></svg>
+                  </i>}
+                </span>
+                <strong>{profile.name}</strong>
+                <small>{applied ? "적용됨" : downloaded ? "다운로드됨" : selected ? "선택됨 · 광고로 받기" : "광고로 받기"}</small>
+              </button>;
+            })}
+          </div>
+          <div className="wake-library-action">
+            <button
+              type="button"
+              disabled={studyWarningDownloadBusy || selectedStudyWarningApplied}
+              className={selectedStudyWarningApplied ? "applied" : ""}
+              onClick={onDownloadOrApplyStudyWarningVideo}
+            >
+              {studyWarningDownloadBusy ? "광고 불러오는 중…" : selectedStudyWarningApplied ? "적용됨" : selectedStudyWarningDownloaded ? "적용하기" : "광고 시청 후 다운로드"}
+            </button>
+          </div>
+        </section>
+
+        <section className="study-video-profile-group" aria-label="공부 종료 영상">
+          <header className="wake-library-heading">
+            <div><span>FINISH VIDEO</span><h1>공부 종료 영상</h1><p>공부를 종료했을 때 재생됩니다.</p></div>
+            <em>{studyEndingLibrary.downloadedIds.length}/{STUDY_ENDING_VIDEO_PROFILES.length} 보유</em>
+          </header>
+          <div className="wake-profile-scroll study-finish-profile-scroll" role="list">
+            {STUDY_ENDING_VIDEO_PROFILES.map((profile) => {
+              const downloaded = studyEndingLibrary.downloadedIds.includes(profile.id);
+              const selected = selectedStudyEndingVideoId === profile.id;
+              const applied = studyEndingLibrary.appliedId === profile.id;
+              return <button
+                key={profile.id}
+                type="button"
+                role="listitem"
+                className={`wake-profile-card study-video-profile-card ${selected ? "selected" : ""} ${downloaded ? "downloaded" : "locked"} ${applied ? "applied" : ""}`}
+                aria-pressed={selected}
+                onClick={() => onSelectStudyEndingVideo(profile.id)}
+              >
+                <span className="wake-profile-thumb">
+                  <video src={`${profile.path}#t=0.12`} muted playsInline preload="metadata" aria-hidden="true" />
+                  {applied && <i className="wake-profile-applied-mark">✓</i>}
+                  {!downloaded && <i className="wake-profile-lock" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6z" /></svg>
+                  </i>}
+                </span>
+                <strong>{profile.name}</strong>
+                <small>{applied ? "적용됨" : downloaded ? "다운로드됨" : selected ? "선택됨 · 광고로 받기" : "광고로 받기"}</small>
+              </button>;
+            })}
+          </div>
+          <div className="wake-library-action">
+            <button
+              type="button"
+              disabled={studyEndingDownloadBusy || selectedStudyEndingApplied}
+              className={selectedStudyEndingApplied ? "applied" : ""}
+              onClick={onDownloadOrApplyStudyEndingVideo}
+            >
+              {studyEndingDownloadBusy ? "광고 불러오는 중…" : selectedStudyEndingApplied ? "적용됨" : selectedStudyEndingDownloaded ? "적용하기" : "광고 시청 후 다운로드"}
+            </button>
+          </div>
+        </section>
+      </section>}
+      <header hidden={homeMediaMode !== "DROWSINESS"} className="wake-library-heading">
         <div><span>WAKE-UP VIDEO</span><h1>졸음운전 영상</h1><p>졸음운전 모드 중 졸음 현상이 있으면 재생됩니다.</p></div>
         <em>{wakeUpLibrary.downloadedIds.length}/{orderedProfiles.length} 보유</em>
       </header>
       <div
+        hidden={homeMediaMode !== "DROWSINESS"}
         ref={wakeProfileScrollRef}
         className="wake-profile-scroll"
         role="list"
@@ -1506,7 +1864,7 @@ function HomeScreen({
           <small>새 영상 업데이트 예정</small>
         </article>
       </div>
-      <div className="wake-library-action">
+      <div hidden={homeMediaMode !== "DROWSINESS"} className="wake-library-action">
         <button
           type="button"
           onClick={onDownloadWakeUpVideo}
@@ -1517,23 +1875,42 @@ function HomeScreen({
         </button>
       </div>
     </section>
-    <div className="home-bento home-puzzle">
+    <div className="home-bento home-puzzle removed-home-mode-cards">
       <button className="suha-card drive" onClick={() => onOpen("DROWSINESS")}>
         <video key={`drive-${appliedProfile.id}`} className="home-card-art" src={`${appliedProfile.path}#t=0.12`} poster="/media/sleepy-driver.png" muted playsInline preload="metadata" aria-hidden="true" />
         <span className="home-card-tint" aria-hidden="true" />
         <span className="card-icon"><i /></span><div><small>DRIVE SAFE</small><b>졸음운전 방지</b><p>눈과 고개 움직임을 살펴<br />안전한 운전을 도와요.</p></div><em>시작하기 <span>→</span></em>
       </button>
-      <button className="suha-card posture" onClick={() => onOpen("POSTURE")}>
-        <small>POSTURE</small><b>자세 교정</b><p>바른 자세를<br />함께 찾아요.</p>
+      <button className="suha-card study" onClick={() => onOpen("STUDY")}>
+        <span className="study-card-symbol reward"><img src={studyRewardPath(selectedStudyReward)} alt="" /></span><div><small>STUDY FOCUS</small><b>열공 모드</b><p>눈·고개·자세를 살펴<br />집중과 휴식을 도와요.</p></div><em>열공 시작 <span>→</span></em>
       </button>
-      <button className="suha-card sign" onClick={() => onOpen("SIGN")}>
-        <small>KSL CARE</small><b>수어 통역</b><p>수어와 음성을<br />서로 이어줘요.</p>
-      </button>
-    </div>
-    <div className="home-meditation-row">
-      <button className="suha-card meditation" onClick={() => onOpen("MEDITATION")}><span className="breath-mark">◌</span><div><small>MINDFUL BREATH</small><b>잠시, 호흡할까요?</b><p>5분 호흡 명상으로 마음을 가볍게.</p></div></button>
     </div>
     <button className="home-utility" onClick={() => onOpen("WIDGET")}><span><i>▣</i><b>통역 위젯</b><small>{widgetSettings.enabled ? `표시 중 · ${widgetPositionLabel(widgetSettings.position)}` : "현재 숨김"}</small></span></button>
+    <section className={`home-coming-soon ${comingSoonOpen ? "open" : ""}`}>
+      <button
+        type="button"
+        className="home-coming-soon-toggle"
+        aria-expanded={comingSoonOpen}
+        aria-controls="home-coming-soon-items"
+        onClick={() => setComingSoonOpen((open) => !open)}
+      >
+        <span><small>COMING SOON</small><b>업데이트 예정</b></span>
+        <em>{comingSoonOpen ? "접기" : "펼쳐보기"} <i aria-hidden="true">⌄</i></em>
+      </button>
+      {comingSoonOpen && <div id="home-coming-soon-items" className="home-coming-soon-items">
+        <div className="home-bento">
+          <button className="suha-card posture" onClick={() => onOpen("POSTURE")}>
+            <small>POSTURE</small><b>자세 교정</b><p>바른 자세를<br />함께 찾아요.</p>
+          </button>
+          <button className="suha-card sign" onClick={() => onOpen("SIGN")}>
+            <small>KSL CARE</small><b>수어 통역</b><p>수어와 음성을<br />서로 이어줘요.</p>
+          </button>
+        </div>
+        <div className="home-meditation-row">
+          <button className="suha-card meditation" onClick={() => onOpen("MEDITATION")}><span className="breath-mark">◌</span><div><small>MINDFUL BREATH</small><b>잠시, 호흡할까요?</b><p>5분 호흡 명상으로 마음을 가볍게.</p></div></button>
+        </div>
+      </div>}
+    </section>
   </section>;
 }
 
@@ -1613,7 +1990,18 @@ function beep(context: AudioContext | null, urgent: boolean): void {
 }
 
 function getStatusLabel(status: MonitorSnapshot["status"]): string {
-  return { IDLE: "준비", CALIBRATING: "측정 중", AWAKE: "정상", WARNING: "주의", ALARM: "위험", NO_FACE: "얼굴 확인" }[status];
+  return { IDLE: "준비", CALIBRATING: "측정 중", NORMAL: "정상", CAUTION: "주의", WARNING: "경고", DANGER: "위험", NO_FACE: "얼굴 확인" }[status];
+}
+
+function updateAlertLatch(
+  activeRef: { current: boolean },
+  clearedAtRef: { current: number | null },
+  active: boolean,
+  now: number,
+): void {
+  const next = advanceAlertLatch({ active: activeRef.current, clearedAtMs: clearedAtRef.current }, active, now);
+  activeRef.current = next.active;
+  clearedAtRef.current = next.clearedAtMs;
 }
 
 function getPostureLabel(status: MonitorSnapshot["postureStatus"], issue: string): string {
@@ -1625,6 +2013,7 @@ function getPostureLabel(status: MonitorSnapshot["postureStatus"], issue: string
     SLOUCHING: "등 굽음",
     FORWARD_HEAD: "거북목",
     CAMERA_ANGLE: "각도 재측정 필요",
+    TORSO_MISSING: "허리선 확인",
   };
   return labels[issue] ?? "자세 확인";
 }
@@ -1661,69 +2050,6 @@ function getPermissionLabel(permission: CameraPermission): string {
     DENIED: "카메라 권한 차단됨 · 주소창의 카메라 설정을 확인하세요",
     UNAVAILABLE: window.isSecureContext ? "이 브라우저에서는 카메라를 사용할 수 없습니다" : "HTTPS 접속이 필요합니다",
   }[permission];
-}
-
-function cameraErrorMessage(cause: unknown): string {
-  if (!(cause instanceof DOMException)) return cause instanceof Error ? cause.message : "카메라를 시작하지 못했습니다.";
-  if (cause.name === "NotAllowedError" || cause.name === "SecurityError") {
-    return "카메라 권한이 차단됐습니다. Chrome 주소창의 사이트 설정 → 카메라 → 허용으로 바꾼 뒤 다시 시작해 주세요.";
-  }
-  if (cause.name === "NotReadableError" || cause.name === "AbortError") {
-    return "다른 앱이 카메라를 사용 중입니다. 카메라 앱이나 화상회의를 종료한 뒤 다시 시도해 주세요.";
-  }
-  if (cause.name === "NotFoundError" || cause.name === "OverconstrainedError") {
-    return "사용 가능한 전면 카메라를 찾지 못했습니다. 기기의 카메라 연결과 Chrome 권한을 확인해 주세요.";
-  }
-  if (cause.name === "TimeoutError") {
-    return "카메라 허용을 기다리는 시간이 초과됐습니다. Chrome의 권한 창에서 허용을 선택한 뒤 다시 시작해 주세요.";
-  }
-  return `카메라를 시작하지 못했습니다. ${cause.message}`;
-}
-
-async function requestUserCamera(constraints: MediaStreamConstraints): Promise<MediaStream> {
-  let timedOut = false;
-  const request = navigator.mediaDevices.getUserMedia(constraints);
-  const timeout = new Promise<never>((_, reject) => {
-    window.setTimeout(() => {
-      timedOut = true;
-      reject(new DOMException("카메라 권한 응답 시간 초과", "TimeoutError"));
-    }, 20_000);
-  });
-  void request.then((stream) => {
-    if (timedOut) stream.getTracks().forEach((track) => track.stop());
-  }).catch(() => undefined);
-  return Promise.race([request, timeout]);
-}
-
-async function waitForUsableVideoFrame(video: HTMLVideoElement, timeoutMs = 7_000): Promise<void> {
-  const startedAt = performance.now();
-  while (!isUsableVideoFrame(video)) {
-    if (performance.now() - startedAt >= timeoutMs) {
-      throw new Error("카메라 영상 크기를 확인하지 못했습니다. 앱을 다시 시작해 주세요.");
-    }
-    await nextVideoFrame(video);
-  }
-}
-
-function nextVideoFrame(video: HTMLVideoElement): Promise<void> {
-  if (typeof video.requestVideoFrameCallback === "function") {
-    return new Promise((resolve) => {
-      let settled = false;
-      let timeout = 0;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        resolve();
-      };
-      const callbackId = video.requestVideoFrameCallback(finish);
-      timeout = window.setTimeout(() => {
-        video.cancelVideoFrameCallback(callbackId);
-        finish();
-      }, 250);
-    });
-  }
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
 createRoot(document.getElementById("root")!).render(
