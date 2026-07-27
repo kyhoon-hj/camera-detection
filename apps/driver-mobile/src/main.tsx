@@ -430,8 +430,8 @@ function App() {
           frame,
           showWarning,
           activeModuleRef.current === "POSTURE",
-          activeModuleRef.current === "DROWSINESS" ? next.baselineGuide : null,
-          next.baselineDeviated,
+          null,
+          false,
         );
       } catch (cause) {
         if (cause instanceof VisionFrameUnavailableError) {
@@ -1203,11 +1203,11 @@ function App() {
                 {snapshot.calibrationStable ? countdown : "!"}
               </div>
               <div>
-                <strong>{snapshot.calibrationStable ? "현재 위치를 유지해 주세요" : activeModule === "POSTURE" ? "얼굴·양쪽 어깨·허리선을 화면에 맞춰 주세요" : "평소 운전 자세를 유지해 주세요"}</strong>
+                <strong>{snapshot.calibrationStable ? activeModule === "POSTURE" ? "현재 위치를 유지해 주세요" : "얼굴이 보이면 자동으로 시작합니다" : activeModule === "POSTURE" ? "얼굴·양쪽 어깨·허리선을 화면에 맞춰 주세요" : "방향과 자세에 관계없이 얼굴만 보여 주세요"}</strong>
                 <p>{snapshot.message}</p>
               </div>
               <div className="progress-track"><i style={{ width: `${snapshot.calibrationProgress * 100}%` }} /></div>
-              <small>{activeModule === "POSTURE" ? "어깨선과 목에서 허리로 이어지는 상체 축을 함께 측정합니다" : "정면·사선·측면 모두 현재 보이는 모습을 기준으로 측정합니다"}</small>
+              <small>{activeModule === "POSTURE" ? "어깨선과 목에서 허리로 이어지는 상체 축을 함께 측정합니다" : "정면·사선·측면 어느 방향이든 얼굴이 보이면 시작합니다"}</small>
             </div>
           </div>
         )}
@@ -1218,7 +1218,6 @@ function App() {
         )}
         {activeModule === "DROWSINESS" && runState === "RUNNING" && !calibrating && (
           <div className="drowsy-camera-signals" aria-label="졸음운전 감지 상태">
-            <span className={snapshot.baselineDeviated ? "active baseline" : ""}><i />기준 자세 이탈</span>
             <span className={snapshot.eyesClosed ? "active" : ""}><i />눈 감김</span>
             <span className={snapshot.headDown ? "active" : ""}><i />고개 숙임</span>
           </div>

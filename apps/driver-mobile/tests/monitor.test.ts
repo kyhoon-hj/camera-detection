@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { CALIBRATION_DURATION_MS, DriverMonitor, bothEyesStableForCalibration, seatedTorsoVisible, type Landmark, type VisionFrame } from "../src/monitor";
 
 describe("DriverMonitor 5초 기준 측정", () => {
-  it("현재 검출된 잘린 허리 위치를 열공 기준으로 사용한다", () => {
+  it("허리선이 보이지 않아도 얼굴과 양쪽 어깨로 현재 열공 자세를 저장한다", () => {
     const pose = makePose();
     pose[23] = { ...pose[23], y: 1.55, visibility: 0 };
     pose[24] = { ...pose[24], y: 1.55, visibility: 0 };
 
-    expect(seatedTorsoVisible(pose)).toBe(true);
+    expect(seatedTorsoVisible(pose)).toBe(false);
 
     const monitor = new DriverMonitor();
     monitor.begin("STUDY");
@@ -17,7 +17,85 @@ describe("DriverMonitor 5초 기준 측정", () => {
     const calibrated = monitor.process(frame(CALIBRATION_DURATION_MS, false, pose));
     expect(calibrated.status).toBe("NORMAL");
     expect(calibrated.postureIssue).toBe("NONE");
-    expect(calibrated.baselineGuide?.showTorso).toBe(true);
+    expect(calibrated.baselineGuide?.showShoulders).toBe(true);
+    expect(calibrated.baselineGuide?.showTorso).toBe(false);
+  });
+
+  it("열공 기준 측정 중 자연스럽게 움직여도 현재 자세 평균을 저장한다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("STUDY");
+
+    let snapshot = monitor.process(frame(0));
+    for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
+      const drift = Math.sin(time / 450) * 0.08;
+      snapshot = monitor.process({
+        timestampMs: time,
+        face: shiftedFace(drift),
+        pose: makePose({ torsoLean: drift }),
+      });
+    }
+
+    expect(snapshot.status).toBe("NORMAL");
+    expect(snapshot.calibrationProgress).toBe(1);
+  });
+
+  it("열공 기준 측정은 어깨와 자세가 전혀 보이지 않아도 얼굴만으로 완료한다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("STUDY");
+    let snapshot = monitor.process({ timestampMs: 0, face: makeFace(false), pose: null });
+    for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
+      snapshot = monitor.process({ timestampMs: time, face: makeFace(false), pose: null });
+    }
+
+    expect(snapshot.status).toBe("NORMAL");
+    expect(snapshot.calibrationProgress).toBe(1);
+    expect(snapshot.baselineGuide?.showShoulders).toBe(false);
+    expect(snapshot.baselineGuide?.showTorso).toBe(false);
+    expect(snapshot.postureStatus).toBe("NO_POSE");
+  });
+
+  it("열공 기준 측정은 눈을 뜬 정도를 별도 조건으로 사용하지 않는다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("STUDY");
+
+    let snapshot = monitor.process({ timestampMs: 0, face: makeFace(true), pose: null });
+    for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
+      snapshot = monitor.process({ timestampMs: time, face: makeFace(true), pose: null });
+    }
+
+    expect(snapshot.status).toBe("NORMAL");
+    expect(snapshot.calibrationProgress).toBe(1);
+  });
+
+  it("열공모드는 측면 얼굴로 보여도 4초간 눈을 감으면 감김 시간을 측정한다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("STUDY");
+    for (let time = 0; time <= CALIBRATION_DURATION_MS; time += 100) {
+      monitor.process({ timestampMs: time, face: makeFace(false), pose: null });
+    }
+
+    const closedProfile = makeFace(true);
+    closedProfile[1] = { ...closedProfile[1], x: 0.66 };
+    monitor.process({ timestampMs: 5_100, face: closedProfile, pose: null });
+    const closed = monitor.process({ timestampMs: 9_100, face: closedProfile, pose: null });
+
+    expect(closed.eyesClosed).toBe(true);
+    expect(closed.closedDurationMs).toBe(4_000);
+    expect(closed.trigger).toBe("EYES_ONLY");
+  });
+
+  it("열공 기준 측정은 얼굴이 보이지 않을 때만 진행하지 않는다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("STUDY");
+
+    let snapshot = monitor.process({ timestampMs: 0, face: null, pose: makePose() });
+    for (let time = 100; time <= 1_500; time += 100) {
+      snapshot = monitor.process({ timestampMs: time, face: null, pose: makePose() });
+    }
+
+    expect(snapshot.status).toBe("CALIBRATING");
+    expect(snapshot.calibrationProgress).toBe(0);
+    expect(snapshot.calibrationStable).toBe(false);
   });
 
   it("열공 모드에서 허리를 유지하고 책을 보는 고개 숙임은 상체 숙임으로 경고하지 않는다", () => {
@@ -266,6 +344,40 @@ describe("DriverMonitor 5초 기준 측정", () => {
     expect(snapshot.status).toBe("NORMAL");
   });
 
+  it("졸음운전 모드는 눈 모양과 움직임을 조건으로 삼지 않고 얼굴만 보이면 시작한다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("DROWSINESS");
+    let snapshot = monitor.process({ timestampMs: 0, face: makeFace(true), pose: null });
+    for (let time = 100; time <= CALIBRATION_DURATION_MS; time += 100) {
+      const face = makeFace(true).map((point) => ({ ...point, x: point.x + Math.sin(time / 300) * 0.08 }));
+      snapshot = monitor.process({ timestampMs: time, face, pose: null });
+    }
+    expect(snapshot.status).not.toBe("CALIBRATING");
+    expect(snapshot.calibrationProgress).toBe(1);
+  });
+
+  it("정면 기준 측정 후 측면 얼굴로 바뀌어도 졸음이나 기준 이탈로 오인하지 않는다", () => {
+    const monitor = new DriverMonitor();
+    monitor.begin("DROWSINESS");
+    for (let time = 0; time <= CALIBRATION_DURATION_MS; time += 100) {
+      monitor.process({ timestampMs: time, face: makeFace(false), pose: null });
+    }
+
+    const sideFace = makeFace(false);
+    sideFace[1] = { ...sideFace[1], x: 0.66 };
+    setEyeOpening(sideFace, RIGHT_EYE_TEST, 0.11);
+    setEyeOpening(sideFace, LEFT_EYE_TEST, 0.11);
+    monitor.process({ timestampMs: 5_100, face: sideFace, pose: null });
+    const side = monitor.process({ timestampMs: 8_500, face: sideFace, pose: null });
+
+    expect(side.status).toBe("NORMAL");
+    expect(side.trigger).toBe("NONE");
+    expect(side.eyesClosed).toBe(false);
+    expect(side.headDown).toBe(false);
+    expect(side.baselineDeviated).toBe(false);
+    expect(side.baselineGuide).toBeNull();
+  });
+
   it("측면에서는 얼굴 기울기나 정면 기준의 작은 하강만으로 쓰러짐 처리하지 않는다", () => {
     const sidePose = makePose({ yawDegrees: 70 });
     const monitor = calibratedMonitor(sidePose);
@@ -354,18 +466,14 @@ describe("DriverMonitor 5초 기준 측정", () => {
     expect(warning.trigger).toBe("EYES_ONLY");
   });
 
-  it("차량 모드의 기준 자세 이탈은 표시만 하고 졸음 단계에는 영향을 주지 않는다", () => {
+  it("차량 모드는 얼굴 방향 변화를 기준 자세 이탈로 표시하지 않는다", () => {
     const baselinePose = makePose({ yawDegrees: 55 });
     const monitor = calibratedMonitor(baselinePose);
     const changedPose = makePose({ yawDegrees: 5 });
 
     const snapshot = monitor.process({ timestampMs: 5_100, face: makeFace(false), pose: changedPose });
-    expect(snapshot.baselineDeviated).toBe(true);
-    expect(snapshot.baselineGuide).not.toBeNull();
-    expect(snapshot.baselineGuide?.faceX).toBeGreaterThan(0);
-    expect(snapshot.baselineGuide?.faceX).toBeLessThan(1);
-    expect(snapshot.baselineGuide?.faceHeight).toBeGreaterThan(0);
-    expect(snapshot.baselineGuide?.shoulderWidth).toBeGreaterThan(0);
+    expect(snapshot.baselineDeviated).toBe(false);
+    expect(snapshot.baselineGuide).toBeNull();
     expect(snapshot.status).toBe("NORMAL");
     expect(snapshot.trigger).toBe("NONE");
     expect(snapshot.eyesClosed).toBe(false);

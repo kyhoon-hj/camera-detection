@@ -684,9 +684,20 @@ body{background:radial-gradient(circle at 82% -8%,rgba(51,213,153,.13),transpare
 .study-reward-grid .locked img{opacity:.24;filter:blur(6px) grayscale(1) brightness(.38);transform:scale(.88)}
 .study-reward-grid .locked i{z-index:2;inset:7px;display:grid;place-items:center;border:1px solid rgba(190,218,207,.1);border-radius:8px;color:rgba(222,238,232,.62);background:radial-gradient(circle,rgba(104,132,121,.22),rgba(3,10,7,.36));font-size:25px;font-weight:950;text-shadow:0 0 12px rgba(220,245,235,.3)}
 @media(max-width:370px){.study-reward-grid{grid-auto-rows:68px}.study-reward-grid>button{height:68px;min-height:68px!important}}
-.study-mode .study-camera-shell.visible{aspect-ratio:3/4;min-height:min(68dvh,720px);max-height:720px;margin-inline:auto;background:#020806}
-.study-mode .study-camera-shell.visible>video,.study-mode .study-camera-shell.visible>canvas{object-fit:contain;object-position:center}
-@media(min-width:700px){.study-mode .study-camera-shell.visible{width:min(100%,560px);min-height:640px}}
+.study-mode .study-camera-shell.visible{width:100%;max-width:none;aspect-ratio:3/4;min-height:min(51dvh,540px);max-height:540px;margin-inline:auto;background:#020806}
+.study-mode .study-camera-shell.visible>video,.study-mode .study-camera-shell.visible>canvas{object-fit:cover;object-position:center}
+@media(min-width:700px){.study-mode .study-camera-shell.visible{width:100%;max-width:none;min-height:480px;max-height:540px}}
+@media(orientation:landscape){.study-mode .study-camera-shell.visible{width:100%;aspect-ratio:4/3;min-height:min(72dvh,420px);max-height:420px}}
+.study-run-toolbar{position:sticky;z-index:30;top:6px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px;border:1px solid rgba(105,200,165,.14);border-radius:18px;background:rgba(5,20,14,.94);box-shadow:0 10px 28px rgba(0,0,0,.28);backdrop-filter:blur(12px)}
+.study-run-toolbar>div{justify-content:center;min-width:0}.study-run-toolbar>div b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.study-run-toolbar>.study-run-exit{display:flex;width:auto;height:42px;align-items:center;gap:4px;padding:0 12px;border:1px solid rgba(255,126,117,.22);border-radius:13px;color:#ffc0bb;background:rgba(75,25,22,.72);font-size:20px}.study-run-toolbar>.study-run-exit span{font-size:10px;font-weight:900}
+.study-run-toolbar>.study-run-settings{width:42px;height:42px}
+.study-run-actions .focus{border-color:rgba(255,202,125,.28);color:#ffe2b1;background:rgba(73,45,18,.62)}
+.study-mini-flow>.study-live-flow-chart{box-sizing:border-box;height:132px;padding:10px 9px;border:1px solid rgba(111,188,160,.12);border-radius:11px;background:rgba(3,15,11,.42);overflow:hidden}
+.study-live-flow-axis{box-sizing:border-box;min-height:0;padding-block:0}
+.study-live-flow-axis>span{display:flex;align-items:center;height:100%;line-height:1}
+.study-live-flow-chart svg{min-width:0;overflow:hidden}
+.study-mini-flow>footer{box-sizing:border-box;margin-top:10px;padding:0 2px}
 
 /* Native layout rule: fixed app bar, scrollable content, protected system insets. */
 .app{

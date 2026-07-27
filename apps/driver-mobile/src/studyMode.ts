@@ -724,8 +724,7 @@ export class StudySessionTracker {
 
   private processEyes(monitor: MonitorSnapshot, now: number): number {
     const eyesObservable = monitor.faceVisible
-      && monitor.eyeAspectRatio !== null
-      && !monitor.headDown;
+      && monitor.eyeAspectRatio !== null;
     if (!eyesObservable) {
       this.eyeClosedSince = null;
       this.wasEyesClosed = false;
@@ -836,8 +835,7 @@ export class StudySessionTracker {
   private applyLiveStatus(monitor: MonitorSnapshot, eyeClosedDurationMs: number, now: number): void {
     if (!ACTIVE_STATES.has(this.snapshot.status)) return;
     const eyesObservable = monitor.faceVisible
-      && monitor.eyeAspectRatio !== null
-      && !monitor.headDown;
+      && monitor.eyeAspectRatio !== null;
     const closedDurationMs = eyesObservable && monitor.eyesClosed
       ? Math.max(monitor.closedDurationMs, eyeClosedDurationMs)
       : 0;

@@ -80,7 +80,7 @@ describe("StudySessionTracker", () => {
     expect(snapshot.events.some((event) => event.code === "BLINK_DETECTED")).toBe(true);
   });
 
-  it("ignores eye-closure signals while the user is looking down at a book", () => {
+  it("detects a long eye closure even while the user is looking down at a book", () => {
     const tracker = new StudySessionTracker(DEFAULT_STUDY_SETTINGS, 0);
     tracker.process(frame(), monitor(), 0);
     tracker.process(frame(), monitor({
@@ -98,14 +98,14 @@ describe("StudySessionTracker", () => {
       postureIssue: "SLOUCHING",
     }), 8_000);
 
-    expect(snapshot.status).toBe("FOCUS");
+    expect(snapshot.status).toBe("DROWSY");
     expect(snapshot.counts.blinks).toBe(0);
-    expect(snapshot.counts.longEyeClosures).toBe(0);
+    expect(snapshot.counts.longEyeClosures).toBe(1);
     expect(snapshot.counts.headDrops).toBe(0);
     expect(snapshot.counts.deskSleeps).toBe(0);
     expect(snapshot.counts.postureWarnings).toBe(0);
     expect(snapshot.pendingAlert).toBeNull();
-    expect(snapshot.events.some((event) => event.code === "LONG_EYE_CLOSURE_DETECTED")).toBe(false);
+    expect(snapshot.events.some((event) => event.code === "LONG_EYE_CLOSURE_DETECTED")).toBe(true);
     expect(snapshot.events.some((event) => event.code === "DESK_SLEEP_DETECTED")).toBe(false);
   });
 
