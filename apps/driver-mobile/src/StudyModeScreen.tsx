@@ -538,7 +538,11 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
     />}
     <section className={`study-camera-shell ${cameraPanelVisible ? "visible" : "hidden"}`} aria-hidden={!cameraPanelVisible} data-screen-id="STUDY-03">
       <video ref={videoRef} playsInline muted />
-      <canvas ref={canvasRef} className="study-diagnostics-canvas" />
+      <canvas
+        ref={canvasRef}
+        className={`study-diagnostics-canvas${quickSettingsOpen ? " hidden" : ""}`}
+        aria-hidden={quickSettingsOpen}
+      />
       {endingVideoVisible && <div className="study-ending-camera-video">
         <video src={endingVideoPath} autoPlay playsInline controls onEnded={finishSession} onError={finishSession} />
         <div><small>STUDY COMPLETE</small><strong>오늘도 수고했어요</strong></div>
