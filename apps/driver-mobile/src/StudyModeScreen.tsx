@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyMinimumCameraZoom, cameraErrorMessage, requestUserCamera, waitForUsableVideoFrame } from "./cameraAccess";
 import { removeBottomBannerAd, showBottomBannerAd } from "./ads";
-import { DriverMonitor, seatedTorsoVisible, upperBodyVisible, type MonitorSnapshot } from "./monitor";
+import { DriverMonitor, type MonitorSnapshot } from "./monitor";
 import { speakKorean, stopKoreanSpeech } from "./speech";
 import {
   DEFAULT_STUDY_SETTINGS,
@@ -18,7 +18,7 @@ import {
   type StudySettings,
   type StudyStatus,
 } from "./studyMode";
-import { MobileVisionEngine, VisionFrameUnavailableError, drawLandmarks, isUsableVideoFrame, stabilizeOverlayFrame, visionErrorMessage } from "./vision";
+import { MobileVisionEngine, VisionFrameUnavailableError, drawLandmarks, isRecoverableVisionError, isUsableVideoFrame, stabilizeOverlayFrame, visionErrorMessage } from "./vision";
 import {
   STUDY_REWARD_IMAGES,
   STUDY_REWARDS_STORAGE_KEY,
@@ -34,22 +34,12 @@ import {
 type StudyView = "START" | "SETTINGS" | "CAMERA" | "RUN" | "PAUSED" | "BREAK" | "EXERCISE" | "RETURN" | "END_CONFIRM" | "RESULT" | "HISTORY" | "RECORD_DETAIL";
 type HistoryFilter = "7D" | "30D" | "ALL";
 type CameraChecks = {
-  brightness: number | null;
   faceVisible: boolean;
-  eyesVisible: boolean;
-  upperBodyVisible: boolean;
-  torsoVisible: boolean;
-  faceSizeOk: boolean;
 };
 
 const STUDY_CALIBRATION_DURATION_MS = 5_000;
 const initialCameraChecks: CameraChecks = {
-  brightness: null,
   faceVisible: false,
-  eyesVisible: false,
-  upperBodyVisible: false,
-  torsoVisible: false,
-  faceSizeOk: false,
 };
 
 const initialMonitorSnapshot: MonitorSnapshot = {
@@ -247,18 +237,22 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       await waitForUsableVideoFrame(videoRef.current);
-      const engine = new MobileVisionEngine();
+      let engine = new MobileVisionEngine();
       await engine.initialize();
       engineRef.current = engine;
       monitorRef.current.begin("STUDY", STUDY_CALIBRATION_DURATION_MS);
       setCameraActive(true);
       setCameraBusy(false);
       let runningStarted = false;
-      let lastQualitySampleAt = -Infinity;
-      let latestBrightness: number | null = null;
-      const brightnessCanvas = document.createElement("canvas");
+      let recoveryInProgress = false;
+      let cpuRecoveryUsed = false;
       const detect = () => {
-        if (!mountedRef.current || engineRef.current !== engine || !streamRef.current) return;
+        if (!mountedRef.current || !streamRef.current) return;
+        if (recoveryInProgress) {
+          animationRef.current = requestAnimationFrame(detect);
+          return;
+        }
+        if (engineRef.current !== engine) return;
         if (alertVideoVisibleRef.current) {
           animationRef.current = requestAnimationFrame(detect);
           return;
@@ -271,20 +265,8 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
           lastVideoTimeRef.current = video.currentTime;
           try {
             const frame = engine.detect(video, now);
-            const faceWidth = normalizedFaceWidth(frame.face);
-            const brightness = now - lastQualitySampleAt >= 450
-              ? sampleVideoBrightness(video, brightnessCanvas)
-              : null;
-            if (brightness !== null) {
-              lastQualitySampleAt = now;
-              latestBrightness = brightness;
-            }
             const faceVisible = frame.face !== null;
-            const eyesVisible = frame.face !== null && frame.face.length > 387;
-            const upperBodyDetected = upperBodyVisible(frame.pose);
-            const torsoDetected = seatedTorsoVisible(frame.pose);
-            const faceSizeOk = faceWidth !== null && faceWidth >= 0.14 && faceWidth <= 0.78;
-            const checks = { brightness: latestBrightness, faceVisible, eyesVisible, upperBodyVisible: upperBodyDetected, torsoVisible: torsoDetected, faceSizeOk };
+            const checks = { faceVisible };
             const nextMonitor = monitorRef.current.process(frame);
             const overlayFrame = stabilizeOverlayFrame(frame, overlayFrameRef.current);
             overlayFrameRef.current = overlayFrame;
@@ -323,7 +305,37 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
               }
             }
           } catch (cause) {
-            if (!(cause instanceof VisionFrameUnavailableError)) {
+            if (cause instanceof VisionFrameUnavailableError) {
+              // 카메라가 회전·리사이즈되는 짧은 구간은 다음 프레임에서 자동 재개한다.
+            } else if (isRecoverableVisionError(cause) && engine.activeDelegate === "GPU" && !cpuRecoveryUsed) {
+              const activeStream = streamRef.current;
+              recoveryInProgress = true;
+              cpuRecoveryUsed = true;
+              engineRef.current = null;
+              engine.close();
+              setCameraBusy(true);
+              const replacement = new MobileVisionEngine();
+              void replacement.initialize("CPU").then(() => {
+                if (!mountedRef.current || streamRef.current !== activeStream) {
+                  replacement.close();
+                  return;
+                }
+                engine = replacement;
+                engineRef.current = replacement;
+                lastInferenceRef.current = 0;
+                lastVideoTimeRef.current = -1;
+                setCameraError("");
+                setCameraBusy(false);
+              }).catch((recoveryCause) => {
+                replacement.close();
+                if (streamRef.current !== activeStream) return;
+                setCameraError(visionErrorMessage(recoveryCause));
+                stopCamera();
+                setCameraBusy(false);
+              }).finally(() => {
+                recoveryInProgress = false;
+              });
+            } else {
               setCameraError(visionErrorMessage(cause));
               stopCamera();
             }
@@ -492,11 +504,11 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
       <button className="study-start-settings" onClick={() => setView("SETTINGS")} aria-label="열공 설정">⚙</button>
     </header>}
     {view === "RUN" && live && <header className="study-run-toolbar">
+      <button className="study-run-exit" onClick={requestEnd} aria-label="열공모드 나가기">‹ <span>나가기</span></button>
       <div>
-        <button className="study-focus-launch" onClick={openFocusImmersive}>화면 가리기</button>
         <span className={`study-live-dot ${live.status.toLowerCase()}`} /><b>{studyStatusLabel(live.status)} · {formatClock(live.actualStudyMs)}</b>
       </div>
-      <button onClick={openQuickSettings} aria-label="빠른 설정">⚙</button>
+      <button className="study-run-settings" onClick={openQuickSettings} aria-label="빠른 설정">⚙</button>
     </header>}
     {view === "CAMERA" && <header className="study-session-toolbar">
       <button onClick={() => {
@@ -562,8 +574,8 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
       {view === "START" && <div className="study-ready-camera">
         <div className="study-ready-face" aria-hidden="true"><span /><span /></div>
         <strong>열공 감지 준비</strong>
-        <p>휴대폰을 실제 사용할 위치에 고정하고 얼굴부터 허리까지 보이게 해 주세요.</p>
-        <small>현재 어깨선과 목-허리 상체 축이 5초 기준이 됩니다.</small>
+        <p>휴대폰을 실제 사용할 위치에 두고 얼굴만 보이게 해 주세요.</p>
+        <small>정해진 자세 조건은 없습니다. 지금 보이는 얼굴 위치가 앞으로의 기준이 됩니다.</small>
       </div>}
       {view === "CAMERA" && <div className="study-calibration-video-status">
         <i className={monitorSnapshot.calibrationStable ? "active" : ""} />
@@ -578,9 +590,6 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
       </header>
         <div className="study-check-list" aria-label="카메라 확인 상태">
           <CameraCheckIcon icon="●" label="얼굴" ready={cameraChecks.faceVisible} />
-          <CameraCheckIcon icon="◉" label="양쪽 눈" ready={cameraChecks.eyesVisible} />
-          <CameraCheckIcon icon="◆" label="양쪽 어깨" ready={cameraChecks.upperBodyVisible} />
-          <CameraCheckIcon icon="│" label="허리선" ready={cameraChecks.torsoVisible} />
         </div>
         <div className="study-calibration-progress" aria-label={studyCalibrationProgressLabel(monitorSnapshot)}>
           <i style={{ width: `${monitorSnapshot.calibrationProgress * 100}%` }} />
@@ -625,7 +634,7 @@ export function StudyModeScreen({ onExit, alertVideoPath, endingVideoPath, adsRe
         setView("PAUSED");
       }}
       onBreak={() => startBreak()}
-      onEnd={requestEnd}
+      onFocus={openFocusImmersive}
       onExercise={startExercise}
       onSkipExercise={() => {
         const tracker = trackerRef.current;
@@ -889,8 +898,8 @@ function StudyStartScreen({ settings, records, onStart, onHistory }: {
     </section>
     <section className="study-start-guide">
       <header><span>START GUIDE</span><strong>현재 위치를 기준으로 시작해요</strong></header>
-      <p>휴대폰을 실제 사용할 위치에 고정하고 얼굴·양쪽 어깨·허리선이 보이게 한 뒤, 현재 자세를 기준으로 5초 측정합니다.</p>
-      <div><span><b>1</b>얼굴·눈 인식</span><span><b>2</b>현재 자세 유지</span><span><b>3</b>5초 기준 측정</span></div>
+      <p>휴대폰을 실제 사용할 위치에 두고 얼굴이 보이면, 지금 보이는 얼굴 위치를 그대로 5초간 기준으로 저장합니다.</p>
+      <div><span><b>1</b>얼굴 인식</span><span><b>2</b>현재 위치 유지</span><span><b>3</b>얼굴 기준 저장</span></div>
     </section>
     <button className="study-detection-start" onClick={onStart}>▶ 기본 위치 설정 후 감지 시작</button>
     <div className="study-start-links"><button onClick={onHistory}>학습 기록 보기{records.length > 0 ? ` · ${records.length}개` : ""}</button><span>운동·휴식 {settings.exerciseIntervalMinutes}분 주기</span></div>
@@ -984,7 +993,7 @@ function StudyFocusImmersive({ totalStudyMs, imagePath, onClose }: { totalStudyM
   </section>;
 }
 
-function StudyRunScreen({ live, settings, monitor, cameraActive, quickSettingsOpen, onToggleQuick, onSettings, onPause, onBreak, onEnd, onExercise, onSkipExercise, onSnoozeExercise }: {
+function StudyRunScreen({ live, settings, monitor, cameraActive, quickSettingsOpen, onToggleQuick, onSettings, onPause, onBreak, onFocus, onExercise, onSkipExercise, onSnoozeExercise }: {
   live: StudyLiveSnapshot;
   settings: StudySettings;
   monitor: MonitorSnapshot;
@@ -994,7 +1003,7 @@ function StudyRunScreen({ live, settings, monitor, cameraActive, quickSettingsOp
   onSettings(patch: Partial<StudySettings>): void;
   onPause(): void;
   onBreak(): void;
-  onEnd(): void;
+  onFocus(): void;
   onExercise(): void;
   onSkipExercise(): void;
   onSnoozeExercise(): void;
@@ -1008,7 +1017,7 @@ function StudyRunScreen({ live, settings, monitor, cameraActive, quickSettingsOp
         <small>다음 휴식 <b>{live.nextBreakInMs === null ? "없음" : formatClock(live.nextBreakInMs)}</b></small>
       </div>
     </div>
-    <div className="study-run-actions"><button onClick={onPause}>일시 정지</button><button onClick={onBreak}>휴식</button><button className="danger" onClick={onEnd}>열공 종료</button></div>
+    <div className="study-run-actions"><button className="focus" onClick={onFocus}>화면 가리기</button><button onClick={onPause}>일시 정지</button><button onClick={onBreak}>휴식</button></div>
     <div className="study-camera-health"><i className={cameraActive && monitor.faceVisible ? "ok" : ""} />{cameraActive ? monitor.faceVisible ? "카메라 인식 양호" : "얼굴 확인 중" : "카메라 정지"}<span>영상·감지선 ON</span></div>
     <div className="study-live-metrics">
       <Metric label="눈 상태" value={monitor.eyesClosed ? "감김" : "정상"} sub={`깜빡임 ${live.counts.blinks}회 · 장시간 ${live.counts.longEyeClosures}회`} />
@@ -1105,29 +1114,39 @@ function StudyMiniFlow({ live }: { live: StudyLiveSnapshot }) {
     y: studyFlowLevel(point.state),
   });
   const positioned = points.map(pointPosition);
-  const linePoints = positioned.map((point) => `${point.x.toFixed(2)},${point.y}`).join(" ");
+  const lastPosition = positioned.at(-1) ?? { x: 0, y: studyFlowLevel("FOCUS") };
+  const extended = lastPosition.x < 100 ? [...positioned, { x: 100, y: lastPosition.y }] : positioned;
+  const linePath = extended.map((point, index) => index === 0
+    ? `M ${point.x.toFixed(2)} ${point.y}`
+    : `H ${point.x.toFixed(2)} V ${point.y}`).join(" ");
   const currentState = points.at(-1)?.state ?? "FOCUS";
 
   return <section className="study-mini-flow">
     <header><div><span>FOCUS TIMELINE</span><b>집중 흐름 분석</b></div><em className={currentState.toLowerCase()}>{timelineLabel(currentState)}</em></header>
     <div className="study-live-flow-chart">
       <div className="study-live-flow-axis" aria-hidden="true"><span>졸음</span><span>주의</span><span>집중</span><span>이탈</span></div>
-      <svg viewBox="0 0 100 76" preserveAspectRatio="none" role="img" aria-label={`최근 5분 집중 흐름 · 현재 ${timelineLabel(currentState)}`}>
-        <g className="study-live-flow-grid"><line x1="0" y1="8" x2="100" y2="8" /><line x1="0" y1="30" x2="100" y2="30" /><line x1="0" y1="54" x2="100" y2="54" /><line x1="0" y1="72" x2="100" y2="72" /></g>
-        <polyline className="study-live-flow-line" points={linePoints} />
-        {positioned.map((point, index) => <circle key={`${points[index].at}-${index}`} className={points[index].state.toLowerCase()} cx={point.x} cy={point.y} r="1.8" />)}
+      <svg viewBox="0 0 100 80" preserveAspectRatio="none" role="img" aria-label={`최근 5분 집중 흐름 · 현재 ${timelineLabel(currentState)}`}>
+        <g className="study-live-flow-grid"><line x1="0" y1="10" x2="100" y2="10" /><line x1="0" y1="30" x2="100" y2="30" /><line x1="0" y1="50" x2="100" y2="50" /><line x1="0" y1="70" x2="100" y2="70" /></g>
+        <path className="study-live-flow-line" d={linePath} />
+        {positioned.map((point, index) => <circle key={`${points[index].at}-${index}`} className={studyFlowClass(points[index].state)} cx={point.x} cy={point.y} r="1.8" />)}
       </svg>
     </div>
-    <footer><div className="study-live-flow-legend"><span className="focus">집중</span><span className="attention">주의</span><span className="drowsy">졸음</span><span className="break">휴식·운동</span><span className="away">이탈·정지</span></div><small>최근 5분 · 상태 변화</small></footer>
+    <footer><div className="study-live-flow-legend"><span className="focus">집중</span><span className="attention">주의</span><span className="drowsy">졸음</span><span className="away">이탈</span></div><small>최근 5분 · 상태 변화</small></footer>
   </section>;
 }
 
 function studyFlowLevel(state: StudyLiveSnapshot["timeline"][number]["state"]): number {
-  if (state === "DROWSY") return 8;
+  if (state === "DROWSY") return 10;
   if (state === "ATTENTION") return 30;
-  if (state === "FOCUS") return 54;
-  if (state === "BREAK" || state === "EXERCISE") return 64;
-  return 72;
+  if (state === "FOCUS") return 50;
+  return 70;
+}
+
+function studyFlowClass(state: StudyLiveSnapshot["timeline"][number]["state"]): string {
+  if (state === "DROWSY") return "drowsy";
+  if (state === "ATTENTION") return "attention";
+  if (state === "FOCUS") return "focus";
+  return "away";
 }
 
 function StudyFlowGraph({ record }: { record: StudySessionRecord }) {
@@ -1271,39 +1290,9 @@ function perMinute(count: number, ms: number): string { return (count / Math.max
 function timelineLabel(state: StudySessionRecord["timeline"][number]["state"]): string { return { FOCUS: "집중", ATTENTION: "주의", DROWSY: "졸음", BREAK: "휴식", EXERCISE: "운동", AWAY: "자리 이탈", PAUSED: "일시 정지" }[state]; }
 function comparisonLabel(record: StudySessionRecord): string { if (record.comparison.label === "NO_DATA") return "첫 기록"; if (record.comparison.label === "SIMILAR") return "이전과 비슷함"; return record.comparison.label === "BETTER" ? "이전 대비 좋아짐" : "휴식 권장"; }
 
-function normalizedFaceWidth(face: Array<{ x: number }> | null): number | null {
-  if (!face || face.length === 0) return null;
-  let minX = 1;
-  let maxX = 0;
-  for (const point of face) {
-    minX = Math.min(minX, point.x);
-    maxX = Math.max(maxX, point.x);
-  }
-  return Math.max(0, maxX - minX);
-}
-
-function sampleVideoBrightness(video: HTMLVideoElement, canvas: HTMLCanvasElement): number | null {
-  try {
-    canvas.width = 24;
-    canvas.height = 14;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) return null;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let total = 0;
-    for (let index = 0; index < pixels.length; index += 4) total += (pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722) / 255;
-    return total / (pixels.length / 4);
-  } catch {
-    return null;
-  }
-}
-
 function cameraQualityMessage(checks: CameraChecks): string {
   if (!checks.faceVisible) return "현재 위치에서 얼굴이 인식되도록 잠시 화면을 바라봐 주세요.";
-  if (!checks.eyesVisible) return "현재 위치에서 눈을 인식하고 있습니다.";
-  if (!checks.upperBodyVisible) return "현재 위치에서 상체가 인식되도록 카메라 화면 안에 있어 주세요.";
-  if (!checks.torsoVisible) return "어깨 아래에 현재 허리 곡선이 잡히도록 카메라 각도를 조금만 내려 주세요.";
-  return "현재 위치와 자세를 그대로 유지하면 5초간 기준으로 저장합니다.";
+  return "다른 자세 조건은 없습니다. 지금 보이는 얼굴 위치를 기준으로 저장합니다.";
 }
 
 function studyCalibrationTitle(cameraBusy: boolean, monitor: MonitorSnapshot, checks: CameraChecks): string {
@@ -1321,8 +1310,5 @@ function studyCalibrationProgressLabel(monitor: MonitorSnapshot): string {
 }
 
 function allStudyCameraChecksReady(checks: CameraChecks): boolean {
-  return checks.faceVisible
-    && checks.eyesVisible
-    && checks.upperBodyVisible
-    && checks.torsoVisible;
+  return checks.faceVisible;
 }

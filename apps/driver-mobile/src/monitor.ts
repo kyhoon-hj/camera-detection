@@ -229,9 +229,9 @@ export class DriverMonitor {
   }
 
   private calibrate(frame: VisionFrame): MonitorSnapshot {
-    const requirePose = this.mode !== "DROWSINESS";
-    const sample = getCalibrationSample(frame, requirePose);
-    const valid = sample !== null && isStableSample(this.previousSample, sample, requirePose);
+    const requirePose = this.mode === "POSTURE";
+    const sample = getCalibrationSample(frame, this.mode);
+    const valid = sample !== null && isStableSample(this.previousSample, sample, this.mode);
 
     if (!valid) {
       if (this.invalidSince === null) this.invalidSince = frame.timestampMs;
@@ -248,12 +248,16 @@ export class DriverMonitor {
         Math.ceil((this.calibrationDurationMs * (1 - progress)) / 1_000) * 1_000,
         false,
         sample === null
-          ? requirePose
-            ? "얼굴, 양쪽 어깨와 허리선이 모두 보이도록 휴대폰 위치를 맞춰 주세요."
-            : "실제로 사용할 휴대폰 위치에서 얼굴이 보이도록 맞춰 주세요."
-          : requirePose
-            ? "몸을 움직이지 말고 정면을 보세요. 기준 측정을 다시 이어갑니다."
-            : "평소 운전 자세를 유지해 주세요. 현재 보이는 각도를 기준으로 측정합니다.",
+          ? this.mode === "STUDY"
+            ? "현재 위치에서 얼굴만 보이도록 휴대폰 위치를 맞춰 주세요."
+            : requirePose
+              ? "얼굴, 양쪽 어깨와 허리선이 모두 보이도록 휴대폰 위치를 맞춰 주세요."
+              : "실제로 사용할 휴대폰 위치에서 얼굴이 보이도록 맞춰 주세요."
+          : this.mode === "STUDY"
+            ? "지금 보이는 자세를 그대로 기준으로 저장하고 있습니다."
+            : requirePose
+              ? "몸을 움직이지 말고 정면을 보세요. 기준 측정을 다시 이어갑니다."
+              : "평소 운전 자세를 유지해 주세요. 현재 보이는 각도를 기준으로 측정합니다.",
       );
     }
 
@@ -268,7 +272,7 @@ export class DriverMonitor {
     const progress = clamp(elapsed / this.calibrationDurationMs, 0, 1);
 
     if (elapsed >= this.calibrationDurationMs && this.samples.length >= MIN_CALIBRATION_SAMPLES) {
-      this.baseline = buildBaseline(this.samples);
+      this.baseline = buildBaseline(this.samples, this.mode);
       return this.monitor(frame);
     }
 
@@ -276,9 +280,11 @@ export class DriverMonitor {
       progress,
       Math.max(0, this.calibrationDurationMs - elapsed),
       true,
-      requirePose
-        ? `${getCameraViewLabel(sample.pose.viewAngle)} 촬영 기준으로 어깨선과 목-허리 상체 축을 잡고 있습니다.`
-        : "현재 카메라 각도와 눈·고개 위치를 기준으로 잡고 있습니다. 평소 운전 자세를 유지하세요.",
+      this.mode === "STUDY"
+        ? "지금 카메라에 보이는 얼굴 위치를 앞으로의 기준으로 저장하고 있습니다."
+        : requirePose
+          ? `${getCameraViewLabel(sample.pose.viewAngle)} 촬영 기준으로 어깨선과 목-허리 상체 축을 잡고 있습니다.`
+          : "현재 카메라 각도와 눈·고개 위치를 기준으로 잡고 있습니다. 평소 운전 자세를 유지하세요.",
     );
   }
 
@@ -350,13 +356,20 @@ export class DriverMonitor {
     const [rightEar, leftEar] = eyeAspectRatios(face);
     const ear = (rightEar + leftEar) / 2;
     const viewAngle = Math.abs(currentPose?.viewAngle ?? baseline.viewAngle);
-    const sideFactor = clamp((viewAngle - 20) / 50, 0, 1);
+    const sideFactor = Math.max(
+      clamp((viewAngle - 20) / 50, 0, 1),
+      faceProfileFactor(face),
+    );
     const closeRatio = 0.68 - sideFactor * 0.22;
     const reopenRatioMargin = this.eyesWereClosed ? 0.02 : 0;
     const rightRatioFromBaseline = rightEar / Math.max(baseline.rightEar, 1e-6);
     const leftRatioFromBaseline = leftEar / Math.max(baseline.leftEar, 1e-6);
-    const eyesClosed = rightRatioFromBaseline < closeRatio + reopenRatioMargin
+    const relativeEyesClosed = rightRatioFromBaseline < closeRatio + reopenRatioMargin
       && leftRatioFromBaseline < closeRatio + reopenRatioMargin;
+    const profileEyeThreshold = 0.055 + (this.eyesWereClosed ? 0.008 : 0);
+    const profileEyesClosed = rightEar < profileEyeThreshold && leftEar < profileEyeThreshold;
+    const useProfileEyeTolerance = this.mode === "DROWSINESS" && sideFactor >= 0.45;
+    const eyesClosed = useProfileEyeTolerance ? profileEyesClosed : relativeEyesClosed;
     if (eyesClosed && !this.eyesWereClosed) this.eyesClosedSince = frame.timestampMs;
     if (!eyesClosed) this.eyesClosedSince = null;
     this.eyesWereClosed = eyesClosed;
@@ -365,13 +378,13 @@ export class DriverMonitor {
       : 0;
 
     const pitch = headPitch(face);
-    const headDownCandidate = detectHeadDown(pitch, currentPose, baseline, this.headWasDown);
+    const headDownCandidate = detectHeadDown(pitch, currentPose, baseline, this.headWasDown, sideFactor);
     if (headDownCandidate && this.headDownCandidateSince === null) this.headDownCandidateSince = frame.timestampMs;
     if (!headDownCandidate) this.headDownCandidateSince = null;
     const headDown = headDownCandidate
       && this.headDownCandidateSince !== null
       && frame.timestampMs - this.headDownCandidateSince >= HEAD_DOWN_CONFIRM_MS;
-    const baselineDeviated = this.mode !== "POSTURE"
+    const baselineDeviated = this.mode === "STUDY"
       && currentPose !== null
       && baseline.poseAvailable
       && hasBaselineDeviation(currentPose, baseline);
@@ -431,7 +444,7 @@ export class DriverMonitor {
       headDown,
       headDownDurationMs,
       baselineDeviated,
-      baselineGuide: {
+      baselineGuide: this.mode === "STUDY" ? {
         faceX: baseline.faceX,
         faceY: baseline.faceY,
         faceWidth: baseline.faceWidth,
@@ -443,7 +456,7 @@ export class DriverMonitor {
         hipY: baseline.hipY,
         showShoulders: baseline.poseAvailable,
         showTorso: baseline.torsoAvailable,
-      },
+      } : null,
       combinedDurationMs,
       bodyCollapseDurationMs: 0,
       bodyCollapseCountReady: false,
@@ -466,7 +479,7 @@ export class DriverMonitor {
 
   private measurePosture(pose: Landmark[] | null, now: number): PostureResult {
     const baseline = this.baseline;
-    if (baseline === null || !upperBodyVisible(pose)) {
+    if (baseline === null || !upperBodyVisible(pose) || (this.mode === "STUDY" && !baseline.poseAvailable)) {
       this.postureIssueSince = null;
       this.lastPostureIssue = "NONE";
       this.poseHistory = [];
@@ -511,9 +524,10 @@ export class DriverMonitor {
     ];
     const [candidate, severity] = issues.reduce((best, current) => current[1] > best[1] ? current : best);
     const lowConfidence = confidence < 0.42 || viewDrift > 48;
+    const torsoMissing = this.mode !== "STUDY" && !torsoReady;
     const issue = lowConfidence
       ? "CAMERA_ANGLE"
-      : !torsoReady
+      : torsoMissing
         ? "TORSO_MISSING"
         : severity > 0
           ? candidate
@@ -572,6 +586,21 @@ export function bothEyesStableForCalibration(face: Landmark[] | null): boolean {
     && nosePosition <= 0.7;
 }
 
+function faceProfileFactor(face: Landmark[]): number {
+  const rightEyeWidth = distance(face[RIGHT_EYE[0]], face[RIGHT_EYE[3]]);
+  const leftEyeWidth = distance(face[LEFT_EYE[0]], face[LEFT_EYE[3]]);
+  const widthRatio = rightEyeWidth / Math.max(leftEyeWidth, 1e-6);
+  const eyeAsymmetry = Math.abs(Math.log(Math.max(widthRatio, 1e-6)));
+  const outerLeftX = Math.min(face[RIGHT_EYE[0]].x, face[LEFT_EYE[3]].x);
+  const outerRightX = Math.max(face[RIGHT_EYE[0]].x, face[LEFT_EYE[3]].x);
+  const nosePosition = (face[1].x - outerLeftX) / Math.max(outerRightX - outerLeftX, 1e-6);
+  const noseDeviation = Math.abs(nosePosition - 0.5);
+  return Math.max(
+    clamp((noseDeviation - 0.12) / 0.38, 0, 1),
+    clamp((eyeAsymmetry - 0.18) / 0.82, 0, 1),
+  );
+}
+
 function eyeAspectRatios(face: Landmark[]): [number, number] {
   return [singleEyeAspectRatio(face, RIGHT_EYE), singleEyeAspectRatio(face, LEFT_EYE)];
 }
@@ -582,10 +611,17 @@ export function headPitch(face: Landmark[]): number {
   return (face[1].y - eyeY) / height;
 }
 
-function detectHeadDown(pitch: number, pose: PoseMeasurement | null, baseline: Baseline, wasDown: boolean): boolean {
+function detectHeadDown(
+  pitch: number,
+  pose: PoseMeasurement | null,
+  baseline: Baseline,
+  wasDown: boolean,
+  profileFactor = 0,
+): boolean {
   const viewAngle = pose?.viewAngle ?? baseline.viewAngle;
   const sideFactor = clamp((Math.abs(viewAngle) - 20) / 50, 0, 1);
-  const faceThreshold = baseline.pitch + (wasDown ? 0.065 : 0.09) + sideFactor * 0.025;
+  const combinedSideFactor = Math.max(sideFactor, profileFactor);
+  const faceThreshold = baseline.pitch + (wasDown ? 0.065 : 0.09) + combinedSideFactor * 0.06;
   const faceIndicatesDown = pitch > faceThreshold;
   if (!faceIndicatesDown) return false;
 
@@ -594,7 +630,7 @@ function detectHeadDown(pitch: number, pose: PoseMeasurement | null, baseline: B
     && pose.confidence >= 0.38
     && angleDistance(pose.viewAngle, baseline.viewAngle) <= 30;
   if (!poseReliable) {
-    const faceOnlyThreshold = baseline.pitch + (wasDown ? 0.085 : 0.12) + sideFactor * 0.025;
+    const faceOnlyThreshold = baseline.pitch + (wasDown ? 0.085 : 0.12) + combinedSideFactor * 0.10;
     return pitch > faceOnlyThreshold;
   }
 
@@ -603,9 +639,9 @@ function detectHeadDown(pitch: number, pose: PoseMeasurement | null, baseline: B
   return headHeightDrop >= requiredDrop;
 }
 
-function getCalibrationSample(frame: VisionFrame, requirePose: boolean): CalibrationSample | null {
+function getCalibrationSample(frame: VisionFrame, mode: MonitorMode): CalibrationSample | null {
   if (!faceVisible(frame.face)) return null;
-  if (requirePose && !seatedTorsoVisible(frame.pose)) return null;
+  if (mode === "POSTURE" && !seatedTorsoVisible(frame.pose)) return null;
   let pose: PoseMeasurement;
   let poseAvailable = false;
   if (upperBodyVisible(frame.pose)) {
@@ -630,14 +666,20 @@ function getCalibrationSample(frame: VisionFrame, requirePose: boolean): Calibra
   };
 }
 
-function isStableSample(previous: CalibrationSample | null, current: CalibrationSample, requirePose: boolean): boolean {
-  if (!Number.isFinite(current.ear) || current.ear <= 0.04) return false;
-  const sideFactor = clamp((Math.abs(current.pose.viewAngle) - 20) / 50, 0, 1);
-  const minimumOpenEyeRatio = 0.16 - sideFactor * 0.08;
-  if (current.ear < minimumOpenEyeRatio) return false;
+function isStableSample(previous: CalibrationSample | null, current: CalibrationSample, mode: MonitorMode): boolean {
+  const requirePose = mode === "POSTURE";
+  if (!Number.isFinite(current.ear) || current.ear <= 0) return false;
+  if (mode === "POSTURE") {
+    const sideFactor = clamp((Math.abs(current.pose.viewAngle) - 20) / 50, 0, 1);
+    const minimumOpenEyeRatio = 0.16 - sideFactor * 0.08;
+    if (current.ear < minimumOpenEyeRatio) return false;
+  }
   if (requirePose && !Number.isFinite(current.pose.headHeight)) return false;
   if (requirePose && current.pose.confidence < 0.42) return false;
   if (previous === null) return true;
+  // 열공·졸음운전 모드는 얼굴이 보이는지만 시작 조건으로 사용한다.
+  // 사용자의 자연스러운 움직임이나 정면·측면 방향 변화는 측정을 막지 않는다.
+  if (mode !== "POSTURE") return true;
   const faceMove = Math.hypot(current.pose.noseX - previous.pose.noseX, current.pose.noseY - previous.pose.noseY);
   if (!requirePose) return faceMove < 0.09;
   const shoulderMove = Math.hypot(current.pose.shoulderX - previous.pose.shoulderX, current.pose.shoulderY - previous.pose.shoulderY);
@@ -645,12 +687,13 @@ function isStableSample(previous: CalibrationSample | null, current: Calibration
   return faceMove < 0.08 && shoulderMove < 0.075 && scaleChange < 0.25;
 }
 
-function buildBaseline(samples: CalibrationSample[]): Baseline {
+function buildBaseline(samples: CalibrationSample[], mode: MonitorMode): Baseline {
   const torsoSamples = samples.filter((sample) => sample.pose.torsoAvailable);
+  const minimumFaceOnlyEyeBaseline = mode === "POSTURE" ? 0 : 0.12;
   return {
-    ear: median(samples.map((sample) => sample.ear)),
-    rightEar: median(samples.map((sample) => sample.rightEar)),
-    leftEar: median(samples.map((sample) => sample.leftEar)),
+    ear: Math.max(median(samples.map((sample) => sample.ear)), minimumFaceOnlyEyeBaseline),
+    rightEar: Math.max(median(samples.map((sample) => sample.rightEar)), minimumFaceOnlyEyeBaseline),
+    leftEar: Math.max(median(samples.map((sample) => sample.leftEar)), minimumFaceOnlyEyeBaseline),
     pitch: median(samples.map((sample) => sample.pitch)),
     headHeight: median(samples.map((sample) => sample.pose.headHeight)),
     headForward: median(samples.map((sample) => sample.pose.headForward)),
@@ -753,11 +796,14 @@ export function seatedTorsoVisible(pose: Landmark[] | null): pose is Landmark[] 
   const leftHip = pose[23];
   const rightHip = pose[24];
   if (![leftHip.x, leftHip.y, leftHip.z, rightHip.x, rightHip.y, rightHip.z].every(Number.isFinite)) return false;
+  const hips = [visibility(leftHip), visibility(rightHip)].sort((a, b) => b - a);
   const shoulderCenter = weightedPair(pose[11], pose[12]);
   const hipCenter = weightedPair(leftHip, rightHip);
   const torsoHeight = hipCenter.y - shoulderCenter.y;
   const torsoWidth = distance(leftHip, rightHip);
-  return hipCenter.x >= -0.5
+  return hips[0] >= 0.35
+    && hips[1] >= 0.08
+    && hipCenter.x >= -0.5
     && hipCenter.x <= 1.5
     && hipCenter.y >= -0.1
     && hipCenter.y <= 2.5
