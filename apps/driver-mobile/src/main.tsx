@@ -4,6 +4,7 @@ import { StrictMode, useCallback, useEffect, useMemo, useRef, useState, type Poi
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { removeBottomBannerAd, showBottomBannerAd, showMenuInterstitialAd, showRewardedDownloadAd } from "./ads";
+import { loadAdsDisabledForTesting, saveAdsDisabledForTesting } from "./adTestMode";
 import { cameraErrorMessage, requestUserCamera, waitForUsableVideoFrame } from "./cameraAccess";
 import { applyNativeSafeAreaInsets } from "./displayControl";
 import { FIRST_RUN_NOTICE_ACKNOWLEDGED, FIRST_RUN_NOTICE_STORAGE_KEY, shouldShowFirstRunNotice } from "./firstRunNotice";
@@ -228,6 +229,7 @@ function App() {
   const [showSignComingSoon, setShowSignComingSoon] = useState(false);
   const [comingSoonModule, setComingSoonModule] = useState<"SIGN" | "POSTURE" | "MEDITATION">("SIGN");
   const [adsRemoved, setAdsRemoved] = useState(loadAdsRemoved);
+  const [adsDisabledForTesting, setAdsDisabledForTesting] = useState(loadAdsDisabledForTesting);
   const [showRemoveAdsDialog, setShowRemoveAdsDialog] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
@@ -733,6 +735,7 @@ function App() {
     }
   }, [activeModule]);
 
+  const advertisingDisabled = adsRemoved || adsDisabledForTesting;
   const bannerSuppressed = activeModule === "STUDY" || showDrowsyNotice || showFirstRunNotice || showRemoveAdsDialog || showSignComingSoon;
 
   useEffect(() => {
@@ -753,12 +756,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (adsRemoved || bannerSuppressed) void removeBottomBannerAd();
+    if (advertisingDisabled || bannerSuppressed) void removeBottomBannerAd();
     else void showBottomBannerAd();
     return () => {
       void removeBottomBannerAd();
     };
-  }, [adsRemoved, bannerSuppressed]);
+  }, [advertisingDisabled, bannerSuppressed]);
 
   const openModule = useCallback(async (module: AppModule) => {
     if (module === activeModuleRef.current) return;
@@ -767,7 +770,7 @@ function App() {
       setShowSignComingSoon(true);
       return;
     }
-    if (!adsRemoved) await showMenuInterstitialAd();
+    if (!advertisingDisabled) await showMenuInterstitialAd();
     if (module !== "DROWSINESS") stop();
     activeModuleRef.current = module;
     meditationCueRef.current = "";
@@ -777,7 +780,14 @@ function App() {
     }
     setActiveModule(module);
     if (module === "DROWSINESS") setActiveTab("MONITOR");
-  }, [adsRemoved, stop]);
+  }, [advertisingDisabled, stop]);
+
+  const toggleAdsDisabledForTesting = useCallback(() => {
+    const disabled = !adsDisabledForTesting;
+    saveAdsDisabledForTesting(disabled);
+    setAdsDisabledForTesting(disabled);
+    if (disabled) void removeBottomBannerAd();
+  }, [adsDisabledForTesting]);
 
   const completeRemoveAdsPurchase = useCallback(() => {
     localStorage.setItem(ADS_REMOVED_STORAGE_KEY, "true");
@@ -1081,7 +1091,7 @@ function App() {
   const permissionLabel = getPermissionLabel(cameraPermission);
 
   return (
-    <main className={`app module-${activeModule.toLowerCase()} ${isNativeApp ? "native-app" : ""} status-${activeModule === "MEDITATION" ? "awake" : snapshot.status.toLowerCase()}`}>
+    <main className={`app module-${activeModule.toLowerCase()} ${isNativeApp ? "native-app" : ""} ${advertisingDisabled ? "ads-disabled" : ""} status-${activeModule === "MEDITATION" ? "awake" : snapshot.status.toLowerCase()}`}>
       {showFirstRunNotice && createPortal(<FirstRunNotice onConfirm={acknowledgeFirstRunNotice} />, document.body)}
       <header className="topbar">
         <div className="brand-lockup">
@@ -1095,7 +1105,7 @@ function App() {
         </div>
         {activeModule !== "STUDY" && <button className="header-icon" onClick={() => void (async () => {
           if (activeModule !== "DROWSINESS" && activeModule !== "POSTURE") {
-            if (!adsRemoved) await showMenuInterstitialAd();
+            if (!advertisingDisabled) await showMenuInterstitialAd();
             stop();
             activeModuleRef.current = "DROWSINESS";
             setActiveModule("DROWSINESS");
@@ -1123,6 +1133,7 @@ function App() {
         studyEndingDownloadBusy={studyEndingDownloadBusy}
         onSelectStudyEndingVideo={setSelectedStudyEndingVideoId}
         onDownloadOrApplyStudyEndingVideo={() => void downloadOrApplySelectedStudyEndingVideo()}
+        adsDisabledForTesting={adsDisabledForTesting}
       />}
       {activeModule === "MEDITATION" && (
         <MeditationScreen
@@ -1144,7 +1155,7 @@ function App() {
         onExit={goHome}
         alertVideoPath={getStudyWarningVideoProfile(studyWarningLibrary.appliedId).path}
         endingVideoPath={getStudyEndingVideoProfile(studyEndingLibrary.appliedId).path}
-        adsRemoved={adsRemoved}
+        adsRemoved={advertisingDisabled}
       />}
       {activeModule === "SIGN" && <SignInterpreterScreen widgetSettings={widgetSettings} onWidget={() => void openModule("WIDGET")} />}
       {activeModule === "WIDGET" && <WidgetSettingsScreen settings={widgetSettings} onUpdate={updateWidgetSettings} />}
@@ -1321,6 +1332,7 @@ function App() {
         <button className="setting-row" onClick={()=>setSoundEnabled(value=>!value)} aria-pressed={soundEnabled}><span><b>경보음과 음성 안내</b><small>주의·위험 상태를 한국어로 알립니다.</small></span><i className={soundEnabled?"on":""}>{soundEnabled?"켜짐":"꺼짐"}</i></button>
         <button className="setting-row" onClick={()=>void testVoice()}><span><b>안내 음성 테스트</b><small>기본 한국어 음성과 TTS 상태를 확인합니다.</small></span><i>재생</i></button>
         <button className="setting-row" onClick={()=>monitorRef.current.recalibrate()} disabled={runState!=="RUNNING"}><span><b>운전자 기준 재측정</b><small>{activeModule === "POSTURE" ? "얼굴과 자세 기준을 5초간 다시 측정합니다." : "눈과 고개 움직임 기준을 5초간 다시 측정합니다."}</small></span><i>재측정</i></button>
+        <button className="setting-row ad-test-row" onClick={toggleAdsDisabledForTesting} aria-pressed={adsDisabledForTesting}><span><b>테스트 중 광고 비활성화</b><small>{adsDisabledForTesting ? "배너·전면·보상형 광고를 건너뜁니다. 보상형 콘텐츠는 바로 받을 수 있습니다." : "테스트할 때 모든 광고를 끄고 보상형 콘텐츠를 바로 받습니다."}</small></span><i className={adsDisabledForTesting ? "on" : ""}>{adsDisabledForTesting ? "광고 꺼짐" : "광고 켜짐"}</i></button>
         <button className="setting-row remove-ads-row" onClick={() => { setPurchaseFeedback(""); setShowRemoveAdsDialog(true); }}><span><b>광고 제거</b><small>{adsRemoved ? "광고 제거가 적용되어 있습니다." : "배너와 메뉴 이동 전면 광고를 제거합니다."}</small></span><i className={adsRemoved ? "on" : ""}>{adsRemoved ? "적용됨" : "구매"}</i></button>
         <button className="setting-row" onClick={() => void openModule("WIDGET")}><span><b>번역 위젯 설정</b><small>위치, 글자 크기, 투명도와 Gloss 표시를 설정합니다.</small></span><i>열기</i></button>
         {!isNativeApp&&<button className="setting-row" onClick={()=>void install()} aria-expanded={showInstallHelp}><span><b>홈 화면에 앱 설치</b><small>전체 화면에서 빠르게 실행할 수 있습니다.</small></span><i>설치</i></button>}
@@ -1596,6 +1608,7 @@ function HomeScreen({
   studyEndingDownloadBusy,
   onSelectStudyEndingVideo,
   onDownloadOrApplyStudyEndingVideo,
+  adsDisabledForTesting,
 }: {
   onOpen(module: AppModule): void;
   widgetSettings: WidgetSettings;
@@ -1615,6 +1628,7 @@ function HomeScreen({
   studyEndingDownloadBusy: boolean;
   onSelectStudyEndingVideo(id: StudyEndingVideoId): void;
   onDownloadOrApplyStudyEndingVideo(): void;
+  adsDisabledForTesting: boolean;
 }) {
   const wakeProfileScrollRef = useRef<HTMLDivElement>(null);
   const wakeProfileDragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; moved: boolean } | null>(null);
@@ -1632,6 +1646,9 @@ function HomeScreen({
   const selectedStudyWarningApplied = studyWarningLibrary.appliedId === selectedStudyWarningVideoId;
   const selectedStudyEndingDownloaded = studyEndingLibrary.downloadedIds.includes(selectedStudyEndingVideoId);
   const selectedStudyEndingApplied = studyEndingLibrary.appliedId === selectedStudyEndingVideoId;
+  const lockedDownloadLabel = adsDisabledForTesting ? "테스트로 받기" : "광고로 받기";
+  const downloadActionLabel = adsDisabledForTesting ? "광고 없이 테스트 다운로드" : "광고 시청 후 다운로드";
+  const downloadBusyLabel = adsDisabledForTesting ? "다운로드 준비 중…" : "광고 불러오는 중…";
 
   const beginWakeProfileDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || event.button !== 0) return;
@@ -1751,7 +1768,7 @@ function HomeScreen({
                   </i>}
                 </span>
                 <strong>{profile.name}</strong>
-                <small>{applied ? "적용됨" : downloaded ? "다운로드됨" : selected ? "선택됨 · 광고로 받기" : "광고로 받기"}</small>
+                <small>{applied ? "적용됨" : downloaded ? "다운로드됨" : selected ? `선택됨 · ${lockedDownloadLabel}` : lockedDownloadLabel}</small>
               </button>;
             })}
           </div>
@@ -1762,7 +1779,7 @@ function HomeScreen({
               className={selectedStudyWarningApplied ? "applied" : ""}
               onClick={onDownloadOrApplyStudyWarningVideo}
             >
-              {studyWarningDownloadBusy ? "광고 불러오는 중…" : selectedStudyWarningApplied ? "적용됨" : selectedStudyWarningDownloaded ? "적용하기" : "광고 시청 후 다운로드"}
+              {studyWarningDownloadBusy ? downloadBusyLabel : selectedStudyWarningApplied ? "적용됨" : selectedStudyWarningDownloaded ? "적용하기" : downloadActionLabel}
             </button>
           </div>
         </section>
@@ -1793,7 +1810,7 @@ function HomeScreen({
                   </i>}
                 </span>
                 <strong>{profile.name}</strong>
-                <small>{applied ? "적용됨" : downloaded ? "다운로드됨" : selected ? "선택됨 · 광고로 받기" : "광고로 받기"}</small>
+                <small>{applied ? "적용됨" : downloaded ? "다운로드됨" : selected ? `선택됨 · ${lockedDownloadLabel}` : lockedDownloadLabel}</small>
               </button>;
             })}
           </div>
@@ -1804,7 +1821,7 @@ function HomeScreen({
               className={selectedStudyEndingApplied ? "applied" : ""}
               onClick={onDownloadOrApplyStudyEndingVideo}
             >
-              {studyEndingDownloadBusy ? "광고 불러오는 중…" : selectedStudyEndingApplied ? "적용됨" : selectedStudyEndingDownloaded ? "적용하기" : "광고 시청 후 다운로드"}
+              {studyEndingDownloadBusy ? downloadBusyLabel : selectedStudyEndingApplied ? "적용됨" : selectedStudyEndingDownloaded ? "적용하기" : downloadActionLabel}
             </button>
           </div>
         </section>
@@ -1852,7 +1869,7 @@ function HomeScreen({
               </i>}
             </span>
             <strong>{profile.name}</strong>
-            <small>{applied ? "적용됨" : awaitingApply ? "한 번 더 터치" : downloaded ? "다운로드됨" : selected ? "선택됨 · 광고로 받기" : "광고로 받기"}</small>
+            <small>{applied ? "적용됨" : awaitingApply ? "한 번 더 터치" : downloaded ? "다운로드됨" : selected ? `선택됨 · ${lockedDownloadLabel}` : lockedDownloadLabel}</small>
           </button>;
         })}
         <article className="wake-profile-card coming-soon" role="listitem" aria-label="새 졸음운전 영상 추후 업데이트 예정">
@@ -1870,7 +1887,7 @@ function HomeScreen({
           disabled={downloadBusy || selectedApplied}
           className={selectedApplied ? "applied" : ""}
         >
-          {downloadBusy ? "광고 불러오는 중…" : selectedApplied ? "적용됨" : selectedDownloaded ? "적용하기" : "광고 시청 후 다운로드"}
+          {downloadBusy ? downloadBusyLabel : selectedApplied ? "적용됨" : selectedDownloaded ? "적용하기" : downloadActionLabel}
         </button>
       </div>
     </section>

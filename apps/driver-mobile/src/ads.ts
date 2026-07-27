@@ -10,6 +10,7 @@ import {
   type BannerAdOptions,
   type AdMobRewardItem,
 } from "@capacitor-community/admob";
+import { loadAdsDisabledForTesting } from "./adTestMode";
 import { lockCurrentOrientation, unlockOrientation } from "./displayControl";
 
 const TEST_ANDROID_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
@@ -26,6 +27,10 @@ let initialized = false;
 
 export async function showBottomBannerAd(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
+  if (loadAdsDisabledForTesting()) {
+    await removeBottomBannerAd();
+    return;
+  }
   try {
     await initializeAdMob();
     const options: BannerAdOptions = {
@@ -43,6 +48,7 @@ export async function showBottomBannerAd(): Promise<void> {
 
 export async function showMenuInterstitialAd(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
+  if (loadAdsDisabledForTesting()) return;
   const listeners: PluginListenerHandle[] = [];
   let finishDismissal: (() => void) | null = null;
   let orientationLocked = false;
@@ -82,6 +88,7 @@ export async function showMenuInterstitialAd(): Promise<void> {
 }
 
 export async function showRewardedDownloadAd(): Promise<boolean> {
+  if (loadAdsDisabledForTesting()) return true;
   if (!Capacitor.isNativePlatform()) return true;
 
   const listeners: PluginListenerHandle[] = [];
