@@ -1,0 +1,10 @@
+node_modules/
+dist/
+releases/
+*.tsbuildinfo
+native/**/.gradle/
+native/**/build/
+native/**/local.properties
+native/**/src/main/assets/
+*.keystore
+*.jks

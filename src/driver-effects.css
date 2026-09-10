@@ -1,0 +1,114 @@
+/* Stitch 코믹 팝: 출발 전에는 가볍게, 감지 중에는 정보 중심으로. */
+.driver-playback-settings { margin:5px 0 0; padding:16px; min-width:0; border:1px solid #665276; border-radius:22px; background:linear-gradient(135deg,#2d2538,#211c2c); }
+.driver-playback-settings legend { padding:0 8px; font-size:15px; color:#f2e7fa; font-weight:650; }
+.driver-playback-option { display:flex; align-items:center; gap:12px; padding:15px 12px; margin:0 0 10px; border:1px solid #53445f; border-radius:15px; background:#302639; cursor:pointer; }
+.driver-playback-option:has(input:checked) { border-color:#d2f000; background:#323623; }
+.driver-playback-option:has(input:focus-visible) { outline:2px solid #7df4ff; outline-offset:3px; }
+.driver-playback-option input { flex:0 0 20px; width:20px; height:20px; margin:0; accent-color:#d2f000; }
+.driver-playback-option span { min-width:0; }
+.driver-playback-option b { display:block; color:#fff; font-size:14px; font-weight:600; }
+.driver-playback-option:has(input:checked) b { color:#e2f775; }
+.driver-playback-option small { display:block; margin-top:5px; color:#c8bcd2; font-size:11px; line-height:1.6; }
+.driver-playback-settings>p { margin:4px 3px 0; color:#bfb1ca; font-size:11px; line-height:1.7; }
+.driver-playback-settings:disabled .driver-playback-option { opacity:.65; cursor:default; }
+.pop-playback-summary { padding:11px 13px; margin:-4px 0 18px; border-radius:12px; border:1px solid #6e6650; color:#e4efae; background:#292b23; font-size:12px; line-height:1.6; }
+.driver-alert-art>.driver-random-art { position:static; width:54px; height:54px; border:1px solid #d2f00088; border-radius:14px; background:#383c26; color:#d2f000; font-size:29px; }
+.video-poster { position:relative; width:100%; height:100%; overflow:hidden; background:radial-gradient(ellipse at 65% 30%,#573047,#241e33 75%); }
+.video-poster img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .28s ease; }
+.video-poster.is-ready img { opacity:1; }
+.video-poster.is-error img { display:none; }
+.video-poster-fallback { position:absolute; inset:0; display:grid; place-items:center; color:#dbcfeb; font:600 11px "Jolbang HUD",sans-serif; letter-spacing:.1em; background-image:radial-gradient(#ff9fc220 1px,transparent 1px); background-size:9px 9px; }
+.video-poster.is-ready .video-poster-fallback { visibility:hidden; }
+.pop-intro { position:relative; isolation:isolate; padding-top:4px; }
+.pop-intro::after { content:""; position:absolute; z-index:-1; top:-10px; right:-4px; width:130px; height:138px; background-image:radial-gradient(#d2f00030 1.2px,transparent 1.2px); background-size:8px 8px; mask-image:linear-gradient(135deg,transparent,#000); }
+.pop-intro-spark { position:absolute; right:8px; top:27px; color:#ff82b1; font-size:52px; line-height:1; transform:rotate(12deg); text-shadow:3px 3px #07040d; }
+.pop-library .pop-intro h1 { font-weight:740; }
+.pop-featured { border-color:#d2f000b3; box-shadow:0 14px 40px #08041166,4px 4px 0 #07050e; }
+.pop-featured-media { aspect-ratio:16/10; }
+.pop-featured-media>.video-poster { position:absolute; inset:0; }
+.pop-video-shade { background:linear-gradient(180deg,#0b061a55,transparent 40%,#211629bb); }
+.pop-featured-media.is-locked .video-poster img,.pop-video-card.is-locked .video-poster img { filter:blur(7px) brightness(.4) saturate(.5); transform:scale(1.08); }
+.pop-featured-media.is-locked::after { content:""; pointer-events:none; position:absolute; inset:0; background-image:radial-gradient(#ff9fc229 1px,transparent 1px); background-size:8px 8px; }
+.pop-featured-media :is(.pop-play,.pop-sticker,.pop-owned-badge,.pop-bubble) { z-index:1; }
+.pop-sticker { box-shadow:2px 3px 0 #150514; border:1px solid #ffafd299; }
+.pop-play { padding:0; display:grid; place-items:center; backdrop-filter:blur(6px); background:linear-gradient(140deg,#f2ffa2,#d2f000); box-shadow:0 0 0 8px #d2f00014,0 8px 24px #07031288; }
+.pop-featured-media.is-locked .pop-play { padding:0; background:#302336ef; box-shadow:0 0 0 8px #ff6ca614,0 8px 24px #07031288; }
+.pop-bubble { max-width:calc(100% - 28px); font-weight:650; border:1px solid #181020; }
+.pop-apply { background:linear-gradient(135deg,#e4ff47,#c7e51c); box-shadow:0 3px 0 #788a16; }
+.pop-apply:disabled { box-shadow:none; }
+.pop-apply[aria-busy=true]::before { content:""; display:inline-block; width:12px; height:12px; margin-right:7px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; vertical-align:-2px; animation:driver-loading 1s linear infinite; }
+.pop-video-card { background:linear-gradient(135deg,#2b2337,#201b2a); transition:border-color .2s,background .2s; }
+.pop-video-card.selected { border-style:solid; border-color:#d2f000a6; background:linear-gradient(125deg,#303229,#231e2e); }
+.pop-thumbnail { width:108px; height:108px; border-radius:17px; }
+.pop-card-copy h3 { font-weight:650; }
+.pop-section-heading h2 { font-weight:650; }
+.pop-dock button { background:linear-gradient(120deg,#e5ff55,#cae82d); box-shadow:0 4px 0 #788916,0 8px 30px #07041080; }
+.pop-dock button>span:first-child { width:30px; height:30px; border:1px solid #29300766; border-radius:10px; display:grid; place-items:center; }
+.pop-library button,.pop-preview-dialog button,.variant-jolbang :is(.header-icon,.driver-gps-enable,.controls button,.details-toggle,.safety-confirm,.safety-cancel) { transition:scale .18s cubic-bezier(.2,.8,.3,1.4),box-shadow .18s,background-color .18s; }
+.pop-library button:enabled:active,.pop-preview-dialog button:active,.variant-jolbang :is(.header-icon,.driver-gps-enable,.controls button,.details-toggle,.safety-confirm,.safety-cancel):enabled:active { scale:.965; box-shadow:none; }
+.pop-library .pop-play:enabled:active { scale:.94; }
+.pop-preview-dialog[open] { animation:driver-dialog-in .25s ease-out both; }
+.pop-preview-dialog[open]::backdrop { animation:driver-fade-in .2s ease-out both; backdrop-filter:blur(6px); }
+.pop-intro,.pop-filters,.pop-featured,.driver-monitor-intro { animation:driver-rise-in .38s ease-out both; }
+.pop-featured { animation-delay:.07s; }
+.pop-featured-media .pop-sticker { animation:driver-sticker-in .5s cubic-bezier(.2,.8,.3,1.3) both; }
+.pop-intro-spark { animation:driver-spark-in .65s ease-out both; }
+
+/* 실제 촬영 위의 고정 모서리와 계기판. */
+.app.variant-jolbang.module-drowsiness .camera-stage { border-color:#827a4b; background:#15101e; }
+.app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:485px; }
+.driver-viewfinder { position:absolute; z-index:3; inset:52px 16px 204px; pointer-events:none; opacity:.5; }
+.driver-viewfinder i { position:absolute; width:20px; height:20px; border:2px solid #d2f000; border-radius:3px; }
+.driver-viewfinder i:nth-child(1) { top:0; left:0; border-right:0; border-bottom:0; }
+.driver-viewfinder i:nth-child(2) { top:0; right:0; border-left:0; border-bottom:0; }
+.driver-viewfinder i:nth-child(3) { bottom:0; left:0; border-right:0; border-top:0; }
+.driver-viewfinder i:nth-child(4) { bottom:0; right:0; border-left:0; border-top:0; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder { justify-content:flex-start; padding:51px 20px 204px; background:radial-gradient(ellipse at 50% 35%,#343246,#191521 74%); }
+.app.variant-jolbang.module-drowsiness .camera-placeholder strong { margin-top:12px; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder p { margin:6px 0; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder .permission-state { margin-top:6px; padding:4px 7px; font-size:9px; }
+.driver-lens-guide { width:174px; max-width:60%; display:grid; justify-items:center; gap:2px; color:#d2f000; }
+.driver-guide-label { font:500 8px "Jolbang HUD",sans-serif; letter-spacing:.18em; color:#c1b5d0; }
+.driver-lens-guide svg { width:100%; height:76px; overflow:visible; stroke:#d2f000; stroke-width:2.5; stroke-linecap:round; filter:drop-shadow(0 0 8px #d2f00026); }
+.driver-lens-guide svg rect { fill:#d2f00009; }
+.driver-lens-guide .driver-guide-eyes { stroke-width:5; transform-origin:center 60px; animation:driver-eye-blink .28s ease-in-out 1s 2; }
+.driver-lens-guide .driver-guide-smile { stroke:#ff9fc2; stroke-width:2; }
+.driver-guide-note { font-size:9px; padding:4px 9px; color:#d5c3e6; background:#403046; border-radius:6px; transform:rotate(-3deg); }
+.driver-monitor-intro>b { box-shadow:2px 2px 0 #08050e; transform:rotate(2deg); }
+.driver-monitor-intro>b.is-live { transform:none; }
+.app.variant-jolbang.module-drowsiness .status-badge { border-radius:9px; box-shadow:2px 2px 0 #070510; }
+.app.variant-jolbang.module-drowsiness .driver-alert-profile { background:linear-gradient(115deg,#342538,#251e2b); border-color:#6e485f; }
+.driver-alert-profile>.driver-alert-art { flex:0 0 54px; width:54px; height:54px; display:block; position:relative; }
+.driver-alert-art>.video-poster { border-radius:14px; border:1px solid #ff9fc299; transform:rotate(-3deg); }
+.driver-alert-art>span { position:absolute; right:-4px; top:-5px; width:19px; height:19px; display:grid; place-items:center; background:#ff8ab9; color:#391028; font:bold 13px "Jolbang HUD",sans-serif; border-radius:6px; border:1px solid #160814; }
+.driver-alert-profile>b { padding:5px 7px; background:#d2f00016; border-radius:7px; }
+.driver-wake-caption { position:absolute; left:12px; right:12px; top:12px; z-index:2; pointer-events:none; display:flex; align-items:center; gap:9px; padding:10px; border:1px solid #ff90bc; border-radius:13px; background:#271425f0; box-shadow:3px 3px #08040c; animation:driver-rise-in .25s ease-out both; }
+.driver-wake-caption b { font:700 14px "Jolbang HUD",sans-serif; color:#ff9fc2; white-space:nowrap; }
+.driver-wake-caption span { font-size:10px; line-height:1.5; color:#fff; }
+.app.variant-jolbang .safety-modal { animation:driver-dialog-in .26s ease-out both; }
+
+@keyframes driver-rise-in { from { opacity:0; translate:0 9px; } to { opacity:1; translate:0 0; } }
+@keyframes driver-dialog-in { from { opacity:0; scale:.96; translate:0 12px; } to { opacity:1; scale:1; translate:0 0; } }
+@keyframes driver-fade-in { from { opacity:0; } to { opacity:1; } }
+@keyframes driver-sticker-in { from { opacity:0; scale:.9; rotate:-5deg; } to { opacity:1; scale:1; rotate:0deg; } }
+@keyframes driver-spark-in { from { opacity:0; scale:.6; rotate:-30deg; } to { opacity:1; scale:1; rotate:0deg; } }
+@keyframes driver-eye-blink { 50% { scale:1 .15; } }
+@keyframes driver-loading { to { rotate:360deg; } }
+@media (hover:hover) and (pointer:fine) { .pop-library button:enabled:hover { filter:brightness(1.07); }.pop-video-card:hover { border-color:#796785; } }
+@media (max-width:370px) {
+  .pop-intro-spark { font-size:39px; right:0; top:40px; }
+  .pop-thumbnail { width:88px; height:96px; }
+  .driver-lens-guide { width:130px; }.driver-lens-guide svg { height:78px; }
+  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:4/5; }
+  .app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:500px; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder { padding:51px 15px 204px; }
+}
+@media (orientation:landscape) and (max-height:650px) {
+  .driver-lens-guide { display:none; }
+  .app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:0; }
+  .driver-viewfinder { inset:36px 12px 151px; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder { padding:39px 18px 140px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .variant-jolbang *,.variant-jolbang *::before,.variant-jolbang *::after,.pop-preview-dialog,.pop-preview-dialog::backdrop { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+}
