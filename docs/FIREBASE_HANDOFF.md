@@ -1,6 +1,8 @@
 # Wake Drive Firebase Analytics 개발 인수인계
 
-기준일: **2026-09-10 · Android 0.1.11 / versionCode 12**
+기준일: **2026-09-10 · Android 0.1.12 / versionCode 13**
+
+다음 개발자에게 먼저 전달할 연결 요약: [Firebase 연동 정보 — 개발자 공유용](FIREBASE_CONNECTION.md). 실제 구성 파일 포함 여부, 프로젝트·앱·GA4 식별자, 콘솔 접근 및 재연결 절차를 정리했다.
 
 이 문서는 현재 수집 항목과 집계 기준, 연결 방법, 확인된 테스트 범위를 한곳에 정리한 인수인계 기준 문서다. 이후 이벤트를 변경하면 코드와 함께 갱신한다. [최초 연결 기록](FIREBASE_ANALYTICS.md)은 0.1.8, [이용 선호 확장 기록](USER_PREFERENCE_ANALYTICS.md)은 0.1.9 당시의 상세 이력이다.
 

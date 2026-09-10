@@ -1,5 +1,7 @@
 # Wake Drive · 열공 독립 앱
 
+**개발자 공유용:** [Firebase 연동 정보 및 연결 절차](docs/FIREBASE_CONNECTION.md).
+
 2026-09-10: 졸방의 서비스 이름을 **Wake Drive**로 변경했습니다. 최신 Android 개발용 APK는 `releases/wake-drive-debug.apk` (0.1.12, versionCode 13)입니다. 기존 설치와 보유 영상을 유지하도록 앱 ID·저장 접두사·내부 빌드 이름 `jolbang`은 유지합니다. [시작 버튼·권한 설정 복구](docs/PERMISSIONS_START.md), [광고 영역 실기 검증](docs/AD_LAYOUT.md), [홈 디자인·모션 검증](docs/WAKE_DRIVE_REFRESH.md), [PiP 실기 미검증 범위](docs/ANDROID_PIP.md).
 
 **Firebase 개발 인수인계:** [수집 항목·이벤트 사전·연결 및 테스트 방법](docs/FIREBASE_HANDOFF.md). 현재 앱 이벤트 27개, 이용 선호 속성 5개와 실제 서버 수신 확인 범위, 남은 실기 검증을 정리했습니다. GitHub로 소스를 전달할 때 이 문서와 관련 테스트를 함께 포함합니다. [DAU·MAU 및 광고 표시·보상 카운트](docs/ACTIVE_USERS_AND_ADS.md)도 참고하세요.
