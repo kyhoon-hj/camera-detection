@@ -1,0 +1,30 @@
+name: Wake Drive suite
+on:
+  push:
+    paths:
+      - 'products/wake-drive-suite/**'
+      - '.github/workflows/wake-drive.yml'
+  pull_request:
+    paths:
+      - 'products/wake-drive-suite/**'
+      - '.github/workflows/wake-drive.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: products/wake-drive-suite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: products/wake-drive-suite/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

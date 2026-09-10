@@ -1,5 +1,13 @@
 # SuhaAI Core v0.1.0
 
+## Wake Drive · 열공 최신 개발 소스 (2026-09-10)
+
+**졸음운전/학습 앱의 후속 개발은 [개발자 인수인계](docs/WAKE_DRIVE_DEVELOPER_HANDOFF.md)부터 확인하세요.**
+최신 독립 앱은 [`products/wake-drive-suite`](products/wake-drive-suite)에 있으며, Wake Drive Android 기준 **0.1.12 / versionCode 13**입니다.
+[실행·빌드 안내](products/wake-drive-suite/README.md), [Firebase 연결 정보](products/wake-drive-suite/docs/FIREBASE_CONNECTION.md),
+[Analytics 이벤트 사전](products/wake-drive-suite/docs/FIREBASE_HANDOFF.md)을 함께 제공합니다.
+기존 `apps/driver-mobile`은 분리 전 통합 앱입니다. 아래 SuhaAI Core 안내는 기존 코어 및 통합 프로젝트에 해당합니다.
+
 노트북 RGB 카메라에서 손·상체 특징과 제스처를 인식하고 안정화된 표준 이벤트와 의도를 REST/WebSocket으로 제공하는 로컬 우선 비전 코어입니다. 결제, 키오스크 화면 전환 같은 업무 로직은 코어 밖의 응용 서비스가 담당합니다.
 
 ## 현재 범위
