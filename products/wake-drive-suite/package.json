@@ -1,0 +1,42 @@
+{
+  "name": "hj-separated-mobile-apps",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build:jolbang": "node scripts/app.mjs build jolbang",
+    "build:yeolgong": "node scripts/app.mjs build yeolgong",
+    "build": "node scripts/app.mjs build all",
+    "dev:jolbang": "vite --mode jolbang",
+    "dev:yeolgong": "vite --mode yeolgong",
+    "preview:jolbang": "vite preview --mode jolbang",
+    "preview:yeolgong": "vite preview --mode yeolgong",
+    "android:jolbang": "node scripts/app.mjs android jolbang",
+    "android:yeolgong": "node scripts/app.mjs android yeolgong"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "8.0.0",
+    "@capacitor/android": "8.4.2",
+    "@capacitor/app": "8.0.0",
+    "@capacitor/core": "8.4.2",
+    "@capacitor/ios": "8.4.2",
+    "@mediapipe/tasks-vision": "0.10.35",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.4.2",
+    "@cloudflare/vite-plugin": "1.37.1",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "sharp": "0.34.5",
+    "typescript": "5.9.3",
+    "vite": "8.0.13",
+    "vitest": "3.2.7",
+    "wrangler": "4.92.0"
+  }
+}

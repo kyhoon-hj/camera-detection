@@ -1,0 +1,156 @@
+[
+  {
+    "variant": "jolbang",
+    "url": "http://127.0.0.1:5210/",
+    "pageStatus": 200,
+    "name": "Wake Drive",
+    "pwaId": "/jolbang",
+    "nativeId": "com.hjsolution.jolbang",
+    "nativeName": "Wake Drive",
+    "pid": 13592,
+    "apkBytes": 157974904,
+    "apkSha256": "703C3B1D60339416DF12F89A62774690A1AEEA5DFC8A53399402DE6636D7CD75",
+    "assets": [
+      {
+        "path": "index.html",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "9D3490A5E6A9FE554997E9E689216CD26CB6744A1F44EC3DA8ACEA1C391D0BAF"
+      },
+      {
+        "path": "manifest.webmanifest",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "88CE52941933CAAAD6B6BB57803B941CD929A39A42F29CA50E19E4C8753DA70D"
+      },
+      {
+        "path": "sw.js",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "C6E657161AD48AFF6743CEFE21D371C99E2E1492D49528CED00DCB47E5279ADE"
+      },
+      {
+        "path": "assets/index-Bo9A9-XA.js",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "B1EEEEFDA587FB1B46DE926AED840D0A32395069FEB95E81FBF6768209D59162"
+      },
+      {
+        "path": "assets/index-B3HhQflR.css",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "2F1CD5401B0A3DB64515C342CD847E47A4A1497AB09421D0EE8A99D752E8BD8C"
+      },
+      {
+        "path": "posters/video-0.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "59DF098CBEFB3047853B89635CE6BB8AB2203D9E72FF281F90E782138F5DE103"
+      },
+      {
+        "path": "posters/video-1.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "F34698446B1B51B6B4E1F0667F56D32A5EEEE1E13B40C1AE671FCB248B4EFDF2"
+      },
+      {
+        "path": "posters/video-2.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "F9DA13C56ED1C64745333EDA02F022A86976F33FE88CC0ACB290A51272F3DB97"
+      },
+      {
+        "path": "posters/video-3.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "C8B28AB5A383EC938AC6D100C71F665E8A467B1ED2CF4B76CB771E02B8ECFDD0"
+      },
+      {
+        "path": "posters/video-4.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "71D5F0795FDD295FAAB5EAFDACAA629BF634139D3BC09322B6FBB4E83793999B"
+      },
+      {
+        "path": "posters/video-5.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "64069DF97CF676DA1918F9AFF151A3F3771087CFD37484BE6CDF05CF50BD6657"
+      },
+      {
+        "path": "posters/video-6.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "2272ECBB54681F47B89AE333EB776DF7DFF70019C8AA0AAB216EADAD0C7AC299"
+      },
+      {
+        "path": "posters/video-7.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "5C23558E03DF4984D059405981BB7A011CCB12AB35FD228AA7029E8B14C7B278"
+      },
+      {
+        "path": "posters/video-8.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "5A85EBA7C01D576A0DA22AE917D472C481DDC6A7766BD3BC04063A948E0AA331"
+      },
+      {
+        "path": "posters/video-9.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "C00043DF9B0B953B7D924DFCDA8F149DB0A5C0A5894B59F5D53A1320DD32DA7B"
+      },
+      {
+        "path": "posters/video-10.webp",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "3E01C79172959AF96B7D2A4FDDC84D7FEFD745F1D7C50D6776D11DD53541E553"
+      }
+    ]
+  },
+  {
+    "variant": "yeolgong",
+    "url": "http://127.0.0.1:5211/",
+    "pageStatus": 200,
+    "name": "열공",
+    "pwaId": "/yeolgong",
+    "nativeId": "com.hjsolution.yeolgong",
+    "nativeName": "열공",
+    "pid": 26224,
+    "apkBytes": 149528716,
+    "apkSha256": "4B0C1664D633F5C6ECC15095E8EBE060237EBF88F447C335CC3E3F9D8E1F8C25",
+    "assets": [
+      {
+        "path": "index.html",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "3D60589A208A73E37809627F5A3F7EC1A2C876FDB597F0DDB9317DB00BC09937"
+      },
+      {
+        "path": "manifest.webmanifest",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "16B9E2757BA4084EDE5EE24FFEC72A69BC29F0D102F1BB840D6A14EEAA4E1FD7"
+      },
+      {
+        "path": "sw.js",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "FCECECDC3570803F2989F2B0142EFE88A4A51511EE8C9F3E4FBC90A91938FCD8"
+      },
+      {
+        "path": "assets/index-CMp7xC8I.js",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "866F7A9CA3A5A391D9147B736FA7B7F142AFA2F112754E90F45E89319D64273F"
+      },
+      {
+        "path": "assets/index-D0ZPpPOc.css",
+        "httpStatus": 200,
+        "apkMatchesWeb": true,
+        "sha256": "69D1577DFAD1843246873B56DCA20831603DC7789159274EF84CD1B5276B05C5"
+      }
+    ]
+  }
+]

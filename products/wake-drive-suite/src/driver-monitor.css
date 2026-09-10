@@ -1,0 +1,216 @@
+/* Driving surfaces share the supplied library's purple, lime and pink palette. */
+.driver-start-feedback { margin:10px 0 16px; padding:12px; border:1px solid #655774; border-radius:12px; color:#ece4f4; background:#292232; font-size:12px; line-height:1.6; }
+.driver-start-feedback.is-error { border-color:#ed81ad; color:#ffdce9; }
+.driver-start-feedback p { margin:0; }
+.driver-start-feedback button { margin-top:10px; padding:10px 14px; border:1px solid #d2f000; border-radius:10px; background:#d2f000; color:#202600; font:inherit; cursor:pointer; }
+@font-face { font-family:"Jolbang Sans"; src:url("/fonts/NotoSansKR.ttf") format("truetype"); font-weight:100 900; font-display:swap; }
+@font-face { font-family:"Jolbang HUD"; src:url("/fonts/SpaceGrotesk.ttf") format("truetype"); font-weight:300 700; font-display:swap; }
+.app.variant-jolbang,.app.variant-jolbang .pop-library,.app.variant-jolbang button,.app.variant-jolbang .safety-modal { font-family:"Jolbang Sans",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+.app.variant-jolbang.module-drowsiness {
+  --line:#494151; --muted:#bab2cc; --green:#d2f000;
+  width:min(100%,560px); padding:0 16px calc(24px + var(--app-safe-bottom));
+  color:#f7f4fd; background:#14121d;
+}
+.app.variant-jolbang>.topbar { background:#100e19; border-color:#383140; }
+.app.variant-jolbang .topbar .header-icon { color:#f2dffb; background:#2b2235; border-color:#53415e; }
+.app.variant-jolbang.module-drowsiness>.topbar { width:calc(100% + 32px); margin:0 -16px; padding-inline:16px; }
+.app.variant-jolbang.module-drowsiness button:focus-visible { outline:3px solid #7df4ff; outline-offset:3px; }
+.driver-monitor-intro { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:23px 2px 18px; }
+.driver-monitor-intro>div>span { color:#ff9fc2; font-size:10px; font-weight:850; letter-spacing:.14em; }
+.driver-monitor-intro h2 { margin:7px 0 0; color:#fff; font-size:29px; letter-spacing:-.05em; line-height:1.2; }
+.driver-monitor-intro>b { display:flex; align-items:center; gap:6px; flex-shrink:0; padding:8px 12px; border:1px solid #51465c; border-radius:999px; color:#c8c0d6; background:#292330; font-size:11px; }
+.driver-monitor-intro>b i { width:6px; height:6px; border-radius:50%; background:currentColor; }
+.driver-monitor-intro>b.is-live { color:#d2f000; background:#292d18; border-color:#626d29; }
+.app.variant-jolbang.module-drowsiness .camera-stage { margin:0; aspect-ratio:6/5; width:100%; max-height:54dvh; border:2px solid #766739; border-radius:26px; background:#100d19; box-shadow:5px 5px 0 #08070c; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder { padding:42px 22px 20px; background:radial-gradient(ellipse at 50% 38%,#383047,#211a30 65%); color:#fff; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder strong { margin:18px 0 0; color:#fff; font-size:20px; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder p { color:#c0b6d0; font-size:12px; line-height:1.6; }
+.app.variant-jolbang.module-drowsiness .face-guide { width:78px; height:86px; flex-shrink:0; margin:0; border:2px solid #d2f000; border-radius:30px; background:#292334; box-shadow:5px 5px 0 #100d18; transform:rotate(-5deg); }
+.app.variant-jolbang.module-drowsiness .face-guide::after { width:25px; height:10px; left:50%; bottom:17px; border:0; border-bottom:2px solid #ff8aba; border-radius:0 0 20px 20px; transform:translateX(-50%); }
+.app.variant-jolbang.module-drowsiness .face-guide span { top:29px; width:7px; height:10px; background:#d2f000; }
+.app.variant-jolbang.module-drowsiness .face-guide span:first-child { left:21px; }
+.app.variant-jolbang.module-drowsiness .face-guide span:last-child { right:21px; }
+.driver-camera-label { position:absolute; z-index:4; right:12px; top:12px; color:#dcd5e8; background:#100d19d9; border:1px solid #6c6077; border-radius:999px; padding:6px 9px; font-size:9px; pointer-events:none; }
+.app.variant-jolbang.module-drowsiness .permission-state { color:#d4cce2; background:#211b2d; border-color:#5d506b; font-size:10px; }
+.app.variant-jolbang.module-drowsiness .permission-state.granted { color:#d2f000; border-color:#73822c; }
+.app.variant-jolbang.module-drowsiness .permission-state.denied,
+.app.variant-jolbang.module-drowsiness .permission-state.unavailable { color:#ffb2c8; border-color:#b54b72; }
+.app.variant-jolbang.module-drowsiness .status-panel { padding:24px 0 10px; }
+.app.variant-jolbang.module-drowsiness .status-heading { display:grid; grid-template-columns:1fr; gap:15px; align-items:center; }
+.app.variant-jolbang.module-drowsiness .status-heading>div:first-child { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.app.variant-jolbang.module-drowsiness .eyebrow { color:#c0b5d1; font-size:12px; letter-spacing:.02em; }
+.app.variant-jolbang.module-drowsiness .status-heading h1 { color:#d2f000; font-size:26px; line-height:1.3; margin:0; }
+.app.variant-jolbang.module-drowsiness.status-caution .status-heading h1 { color:#ffdc73; }
+.app.variant-jolbang.module-drowsiness.status-warning .status-heading h1 { color:#ffb477; }
+.app.variant-jolbang.module-drowsiness.status-danger .status-heading h1 { color:#ff759e; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics article { display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px; padding:15px; border:1px solid #63523e; border-radius:19px; background:#302738; text-align:left; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics article:nth-child(2) { border-color:#714a62; background:#332335; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics span { color:#f1e6f6; font-size:14px; font-weight:800; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics strong { color:#d2f000; font-size:21px; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics article:nth-child(2) strong { color:#ff98c2; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics small { grid-column:1/-1; color:#c4b7d0; font-size:11px; }
+.app.variant-jolbang.module-drowsiness .status-panel .main-message { min-height:0; margin:14px 0; padding:12px 14px; border:1px solid #45394f; border-radius:14px; background:#201b2a; color:#d0c5de; font-size:12px; line-height:1.6; }
+.driver-alert-profile { display:flex; align-items:center; gap:11px; padding:13px; margin:0 0 16px; border:1px solid #63503a; border-radius:18px; background:#2d2530; }
+.driver-alert-symbol { display:grid; place-items:center; flex-shrink:0; width:37px; height:37px; border:1px solid #171015; border-radius:12px; background:#ff8ab9; color:#321426; font-size:25px; font-weight:950; transform:rotate(-7deg); box-shadow:3px 3px 0 #100c16; }
+.driver-alert-profile>div { flex:1; min-width:0; display:grid; gap:5px; }
+.driver-alert-profile small { color:#c1b4cb; font-size:10px; }
+.driver-alert-profile strong { color:#fff; font-size:13px; overflow-wrap:anywhere; }
+.driver-alert-profile>b { color:#d2f000; font-size:10px; flex-shrink:0; }
+.driver-alert-profile.is-playing { border-color:#ff759e; }
+.app.variant-jolbang.module-drowsiness .monitor-start-guide { margin:0 0 18px; padding:16px; border:1px solid #4e415b; border-radius:19px; background:#25202f; }
+.app.variant-jolbang.module-drowsiness .monitor-start-guide-heading { gap:8px; }
+.app.variant-jolbang.module-drowsiness .monitor-start-guide-heading span { color:#ff9fc2; font-size:9px; letter-spacing:.08em; }
+.app.variant-jolbang.module-drowsiness .monitor-start-guide-heading strong { color:#f9f3ff; font-size:14px; }
+.app.variant-jolbang.module-drowsiness .monitor-start-guide p { color:#bfb3ce; font-size:11px; line-height:1.6; }
+.app.variant-jolbang.module-drowsiness .monitor-start-steps { display:flex; flex-wrap:wrap; gap:9px; }
+.app.variant-jolbang.module-drowsiness .monitor-start-steps>span { color:#ddd2e9; background:none; padding:0; font-size:10px; }
+.app.variant-jolbang.module-drowsiness .monitor-start-steps b { color:#261a32; background:#d2f000; }
+.app.variant-jolbang.module-drowsiness .controls { position:static; z-index:auto; right:auto; bottom:auto; width:100%; margin:16px 0 22px; padding:0; transform:none; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.app.variant-jolbang.module-drowsiness .controls .primary { width:100%; min-height:54px; height:auto; padding:14px; border:2px solid #101308; border-radius:16px; background:#d2f000; color:#222800; font-size:15px; font-weight:900; box-shadow:4px 4px 0 #050604; }
+.app.variant-jolbang.module-drowsiness .controls .primary.stop { background:#ff8ab9; color:#391025; }
+.app.variant-jolbang.module-drowsiness .controls .portrait-stop { display:block; }
+.app.variant-jolbang.module-drowsiness .controls .landscape-stop { display:none; }
+.app.variant-jolbang.module-drowsiness .timeline-panel { margin:0; padding:16px; border:1px solid #504158; border-radius:20px; background:#211b2c; }
+.app.variant-jolbang.module-drowsiness .timeline-heading span { color:#af9bbe; font-size:9px; }
+.app.variant-jolbang.module-drowsiness .timeline-heading strong { color:#f6eafa; font-size:15px; }
+.app.variant-jolbang.module-drowsiness .timeline-status { color:#d7c9e3; background:#35273f; font-size:10px; }
+.app.variant-jolbang.module-drowsiness .timeline-status i.normal { background:#d2f000; box-shadow:none; }
+.app.variant-jolbang.module-drowsiness .timeline-status i.pending { background:#ae9abd; }
+.app.variant-jolbang.module-drowsiness .timeline-canvas { border-color:#594361; background:#18131f; }
+.app.variant-jolbang.module-drowsiness :is(.timeline-axis,.timeline-axis span,.timeline-axis small,.timeline-legend span,.timeline-footer>small,.timeline-empty) { color:#b8a6c8; }
+.app.variant-jolbang.module-drowsiness .timeline-empty { background:#2c2236; font-size:10px; line-height:1.5; }
+.app.variant-jolbang.module-drowsiness .details-toggle { margin:14px 0; padding:12px 14px; min-height:44px; color:#eee1f9; border:1px solid #554362; border-radius:13px; background:#292030; font-size:12px; }
+.app.variant-jolbang.module-drowsiness .metric-grid article { background:#282030; border-color:#5b4468; padding:15px; border-radius:17px; }
+.app.variant-jolbang.module-drowsiness .metric-grid :is(span,small,p) { color:#bfaecc; }
+.app.variant-jolbang.module-drowsiness .metric-grid strong { color:#f9f0ff; font-size:17px; }
+.app.variant-jolbang.module-drowsiness .posture-metrics label { background:#1c1625; border-color:#53405f; }
+.app.variant-jolbang.module-drowsiness .posture-metrics label b { color:#f3d7fb; }
+.app.variant-jolbang.module-drowsiness .calibration-overlay { padding:45px 18px 18px; background:#171021bd; }
+.app.variant-jolbang.module-drowsiness .calibration-copy { color:#f9f0ff; background:#2b1e3be8; border-color:#70567f; border-radius:18px; }
+.app.variant-jolbang.module-drowsiness .countdown { color:#d2f000; border-color:#d2f000; background:#30223e; box-shadow:5px 5px 0 #110c19; border-radius:25px; }
+.app.variant-jolbang.module-drowsiness .countdown.lost { color:#ffb9d8; border-color:#ff8ab9; }
+.app.variant-jolbang.module-drowsiness .calibration-overlay :is(p,small) { color:#e2d0ed; }
+.app.variant-jolbang.module-drowsiness .progress-track { background:#574460; }
+.app.variant-jolbang.module-drowsiness .progress-track i { background:#d2f000; }
+.app.variant-jolbang.module-drowsiness .status-badge { top:48px; color:#e5f794; background:#221a30e8; border:1px solid #d2f000; }
+.app.variant-jolbang.module-drowsiness .status-badge.caution { color:#ffdc73; border-color:#ffdc73; }
+.app.variant-jolbang.module-drowsiness .status-badge.warning { color:#ffb477; border-color:#ffb477; }
+.app.variant-jolbang.module-drowsiness .status-badge.danger { color:#ffbfd6; border-color:#ff759e; }
+.app.variant-jolbang.module-drowsiness.status-danger .camera-stage { border-color:#ff4774; }
+.app.variant-jolbang.module-drowsiness .drowsy-camera-signals>span { background:#20162dde; border-color:#675172; color:#eee3f5; }
+.app.variant-jolbang.module-drowsiness .drowsy-camera-signals>span.active { background:#8c1645; border-color:#ff8ab9; color:#fff; }
+.app.variant-jolbang.module-drowsiness .wake-up-video-play-button { color:#321426; background:#ff8ab9; border:2px solid #fff; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .mobile-settings { gap:12px; padding:15px 0; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .settings-heading h1 { color:#fff; font-size:32px; margin:10px 0; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .settings-heading .eyebrow { color:#ff9fc2; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .settings-heading p { color:#c9b8d8; line-height:1.6; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row { min-height:83px; padding:17px; border:1px solid #55415f; border-radius:19px; background:#282031; color:#fbf1ff; box-shadow:3px 3px 0 #100b18; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row b { font-size:14px; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row.remove-ads-row { background:#282031!important; color:#fbf1ff!important; border-color:#55415f!important; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row.remove-ads-row small { color:#c6b5d5!important; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row small { color:#c6b5d5; font-size:11px; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row i { color:#f3c0db; background:#463049; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .setting-row i.on { color:#242c03; background:#d2f000; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .privacy-card { padding:17px; border:1px solid #706330; border-radius:18px; background:#2b2930; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .privacy-card b { color:#d2f000; font-size:13px; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) :is(.privacy-card p,.voice-feedback,footer,footer b) { color:#cbbbd8; font-size:11px; line-height:1.7; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .back-to-monitor { width:100%; min-height:54px; margin-top:16px; border:2px solid #15100c; border-radius:16px; color:#242900; background:#d2f000; font-size:14px; box-shadow:4px 4px 0 #08060c; }
+.app.variant-jolbang:is(.module-drowsiness,.is-settings) .install-help { background:#352738; color:#edd0fa; border:1px solid #6b5077; border-radius:15px; }
+.app.variant-jolbang .safety-modal-backdrop { z-index:90; background:#0e081bd1; }
+.app.variant-jolbang .safety-modal { background:#241c31; border:2px solid #796443; box-shadow:7px 7px 0 #0e0818; }
+.app.variant-jolbang .safety-modal-icon { color:#282c02; background:#d2f000; box-shadow:3px 3px 0 #0e0818; }
+.app.variant-jolbang .safety-kicker { color:#ff9fc2; }
+.app.variant-jolbang .safety-modal h2 { color:#fff5ff; }
+.app.variant-jolbang .safety-modal>p { color:#cdbcd9; }
+.app.variant-jolbang .safety-modal li { background:#30253c; border-color:#584364; }
+.app.variant-jolbang .safety-modal li::before { background:#d2f000; color:#252e00; }
+.app.variant-jolbang .safety-modal li strong { color:#faecff; }
+.app.variant-jolbang .safety-modal li span { color:#c6b4d2; }
+.app.variant-jolbang .safety-confirm { background:#d2f000; color:#252c00; box-shadow:3px 3px 0 #0e0818; }
+.app.variant-jolbang .safety-cancel { background:#3c2c48; color:#decce9; }
+.app.variant-jolbang .purchase-modal-backdrop { z-index:90; background:#0e081bd1; }
+.app.variant-jolbang .purchase-modal { background:#241c31; border-color:#796443; }
+.app.variant-jolbang .purchase-modal h2 { color:#fff5ff; }
+.app.variant-jolbang .purchase-modal>p { color:#cdbcd9; }
+.app.variant-jolbang :is(.purchase-summary,.purchase-steps li) { background:#30253c; border-color:#584364; color:#d8c5e6; }
+.app.variant-jolbang .purchase-summary b { color:#edddf7; }
+.app.variant-jolbang .purchase-summary code { color:#d2f000; }
+.app.variant-jolbang .purchase-steps li::before { background:#d2f000; color:#252c00; }
+.app.variant-jolbang :is(.purchase-actions button,.purchase-close) { background:#3c2c48; color:#decce9; }
+.app.variant-jolbang .purchase-actions .purchase-primary { background:#d2f000; color:#252c00; }
+body:has(.variant-jolbang) .first-run-notice { background:#241c31; border-color:#796443; color:#fff5ff; }
+body:has(.variant-jolbang) .first-run-notice h2 { color:#fff5ff; }
+body:has(.variant-jolbang) :is(.first-run-notice-copy,.first-run-notice-closing) { color:#cdbcd9; }
+body:has(.variant-jolbang) .first-run-notice-assurance { background:#32283b; border-color:#695774; color:#eee1f7; }
+body:has(.variant-jolbang) .first-run-notice>button { background:#d2f000; color:#252c00; }
+@media (orientation:landscape) and (max-height:650px) {
+  .app.variant-jolbang.module-drowsiness { display:grid; width:100%; max-width:none; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-rows:auto auto minmax(0,1fr); gap:10px 18px; padding:0 max(16px,var(--app-safe-bottom)) 12px; }
+  .app.variant-jolbang.module-drowsiness>.topbar { grid-column:1/-1; grid-row:1; }
+  .app.variant-jolbang.module-drowsiness .driver-monitor-intro { grid-column:1/-1; grid-row:2; padding:0; }
+  .app.variant-jolbang.module-drowsiness .driver-monitor-intro h2 { display:inline; margin-left:12px; font-size:21px; }
+  .app.variant-jolbang.module-drowsiness .camera-stage { grid-column:1; grid-row:3; height:calc(100dvh - 125px - var(--app-safe-top)); max-height:none; aspect-ratio:auto; }
+  .app.variant-jolbang.module-drowsiness .status-panel { display:flex; flex-direction:column; grid-column:2; grid-row:3; max-height:calc(100dvh - 125px - var(--app-safe-top)); overflow-y:auto; padding:0 5px 10px 0; }
+  .app.variant-jolbang.module-drowsiness .status-panel>* { flex-shrink:0; }
+  .app.variant-jolbang.module-drowsiness .controls { order:-1; position:static; top:auto; margin:0 0 14px; padding:5px 0 9px; background:transparent; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder { padding:32px 18px 10px; }
+  .app.variant-jolbang.module-drowsiness .face-guide { width:64px; height:65px; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder strong { margin-top:10px; font-size:17px; }
+  .app.variant-jolbang.is-settings { display:block; width:min(100%,640px); padding-bottom:25px; }
+  .app.variant-jolbang.is-settings>footer { display:block; }
+}
+@media (max-width:370px) {
+  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:1; }
+  .driver-camera-label { font-size:8px; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder strong { font-size:18px; }
+  .app.variant-jolbang.module-drowsiness .drowsy-quick-metrics article { padding:12px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .app.variant-jolbang.module-drowsiness.status-danger .camera-stage,
+  .app.variant-jolbang.module-drowsiness.status-danger .camera-stage::before,
+  .app.variant-jolbang.module-drowsiness .status-badge.danger { animation:none; }
+}
+
+/* Camera preview and reference information. */
+.app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:4/5; max-height:none; border-color:#514557; box-shadow:0 12px 34px #08061155; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder { padding:45px 22px 159px; background:radial-gradient(ellipse at 50% 32%,#322c42,#181521 75%); }
+.app.variant-jolbang.module-drowsiness .camera-placeholder strong { font-size:18px; font-weight:650; }
+.app.variant-jolbang.module-drowsiness .camera-placeholder p { font-size:11px; }
+.app.variant-jolbang.module-drowsiness .drowsy-camera-signals { top:88px; bottom:auto; left:14px; right:auto; }
+.app.variant-jolbang.module-drowsiness .status-heading h1 { font-weight:650; font-size:25px; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics article { border-color:#4a3d53; background:#24202e; box-shadow:none; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics article:nth-child(2) { border-color:#534050; background:#29202d; }
+.app.variant-jolbang.module-drowsiness .drowsy-quick-metrics strong { font-weight:600; }
+.app.variant-jolbang.module-drowsiness .timeline-panel { background:linear-gradient(145deg,#252031,#1a1723); border-color:#45394f; padding:19px 16px; box-shadow:0 10px 26px #0b071622; }
+.app.variant-jolbang.module-drowsiness .timeline-heading strong { font-weight:600; font-size:16px; }
+.app.variant-jolbang.module-drowsiness .timeline-heading span { font:500 9px "Jolbang HUD",sans-serif; letter-spacing:.14em; }
+.app.variant-jolbang.module-drowsiness .timeline-canvas { background:transparent; border:0; border-radius:10px; }
+.app.variant-jolbang.module-drowsiness .timeline-status { font-weight:500; padding:6px 9px; border-radius:999px; }
+.app.variant-jolbang.module-drowsiness .timeline-axis span { font-size:9px; font-weight:400; }
+.app.variant-jolbang.module-drowsiness .timeline-legend span { font-size:10px; font-weight:400; }
+.driver-chart-time { display:flex; justify-content:space-between; padding-left:32px; margin:7px 0 14px; color:#9689a6; font-size:9px; }
+@media (orientation:landscape) and (max-height:650px) {
+  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:auto; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder { justify-content:flex-start; padding:45px 18px 120px; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder .face-guide,
+  .app.variant-jolbang.module-drowsiness .camera-placeholder p { display:none; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder strong { font-size:16px; margin:0; }
+  .app.variant-jolbang.module-drowsiness .permission-state { margin-top:7px; font-size:9px; padding:4px 7px; }
+}
+
+/* Small edge telemetry leaves the live camera image unobstructed. */
+.driver-hud { position:absolute; z-index:4; inset:auto 10px 10px; display:flex; justify-content:space-between; align-items:end; gap:6px; pointer-events:none; }
+.driver-hud-speed,.driver-hud-session { display:flex; align-items:center; gap:5px; min-width:0; padding:6px 8px; border:1px solid #ffffff26; border-radius:9px; background:#100e1bb3; color:#f9f7ff; }
+.driver-hud span,.driver-hud small { font-size:10px; line-height:1.2; color:#ddd7e7; white-space:nowrap; }
+.driver-hud strong { font:500 22px/1 "Jolbang HUD",sans-serif; font-variant-numeric:tabular-nums; letter-spacing:-.025em; }
+.driver-hud-session strong { font-size:18px; color:#b8f5ff; }
+.driver-hud-session i { width:4px; height:4px; flex:none; border-radius:50%; background:#aaa2b8; }
+.driver-hud-session i.active { background:#d2f000; }
+.driver-gps-enable { display:block; width:fit-content; margin:8px 0 0 auto; min-height:44px; padding:8px 12px; border:1px solid #6d627a; border-radius:12px; background:#2d2639; color:#e4dced; font-size:11px; }
+@media (orientation:landscape) and (max-height:650px) {
+  .driver-hud { inset:auto 8px 8px; }
+  .driver-hud-speed,.driver-hud-session { padding:5px 7px; }
+  .driver-hud strong { font-size:20px; }
+  .driver-hud-session strong { font-size:17px; }
+}
+

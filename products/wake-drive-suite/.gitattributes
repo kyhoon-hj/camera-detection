@@ -1,0 +1,6 @@
+# Normalize text in Git while preserving Windows launcher line endings on checkout.
+* text=auto
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+**/gradlew text eol=lf

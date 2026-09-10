@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "331472726742",
+    "project_id": "wake-drive",
+    "storage_bucket": "wake-drive.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:331472726742:android:24e40bc115535e5fb83777",
+        "android_client_info": {
+          "package_name": "com.hjsolution.jolbang"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnB2IYROjfrwP9KRJHUVlmf_qE9E44fNo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

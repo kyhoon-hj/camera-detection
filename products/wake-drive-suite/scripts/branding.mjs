@@ -1,0 +1,33 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const selection=process.argv[2]??'all';
+for(const [variant,name,color,letter] of [['jolbang','Wake Drive','#14121d',''],['yeolgong','열공','#254ba1','열']]) {
+ if(selection!=='all'&&selection!==variant) continue;
+ const dir=path.join(root,'branding',variant); fs.mkdirSync(dir,{recursive:true});
+ const sourceLogo=variant==='jolbang'?fs.readFileSync(path.join(root,'public/brand/wake-drive-source.png')):null;
+ const svg=sourceLogo?`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><image width="512" height="512" href="data:image/png;base64,${sourceLogo.toString('base64')}"/></svg>`:`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="${color}"/><text x="256" y="340" text-anchor="middle" font-size="256" font-family="Malgun Gothic, sans-serif" font-weight="700" fill="white">${letter}</text></svg>`;
+ const iconInput=sourceLogo??Buffer.from(svg);
+ fs.writeFileSync(path.join(dir,'icon.svg'),svg);
+ for(const [file,size] of [['icon-192.png',192],['icon-512.png',512],['apple-touch-icon.png',180]]) await sharp(iconInput).resize(size,size).png().toFile(path.join(dir,file));
+ fs.writeFileSync(path.join(dir,'manifest.webmanifest'),JSON.stringify({name,short_name:name,id:`/${variant}`,start_url:'/',scope:'/',display:'standalone',lang:'ko-KR',background_color:color,theme_color:color,icons:[{src:'/icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},{src:'/icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}]},null,2));
+ const cache=`${variant}:shell:${Date.now()}`;
+ fs.writeFileSync(path.join(dir,'sw.js'),`const CACHE=${JSON.stringify(cache)};
+self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/','/icon-192.png','/manifest.webmanifest'])));self.skipWaiting();});
+self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('${variant}:shell:')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim();});
+self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
+event.respondWith(fetch(event.request).then(response=>{if(response.ok&&response.status===200){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(event.request,copy)));}return response;}).catch(()=>caches.match(event.request).then(cached=>cached||Response.error())));});
+`);
+ const res=path.join(root,'native',variant,'android/app/src/main/res');
+ for(const [density,size] of [['mdpi',48],['hdpi',72],['xhdpi',96],['xxhdpi',144],['xxxhdpi',192]]) {
+  const output=path.join(res,`mipmap-${density}`);fs.mkdirSync(output,{recursive:true});
+  for(const suffix of ['','_round','_foreground']) {
+   const target=suffix==='_foreground'?Math.round(size*2.25):size;
+   let icon=sharp(iconInput).resize(sourceLogo&&suffix==='_foreground'?Math.round(target*.64):target);
+   if(sourceLogo&&suffix==='_foreground') { const gap=target-Math.round(target*.64); icon=icon.extend({top:Math.floor(gap/2),bottom:Math.ceil(gap/2),left:Math.floor(gap/2),right:Math.ceil(gap/2),background:'#030b18'}); }
+   await icon.png().toFile(path.join(output,`ic_launcher${suffix}.png`));
+  }
+ }
+}
