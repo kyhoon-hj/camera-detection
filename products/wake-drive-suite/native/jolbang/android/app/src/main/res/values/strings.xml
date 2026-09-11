@@ -4,4 +4,5 @@
     <string name="title_activity_main">Wake Drive</string>
     <string name="package_name">com.hjsolution.jolbang</string>
     <string name="custom_url_scheme">com.hjsolution.jolbang</string>
+    <string name="admob_app_id">ca-app-pub-3432387659713259~3617939047</string>
 </resources>

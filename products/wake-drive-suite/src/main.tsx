@@ -334,7 +334,8 @@ function App() {
   const [placementAutoStart, setPlacementAutoStart] = useState(false);
   const [showSignComingSoon, setShowSignComingSoon] = useState(false);
   const [comingSoonModule, setComingSoonModule] = useState<"SIGN" | "POSTURE" | "MEDITATION">("SIGN");
-  const [adsRemoved, setAdsRemoved] = useState(true);
+  const [adsRemoved, setAdsRemoved] = useState(() => appStorage.getItem(ADS_REMOVED_STORAGE_KEY) === 'true');
+  const moduleTransitionBusy = useRef(false);
   const [showRemoveAdsDialog, setShowRemoveAdsDialog] = useState(false);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
   const [purchaseFeedback, setPurchaseFeedback] = useState("");
@@ -982,7 +983,7 @@ function App() {
     }
   }, [activeModule]);
 
-  const bannerSuppressed = activeModule === "STUDY" || showDrowsyNotice || showFirstRunNotice || showRemoveAdsDialog || showSignComingSoon;
+  const bannerSuppressed = activeModule !== "HOME" || showDrowsyNotice || showFirstRunNotice || showRemoveAdsDialog || showSignComingSoon;
 
   useEffect(() => {
     if (!isNativeApp) return;
@@ -1018,7 +1019,11 @@ function App() {
       setShowSignComingSoon(true);
       return;
     }
-    if (!adsRemoved) await showMenuInterstitialAd();
+    if (moduleTransitionBusy.current) return;
+    moduleTransitionBusy.current = true;
+    try {
+      if (!adsRemoved && activeModuleRef.current === 'HOME') await showMenuInterstitialAd();
+    } finally { moduleTransitionBusy.current = false; }
     if (module !== "DROWSINESS") stop();
     activeModuleRef.current = module;
     meditationCueRef.current = "";
@@ -1611,7 +1616,7 @@ function App() {
           <label className="driver-playback-option"><input type="radio" name="english-warning" checked={englishWarningMode === 'POPUP'} onChange={() => {try {appStorage.setItem(ENGLISH_WARNING_STORAGE_KEY,'POPUP');setEnglishWarningMode('POPUP');} catch {setLanguageError(t('설정을 저장하지 못했습니다. 다시 시도해 주세요.'));}}} /><span><b>Popup and alert sound</b><small>Use this if you prefer alerts without video.</small></span></label>
         </fieldset>}
         <div className="settings-heading"><span className="eyebrow">APP SETTINGS</span><h1>{t("설정")}</h1><p>{t("운전 중에는 조작하지 말고 출발 전에 설정해 주세요.")}</p></div>
-        {APP.variant === "jolbang" && <PrivacyNotice />}
+        {APP.variant === "jolbang" && <PrivacyNotice allowAdOptions={activeModule === 'HOME'} />}
         {APP.variant === "jolbang" && <button data-analytics-action="toggle_pip" className="setting-row" aria-pressed={pipEnabled && nativePip && pipState.supported} disabled={!nativePip || !pipState.supported || runState === "RUNNING" || runState === "LOADING"} onClick={() => {
           try { appStorage.setItem(DRIVER_PIP_STORAGE_KEY, String(!pipEnabled)); setPipEnabled(value => !value); setPipFeedback(""); }
           catch { setPipFeedback(t("작은 화면 설정을 저장하지 못했습니다.")); }

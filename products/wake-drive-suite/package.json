@@ -13,9 +13,11 @@
     "build": "node scripts/app.mjs build jolbang",
     "build:jolbang": "node scripts/app.mjs build jolbang",
     "android:sync": "node scripts/sync-android.mjs",
-    "android:jolbang": "node scripts/app.mjs android jolbang"
+    "android:jolbang": "node scripts/app.mjs android jolbang",
+    "android:bundle:jolbang": "node scripts/app.mjs bundle jolbang"
   },
   "dependencies": {
+    "@capacitor-community/admob": "8.0.0",
     "@capacitor/android": "8.4.2",
     "@capacitor/app": "8.0.0",
     "@capacitor/core": "8.4.2",

@@ -926,3 +926,5 @@ body{background:radial-gradient(circle at 82% -8%,rgba(51,213,153,.13),transpare
 .yeolgong .standalone-start { background: #8bb3ff; color: #102850; }
 .yeolgong .standalone-heading small { color: #a0bfff; }
 .standalone-home .wake-library { padding-top: 0; }
+/* Reserve the native adaptive banner's reported height below page controls. */
+.app { height: calc(100dvh - var(--admob-banner-height, 0px)); min-height: calc(100dvh - var(--admob-banner-height, 0px)); }

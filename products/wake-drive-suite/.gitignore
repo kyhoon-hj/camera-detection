@@ -5,6 +5,8 @@ releases/
 native/**/.gradle/
 native/**/build/
 native/**/local.properties
+native/**/keystore.properties
+.playwright-cli/
 native/**/src/main/assets/
 *.keystore
 *.jks

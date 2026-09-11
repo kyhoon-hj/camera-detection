@@ -1,4 +1,4 @@
-const CACHE="jolbang:shell:1789100901427";
+const CACHE="jolbang:shell:1789117626775";
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/','/icon-192.png','/manifest.webmanifest'])));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('jolbang:shell:')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim();});
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
