@@ -1,4 +1,8 @@
+> 과거 버전 기록: Wake Drive 1.0.0부터 Firebase Analytics와 광고 SDK를 제거했습니다. 아래 설정·수집 내용은 현재 버전에 적용되지 않으며 재도입하지 않습니다. 최신 기준은 프로젝트 README.md입니다.
+
 # Wake Drive Firebase Analytics 개발 인수인계
+
+2026-09-11 추가: [영어 경고 팝업](LANGUAGE_AND_ENGLISH_ALERTS.md)은 `drive_warning`에 `reason`만 기록하고 `video_id` 및 영상 재생 이벤트를 만들지 않는다. 영상 ID 필터로 전체 경고 횟수를 집계하지 않는다. 아래 서버 수신 증빙은 기존 검증 당시 기준이다.
 
 기준일: **2026-09-10 · Android 0.1.12 / versionCode 13**
 

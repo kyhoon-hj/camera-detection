@@ -31,12 +31,12 @@ describe("wake-up video library", () => {
     expect(getAppliedWakeUpVideoPath(applied)).toBe("/media/drowsy-video-1.mp4");
   });
 
-  it("can apply every one of the 11 bundled videos", () => {
+  it("can apply every bundled video", () => {
     const downloaded = WAKE_UP_VIDEO_PROFILES.reduce(
       (state, profile) => addDownloadedWakeUpVideo(state, profile.id),
       DEFAULT_WAKE_UP_LIBRARY_STATE,
     );
-    expect(WAKE_UP_VIDEO_PROFILES).toHaveLength(11);
+    expect(WAKE_UP_VIDEO_PROFILES).toHaveLength(12);
     for (const profile of WAKE_UP_VIDEO_PROFILES) {
       expect(getAppliedWakeUpVideoPath(applyDownloadedWakeUpVideo(downloaded, profile.id))).toBe(profile.path);
     }

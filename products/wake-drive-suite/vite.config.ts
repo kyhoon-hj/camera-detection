@@ -3,15 +3,15 @@ import fs from "node:fs";
 import path from "node:path";
 
 export default defineConfig(({ mode }) => {
-  if (mode !== "jolbang" && mode !== "yeolgong") throw new Error("Use --mode jolbang or --mode yeolgong");
+  if (mode !== "jolbang") throw new Error("Use --mode jolbang or --mode yeolgong");
   const name = mode === "jolbang" ? "Wake Drive" : "열공";
-  const color = mode === "jolbang" ? "#14121d" : "#254ba1";
+  const color = mode === "jolbang" ? "#292333" : "#254ba1";
   const description = mode === "jolbang" ? "눈 감김과 고개 움직임을 살피는 운전 보조 앱" : "집중과 휴식을 관리하고 학습 기록을 쌓는 열공 앱";
   const branding = path.resolve("branding", mode);
   return {
     define: { "import.meta.env.VITE_APP_VARIANT": JSON.stringify(mode) },
-    server: { host: "127.0.0.1", port: mode === "jolbang" ? 5210 : 5211, strictPort: true },
-    preview: { host: "127.0.0.1", port: mode === "jolbang" ? 5210 : 5211, strictPort: true, headers: { "Cache-Control": "no-cache", "Permissions-Policy": "camera=(self), microphone=()" } },
+    server: { host: "127.0.0.1", port: mode === "jolbang" ? 5220 : 5211, strictPort: true },
+    preview: { host: "127.0.0.1", port: mode === "jolbang" ? 5220 : 5211, strictPort: true, headers: { "Cache-Control": "no-cache", "Permissions-Policy": "camera=(self), microphone=(), geolocation=()" } },
     build: { outDir: `dist/${mode}`, emptyOutDir: true },
     plugins: [{
       name: "app-identity",

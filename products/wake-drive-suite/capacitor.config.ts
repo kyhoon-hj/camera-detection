@@ -6,6 +6,6 @@ const config: CapacitorConfig = {
   appName: variant === "jolbang" ? "Wake Drive" : "열공",
   webDir: `dist/${variant}`,
   server: { androidScheme: "https" },
-  android: { path: `native/${variant}/android`, allowMixedContent: false, backgroundColor: "#07110f" },
+  android: { path: `native/${variant}/android`, allowMixedContent: false, backgroundColor: variant === 'jolbang' ? "#292333" : "#07110f" },
 };
 export default config;

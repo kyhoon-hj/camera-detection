@@ -23,7 +23,10 @@ import java.util.Collections;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-    private BannerLayoutController bannerLayout;
+    String localized(String korean, String english) {
+        String language=getSharedPreferences("wake_drive_locale",Context.MODE_PRIVATE).getString("language",java.util.Locale.getDefault().getLanguage());
+        return "ko".equals(language)?korean:english;
+    }
     private final Handler pipHandler = new Handler(Looper.getMainLooper());
     private boolean monitoring = false;
     private boolean pipEnabled = true;
@@ -51,9 +54,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(DisplayControlPlugin.class);
         registerPlugin(DriverPipPlugin.class);
         registerPlugin(DriverPermissionsPlugin.class);
-        registerPlugin(DriverAnalyticsPlugin.class);
         super.onCreate(savedInstanceState);
-        bannerLayout = new BannerLayoutController(bridge.getWebView());
+        bridge.getWebView().getSettings().setGeolocationEnabled(false);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(stopReceiver, new IntentFilter(stopAction()), Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(stopReceiver, new IntentFilter(stopAction()));
         pipHandler.postDelayed(watchdog, 1000);
@@ -98,11 +100,11 @@ public class MainActivity extends BridgeActivity {
     private PictureInPictureParams buildPipParams() {
         Intent intent = new Intent(stopAction()).setPackage(getPackageName());
         PendingIntent pending = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        RemoteAction stop = new RemoteAction(Icon.createWithResource(this, android.R.drawable.ic_media_pause), "측정 종료", "졸음 측정 종료", pending);
+        RemoteAction stop = new RemoteAction(Icon.createWithResource(this, R.drawable.ic_wake_stop), localized("측정 종료", "Stop detection"), localized("졸음 측정 종료", "Stop drowsiness detection"), pending);
         PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder()
             .setAspectRatio(new Rational(4, 3)).setActions(Collections.singletonList(stop));
         if (Build.VERSION.SDK_INT >= 31) builder.setAutoEnterEnabled(monitoring && pipEnabled).setSeamlessResizeEnabled(false);
-        if (Build.VERSION.SDK_INT >= 33) builder.setTitle("Wake Drive · 졸음 감지");
+        if (Build.VERSION.SDK_INT >= 33) builder.setTitle(localized("Wake Drive · 졸음 감지", "Wake Drive · Drowsiness detection"));
         return builder.build();
     }
 
@@ -112,12 +114,10 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void preparePip() {
-        bannerLayout.setSuppressed(true);
         transitionUntil = SystemClock.elapsedRealtime() + 2000;
         rotationGraceUntil = transitionUntil + 1000;
         publishPipState();
         pipHandler.postDelayed(() -> {
-            if (bannerLayout != null) bannerLayout.setSuppressed(Build.VERSION.SDK_INT >= 26 && isInPictureInPictureMode());
             publishPipState();
         }, 2100);
     }
@@ -131,7 +131,6 @@ public class MainActivity extends BridgeActivity {
             if (entered) return true;
         } catch (IllegalStateException | IllegalArgumentException ignored) { }
         transitionUntil = 0;
-        bannerLayout.setSuppressed(false);
         publishPipState();
         return false;
     }
@@ -151,7 +150,6 @@ public class MainActivity extends BridgeActivity {
 
     @Override public void onPictureInPictureModeChanged(boolean inPip, Configuration config) {
         super.onPictureInPictureModeChanged(inPip, config);
-        if (bannerLayout != null) bannerLayout.setSuppressed(inPip);
         transitionUntil = 0;
         rotationGraceUntil = SystemClock.elapsedRealtime() + 2000;
         if (inPip && bridge != null) bridge.getWebView().onResume();
@@ -192,7 +190,6 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override public void onDestroy() {
-        if (bannerLayout != null) bannerLayout.dispose();
         pipHandler.removeCallbacksAndMessages(null);
         unregisterReceiver(stopReceiver);
         super.onDestroy();

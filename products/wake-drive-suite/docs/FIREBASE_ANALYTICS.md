@@ -1,3 +1,5 @@
+> 과거 버전 기록: Wake Drive 1.0.0부터 Firebase Analytics와 광고 SDK를 제거했습니다. 아래 설정·수집 내용은 현재 버전에 적용되지 않으며 재도입하지 않습니다. 최신 기준은 프로젝트 README.md입니다.
+
 # Wake Drive 이용 통계
 
 현재 통합 기준은 [Firebase 개발 인수인계](FIREBASE_HANDOFF.md)를 참고한다. 이 문서는 최초 연결 및 당시 검증 기록이다.

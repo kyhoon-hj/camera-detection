@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Wake Drive 휴대폰 설치 안내 팝업</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="bg-[#1a1721] text-[#f2eef8] flex items-center justify-center min-h-screen p-0 m-0 overflow-hidden select-none">
+<!-- Mobile Device Container (390px layout) -->
+<div class="relative w-[390px] h-[844px] bg-[#211c2a] flex flex-col justify-between overflow-hidden shadow-2xl">
+<!-- Background: Dimmed Wake Drive camera-ready screen preview -->
+<div class="absolute inset-0 z-0 flex flex-col justify-between p-5 opacity-35 filter blur-[1px] pointer-events-none">
+<!-- Background Header -->
+<div class="flex items-center justify-between pt-8 pb-3">
+<div class="flex items-center gap-2">
+<!-- Mini Mascot -->
+<svg class="w-7 h-7" fill="none" viewbox="0 0 160 160">
+<circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="6"></circle>
+<circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="6"></circle>
+<path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-linecap="round" stroke-width="5"></path>
+<rect fill="#d2f000" height="15" rx="2.5" width="5" x="55.5" y="66"></rect>
+<rect fill="#d2f000" height="15" rx="2.5" width="5" x="99.5" y="66"></rect>
+<path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-linecap="round" stroke-width="5"></path>
+</svg>
+<span class="font-semibold tracking-tight text-white/80 text-sm">Wake Drive</span>
+</div>
+<div class="px-2.5 py-1 rounded-full bg-black/40 border border-white/10 text-xs text-[#d2f000] font-medium flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-[#d2f000] animate-pulse"></span>
+          카메라 대기 중
+        </div>
+</div>
+<!-- Center placeholder camera preview box -->
+<div class="my-auto w-full aspect-[4/3] rounded-2xl border border-dashed border-white/20 bg-black/30 flex flex-col items-center justify-center text-white/40">
+<svg class="w-10 h-10 mb-2 stroke-white/40" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path>
+</svg>
+<span class="text-xs">운전자 인식 준비 중</span>
+</div>
+<!-- Background Bottom Bar -->
+<div class="pb-6 pt-2 flex justify-around text-xs text-white/40 border-t border-white/10">
+<span class="text-[#d2f000]">주행 HUD</span>
+<span>알람</span>
+<span>보관함</span>
+<span>리포트</span>
+</div>
+</div>
+<!-- Modal Backdrop Overlay (Darker dimming) -->
+<div class="absolute inset-0 bg-[#16121dc4] backdrop-blur-[6px] z-10"></div>
+<!-- Modal Card (Centered dialog, calm, minimal aesthetic) -->
+<div class="relative z-20 mx-4 my-auto bg-[#292333] border border-[#d2f000]/25 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col">
+<!-- Mascot & Modal Title Header -->
+<div class="flex items-center gap-3 pb-3 border-b border-white/10">
+<!-- Cute Mascot Icon (2.5px monoline vector, cute pill eyes + pink smile) -->
+<div class="w-11 h-11 rounded-2xl bg-[#1e1927] border border-white/10 flex items-center justify-center flex-shrink-0">
+<svg class="w-8 h-8" fill="none" viewbox="0 0 160 160">
+<!-- Left & Right Round Glasses Eye -->
+<circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="6"></circle>
+<circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="6"></circle>
+<!-- Bridge -->
+<path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-linecap="round" stroke-width="5.5"></path>
+<!-- Pill pupils -->
+<rect fill="#d2f000" height="15" rx="2.5" width="5" x="55.5" y="66"></rect>
+<rect fill="#d2f000" height="15" rx="2.5" width="5" x="99.5" y="66"></rect>
+<!-- Soft Pink Smile -->
+<path d="M 71 108 Q 80 117, 89 108" stroke="#ff9cc5" stroke-linecap="round" stroke-width="5"></path>
+</svg>
+</div>
+<div>
+<span class="inline-block text-[11px] font-semibold text-[#d2f000] tracking-wide uppercase">안전 주행 가이드</span>
+<h2 class="text-[17px] font-bold text-white tracking-tight leading-snug">휴대폰, 이렇게 놓아 주세요</h2>
+</div>
+</div>
+<!-- Unified Inline SVG Diagram (Side view + Dashboard mount + Camera cone + Inset preview) -->
+<div class="mt-3.5 mb-2 bg-[#1f1a28] rounded-2xl p-3 border border-white/5 relative overflow-hidden"><svg class="w-full h-auto block select-none" fill="none" viewbox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"><defs><lineargradient gradientunits="userSpaceOnUse" id="beamGrad" x1="220" x2="100" y1="320" y2="290"><stop offset="0%" stop-color="#d2f000" stop-opacity="0.35"></stop><stop offset="100%" stop-color="#d2f000" stop-opacity="0.03"></stop></lineargradient><filter height="120%" id="subtleGlow" width="120%" x="-10%" y="-10%"><fedropshadow dx="0" dy="2" flood-color="#000000" flood-opacity="0.4" stddeviation="3"></fedropshadow></filter></defs><!-- Top/Main Scene: Driver Cockpit View --><g id="cockpit-scene"><!-- Windshield road & horizon strip --><path d="M 40 100 Q 320 85 600 100" stroke="#484156" stroke-dasharray="6 4" stroke-linecap="round" stroke-width="2"></path><path d="M 320 92 L 320 120" stroke="#5d546e" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2"></path><!-- Dashboard upper contour line --><path d="M 30 148 C 120 142, 220 142, 330 145 C 440 148, 540 146, 610 150" stroke="#5d546e" stroke-linecap="round" stroke-width="3"></path><!-- Instrument Cluster visor hood behind steering wheel --><path d="M 85 144 C 95 116, 175 116, 185 144" fill="none" stroke="#716785" stroke-linecap="round" stroke-width="2.5"></path><!-- Digital meter glow hint --><path d="M 105 138 Q 135 130 165 138" stroke="#3b334a" stroke-linecap="round" stroke-width="2"></path><!-- Steering wheel rim & column on left driver position --><path d="M 135 148 L 135 170" stroke="#4a4258" stroke-linecap="round" stroke-width="8"></path><ellipse cx="135" cy="152" fill="none" rx="54" ry="24" stroke="#d6d0e2" stroke-linecap="round" stroke-width="3.5"></ellipse><ellipse cx="135" cy="153" fill="none" rx="43" ry="17" stroke="#383049" stroke-linecap="round" stroke-width="2"></ellipse><circle cx="135" cy="153" fill="#2d2539" r="10" stroke="#716785" stroke-width="2"></circle><!-- Connecting dashed arc between Phone 1A and 1B --><path d="M 235 112 C 265 92, 335 92, 365 112" stroke="#d2f000" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2"></path><!-- Left Arrowhead on arc --><path d="M 242 108 L 235 112 L 239 119" stroke="#d2f000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><!-- Right Arrowhead on arc --><path d="M 358 119 L 365 112 L 358 108" stroke="#d2f000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><!-- Primary Phone Position 1A (Just right of cluster, upper dash) --><g transform="translate(210, 80)"><!-- Cradle Base on Dash --><rect fill="#ff9cc5" height="6" rx="3" width="18" x="11" y="60"></rect><path d="M 20 60 L 20 48" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5"></path><!-- Phone silhouette --><rect fill="#171320" height="46" rx="5" stroke="#d2f000" stroke-width="2.5" width="32" x="4" y="10"></rect><circle cx="20" cy="16" fill="#d2f000" r="2"></circle><!-- Screen mascot face mini hint --><circle cx="16" cy="32" fill="#d2f000" r="2"></circle><circle cx="24" cy="32" fill="#d2f000" r="2"></circle><path d="M 17 38 Q 20 41 23 38" stroke="#ff9cc5" stroke-linecap="round" stroke-width="1.5"></path><!-- Lime Badge 1 --><g transform="translate(36, 10)"><circle cx="0" cy="0" fill="#d2f000" r="10"></circle><text fill="#292333" font-family="sans-serif" font-size="12" font-weight="800" text-anchor="middle" x="0" y="4">1</text></g></g><!-- Secondary Alternative Phone Position 1B (Center-right upper dash, dashed/ghost outline) --><g transform="translate(360, 80)"><!-- Cradle Base --><rect fill="#ff9cc5" height="6" opacity="0.75" rx="3" width="18" x="11" y="60"></rect><path d="M 20 60 L 20 48" opacity="0.75" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5"></path><!-- Ghost Phone body --><rect fill="#171320" height="46" opacity="0.85" rx="5" stroke="#d2f000" stroke-dasharray="3 2" stroke-width="2" width="32" x="4" y="10"></rect><circle cx="20" cy="16" fill="#d2f000" opacity="0.8" r="2"></circle><!-- Screen mini eyes --><circle cx="16" cy="32" fill="#d2f000" opacity="0.8" r="1.8"></circle><circle cx="24" cy="32" fill="#d2f000" opacity="0.8" r="1.8"></circle><!-- Lime Badge 1 (alt) --><g transform="translate(36, 10)"><circle cx="0" cy="0" fill="#d2f000" r="10"></circle><text fill="#292333" font-family="sans-serif" font-size="12" font-weight="800" text-anchor="middle" x="0" y="4">1</text></g></g></g><!-- Horizontal Divider between main scene & bottom mini-scenes --><line stroke="#3b334a" stroke-dasharray="4 4" stroke-width="1.5" x1="40" x2="600" y1="200" y2="200"></line><!-- Bottom Left Mini-Scene (Badge 2: Driver Side Profile & Camera Angle) --><g id="mini-scene-camera-angle"><!-- Driver Head Profile --><path d="M 65 292 C 65 264, 88 260, 100 260 C 112 260, 118 268, 118 280 C 118 286, 116 289, 113 292 L 116 296 L 112 298 C 109 304, 102 308, 96 308 L 90 308" fill="#2d2539" stroke="#d6d0e2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path><!-- Driver Eye (looking ahead & in view) --><circle cx="108" cy="280" fill="#d2f000" r="2.5"></circle><!-- Seat Backrest & Driver body --><path d="M 55 290 L 52 380" stroke="#4a4258" stroke-linecap="round" stroke-width="7"></path><path d="M 72 308 L 65 380" stroke="#716785" stroke-linecap="round" stroke-width="2.5"></path><path d="M 92 308 L 102 380" stroke="#d6d0e2" stroke-linecap="round" stroke-width="2.5"></path><!-- Mini Steering wheel side profile --><path d="M 148 340 L 160 380" stroke="#5d546e" stroke-linecap="round" stroke-width="4"></path><ellipse cx="146" cy="336" fill="none" rx="6" ry="22" stroke="#a297b6" stroke-width="3" transform="rotate(-15 146 336)"></ellipse><!-- Dashboard surface --><path d="M 160 348 Q 210 344 260 346" stroke="#5d546e" stroke-linecap="round" stroke-width="3"></path><!-- Cradle & Phone angled toward driver face --><rect fill="#ff9cc5" height="5" rx="2.5" width="18" x="212" y="340"></rect><path d="M 221 340 L 223 328" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5"></path><g transform="rotate(-20 220 318)"><rect fill="#171320" height="34" rx="3" stroke="#d2f000" stroke-width="2" width="8" x="216" y="298"></rect><circle cx="220" cy="303" fill="#d2f000" r="1.8"></circle></g><!-- Vision cone from camera to face --><polygon fill="url(#beamGrad)" points="216,314 116,268 110,306"></polygon><path d="M 216 314 L 116 268" stroke="#d2f000" stroke-dasharray="3 3" stroke-linecap="round" stroke-width="1.5"></path><path d="M 216 314 L 110 306" stroke="#d2f000" stroke-dasharray="3 3" stroke-linecap="round" stroke-width="1.5"></path><!-- Lime Badge 2 --><g transform="translate(244, 280)"><circle cx="0" cy="0" fill="#d2f000" r="11"></circle><text fill="#292333" font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle" x="0" y="4.5">2</text></g></g><!-- Vertical Sub-divider between Mini-scenes --><line stroke="#3b334a" stroke-dasharray="3 3" stroke-width="1.5" x1="320" x2="320" y1="216" y2="394"></line><!-- Bottom Right Mini-Scene (Badge 3: Front Phone Screen Face Alignment Guide) --><g id="mini-scene-face-alignment" transform="translate(350, 222)"><rect fill="#171320" filter="url(#subtleGlow)" height="145" rx="16" stroke="#d2f000" stroke-width="2" width="190" x="20" y="16"></rect><!-- Notch / Speaker bar --><rect fill="#383046" height="4" rx="2" width="46" x="92" y="22"></rect><!-- Corner Crop Brackets (Viewfinder) --><path d="M 46 48 L 38 48 L 38 56" stroke="#d2f000" stroke-linecap="round" stroke-width="2"></path><path d="M 184 48 L 192 48 L 192 56" stroke="#d2f000" stroke-linecap="round" stroke-width="2"></path><path d="M 38 120 L 38 128 L 46 128" stroke="#d2f000" stroke-linecap="round" stroke-width="2"></path><path d="M 192 120 L 192 128 L 184 128" stroke="#d2f000" stroke-linecap="round" stroke-width="2"></path><!-- Driver Head / Face --><ellipse cx="115" cy="88" fill="#282234" rx="36" ry="38" stroke="#e8e2f4" stroke-width="2"></ellipse><!-- Two cute lime round eyes (Brand style) --><circle cx="102" cy="84" fill="none" r="5.5" stroke="#d2f000" stroke-width="2"></circle><circle cx="102" cy="84" fill="#d2f000" r="2.5"></circle><circle cx="128" cy="84" fill="none" r="5.5" stroke="#d2f000" stroke-width="2"></circle><circle cx="128" cy="84" fill="#d2f000" r="2.5"></circle><!-- Glasses bridge --><path d="M 108 83 Q 115 80 122 83" stroke="#d2f000" stroke-linecap="round" stroke-width="1.5"></path><!-- Sweet pink smile curve --><path d="M 108 102 Q 115 110 122 102" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5"></path><!-- Green checkmark badge top-right of viewfinder --><circle cx="182" cy="42" fill="#d2f000" r="10"></circle><path d="M 178 42 L 181 45 L 186 39" stroke="#292333" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><!-- Lime Badge 3 --><g transform="translate(216, 16)"><circle cx="0" cy="0" fill="#d2f000" r="11"></circle><text fill="#292333" font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle" x="0" y="4.5">3</text></g></g></svg></div>
+<!-- 3 Short Numbered Labels (Within / Below Diagram) -->
+<div class="space-y-1.5 my-2"><div class="flex items-center gap-2.5 bg-[#211b2b] px-3 py-2 rounded-xl border border-white/5"><span class="w-5 h-5 rounded-full bg-[#d2f000] text-[#292333] font-bold text-[11px] flex items-center justify-center flex-shrink-0">1</span><p class="text-[13px] font-medium text-white/90">핸들 앞쪽 또는 오른쪽에 고정</p></div><div class="flex items-center gap-2.5 bg-[#211b2b] px-3 py-2 rounded-xl border border-white/5"><span class="w-5 h-5 rounded-full bg-[#d2f000] text-[#292333] font-bold text-[11px] flex items-center justify-center flex-shrink-0">2</span><p class="text-[13px] font-medium text-white/90">카메라 각도는 얼굴 쪽으로</p></div><div class="flex items-center gap-2.5 bg-[#211b2b] px-3 py-2 rounded-xl border border-white/5"><span class="w-5 h-5 rounded-full bg-[#d2f000] text-[#292333] font-bold text-[11px] flex items-center justify-center flex-shrink-0">3</span><p class="text-[13px] font-medium text-white/90">두 눈과 얼굴 전체가 보이게</p></div></div>
+<!-- Safety Notice (Legal & Driver Safety constraint) -->
+<div class="flex items-start gap-1.5 px-2 py-1.5 mt-1 text-center justify-center"><span class="text-[#ff9cc5] text-xs">💡</span><p class="text-[11.5px] text-[#ff9cc5]/90 font-medium">도로 시야와 계기판을 가리지 않게 설치해요.</p></div>
+<!-- Exactly Two Bottom Action Buttons -->
+<div class="grid grid-cols-2 gap-2.5 mt-3 pt-2">
+<!-- Secondary Button: '그만 보기' -->
+<button class="w-full py-3 px-3 rounded-2xl bg-[#1e1927] hover:bg-[#181420] active:scale-[0.98] transition border border-white/10 text-white/70 font-semibold text-[14px]" type="button">
+          그만 보기
+        </button>
+<!-- Primary Lime Button: '확인' -->
+<button class="w-full py-3 px-3 rounded-2xl bg-[#d2f000] hover:bg-[#c4e000] active:scale-[0.98] transition text-[#292333] font-bold text-[14px] shadow-[0_4px_14px_rgba(210,240,0,0.3)]" type="button">
+          확인
+        </button>
+</div>
+<!-- Tiny Helper Description -->
+<p class="text-center text-[10.5px] text-white/40 mt-2.5">
+        그만 보기를 누르면 다음부터 안내를 숨겨요.
+      </p>
+</div>
+</div>
+</body>
+</html>

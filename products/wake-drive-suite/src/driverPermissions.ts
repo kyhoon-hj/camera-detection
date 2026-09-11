@@ -1,10 +1,12 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 export const nativeDriverPermissions = Capacitor.getPlatform() === "android";
 export const driverPermissions = registerPlugin<{
-  getStatus(): Promise<{ camera:boolean; location:boolean; locationEnabled:boolean; pip:boolean; pipSupported:boolean }>;
-  ensure(options:{feature:"camera"|"location"|"pip"}): Promise<{allowed:boolean}>;
-  configure(options:{location:boolean;pip:boolean}): Promise<void>;
-  openSettings(options:{target:"app"|"locationService"|"pip"|"privacy"}): Promise<void>;
+  getLanguage(): Promise<{selected: 'ko' | 'en' | null; device:string}>;
+  setLanguage(options:{language:'ko'|'en'}): Promise<void>;
+  getStatus(): Promise<{ camera:boolean; pip:boolean; pipSupported:boolean }>;
+  ensure(options:{feature:"camera"|"pip"}): Promise<{allowed:boolean}>;
+  configure(options:{pip:boolean}): Promise<void>;
+  openSettings(options:{target:"app"|"pip"|"privacy"}): Promise<void>;
   showOverview(): Promise<void>;
 }>("DriverPermissions");
 

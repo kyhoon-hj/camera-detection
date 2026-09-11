@@ -1,9 +1,10 @@
-param([ValidateSet('jolbang','yeolgong')][string]$App = 'jolbang', [switch]$NoBrowser)
+param([switch]$NoBrowser)
+$App = 'jolbang'
 $ErrorActionPreference = 'Stop'
 $appRoot = $PSScriptRoot
-$port = if ($App -eq 'jolbang') { 5210 } else { 5211 }
+$port = 5220
 $url = "http://127.0.0.1:$port/"
-$logRoot = Join-Path (Split-Path (Split-Path $appRoot -Parent) -Parent) "work\separated-apps\$App"
+$logRoot = Join-Path $appRoot '.runtime'
 New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
 $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
 if ($listeners.Count -gt 0) {

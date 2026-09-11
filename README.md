@@ -1,11 +1,15 @@
 # SuhaAI Core v0.1.0
 
-## Wake Drive · 열공 최신 개발 소스 (2026-09-10)
+## Wake Drive 최신 개발 소스 (2026-09-11)
 
-**졸음운전/학습 앱의 후속 개발은 [개발자 인수인계](docs/WAKE_DRIVE_DEVELOPER_HANDOFF.md)부터 확인하세요.**
-최신 독립 앱은 [`products/wake-drive-suite`](products/wake-drive-suite)에 있으며, Wake Drive Android 기준 **0.1.12 / versionCode 13**입니다.
-[실행·빌드 안내](products/wake-drive-suite/README.md), [Firebase 연결 정보](products/wake-drive-suite/docs/FIREBASE_CONNECTION.md),
-[Analytics 이벤트 사전](products/wake-drive-suite/docs/FIREBASE_HANDOFF.md)을 함께 제공합니다.
+최신 졸음운전 방지 앱은 [`products/wake-drive-suite`](products/wake-drive-suite)에 있으며, Android **1.0.0 / versionCode 27**입니다.
+위치·GPS·광고·통계 SDK와 인터넷 권한을 제거했고, 감지 모델과 한국어 10편·영어 2편 영상을 앱에 포함했습니다.
+최신 로고·가이드, 경고 영상 전체화면과 흰색 음영, 촬영 영역 조정, 홈 언어 설정 및 운영자·개인정보 문의 정보를 포함합니다.
+
+[실행·빌드 안내](products/wake-drive-suite/README.md) · [출시 인계](products/wake-drive-suite/store/google-play/출시-인계.md) · [정책 수정안](products/wake-drive-suite/store/google-play/공개정책-수정안.md) · [스토어 아이콘](products/wake-drive-suite/store/google-play/wake-drive-icon-512.png)
+
+169개 테스트·타입 검사·웹/Android 빌드 통과 및 휴대폰 업데이트를 확인했습니다. 출시 서명과 공개 정책의 앱별 내용 반영, Play Console 검증은 남아 있습니다. APK/AAB, 서명 키, 로컬 의존성과 빌드 출력은 커밋하지 않습니다.
+이전 Firebase 문서와 [기존 개발 인수인계](docs/WAKE_DRIVE_DEVELOPER_HANDOFF.md)는 과거 기록입니다. 기존 열공 전용 네이티브·브랜드 파일은 보존했으며 이번 Wake Drive 빌드 대상이 아닙니다.
 기존 `apps/driver-mobile`은 분리 전 통합 앱입니다. 아래 SuhaAI Core 안내는 기존 코어 및 통합 프로젝트에 해당합니다.
 
 노트북 RGB 카메라에서 손·상체 특징과 제스처를 인식하고 안정화된 표준 이벤트와 의도를 REST/WebSocket으로 제공하는 로컬 우선 비전 코어입니다. 결제, 키오스크 화면 전환 같은 업무 로직은 코어 밖의 응용 서비스가 담당합니다.

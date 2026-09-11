@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-09-11T13:42:38.6446440+09:00",
+  "device": "R5CR716C0TP",
+  "model": "SM_F711N",
+  "package": "com.hjsolution.jolbang",
+  "installMode": "adb install -r",
+  "installResult": "Success",
+  "installedVersion": "1.0.0",
+  "installedVersionCode": 26,
+  "deviceLastUpdateTime": "2026-09-11 13:36:01",
+  "dataPreserved": true,
+  "launchStatus": "ok",
+  "launchActivity": "com.hjsolution.jolbang/com.hjsolution.suha.driver.MainActivity",
+  "installedBuild": "debug",
+  "runtimePermissions": [
+    "android.permission.CAMERA"
+  ],
+  "cameraConnection": "Android camera service device 1 connected to app at 13:36:46",
+  "detectionUi": [
+    "camera 1, facing front",
+    "Monitoring eyes and head movement",
+    "Normal",
+    "Your eyes are open.",
+    "00:17"
+  ],
+  "stopAndHomeReturn": true,
+  "preview": "Rest stop fairy: active pause control observed",
+  "internetPermissionPresent": false,
+  "notVerified": [
+    "Real driving detection accuracy",
+    "Physical sleep or head-drop triggering",
+    "Long-running device performance",
+    "Full PiP lifecycle",
+    "Actual audible speech output",
+    "Rock Star playback on phone in this pass",
+    "Signed Play-installed build"
+  ]
+}

@@ -1,7 +1,7 @@
 export type AnalyticsParams = Record<string, string | number>;
 export const EVENT_NAMES = ['app_open','screen_view','ui_click','video_select','video_apply','reward_unlock_start','reward_ad_result','video_unlocked','video_unlock_error','video_play_start','video_play_complete','video_play_error','drive_start','drive_progress','drive_end','drive_warning','preferences_snapshot','setting_change','video_impression','library_filter','video_play_exit','video_watch_progress','detection_start_result','ad_request','ad_shown','ad_failed','ad_reward_earned'] as const;
 export type AnalyticsEvent = typeof EVENT_NAMES[number];
-export const PARAM_NAMES = ['screen_name','screen_class','action','video_id','context','reason','outcome','playback_seconds','measured_seconds','speed_valid_seconds','speed_sum','max_kmh','speed_0_10_seconds','speed_10_40_seconds','speed_40_80_seconds','speed_80_plus_seconds','applied_video','playback_mode','sound_mode','pip_mode','library_size_band','setting_name','setting_value','filter','ownership','watched_seconds','watch_percent','milestone','startup_seconds','failure_stage','ad_format','ad_placement','ad_test'] as const;
+export const PARAM_NAMES = ['screen_name','screen_class','action','video_id','context','reason','outcome','playback_seconds','measured_seconds','applied_video','playback_mode','sound_mode','pip_mode','library_size_band','setting_name','setting_value','filter','ownership','watched_seconds','watch_percent','milestone','startup_seconds','failure_stage','ad_format','ad_placement','ad_test'] as const;
 export function cleanParams(params: AnalyticsParams): AnalyticsParams {
   return Object.fromEntries(Object.entries(params).filter(([key,value]) =>
     (PARAM_NAMES as readonly string[]).includes(key) &&
@@ -20,20 +20,13 @@ export class DriveMetrics {
     this.last = now; this.intervalSeconds = 0; this.totals = {}; this.window = {};
     this.emit('drive_start', {});
   }
-  sample(now: number, kmh: number | null) {
+  sample(now: number) {
     if (this.last === null) return;
     const seconds = (now - this.last) / 1000; this.last = now;
     if (seconds <= 0 || seconds > 5) return;
-    const valid = kmh !== null && Number.isFinite(kmh) && kmh >= 0 && kmh <= 300;
     for (const target of [this.totals, this.window]) {
       target.measured_seconds = Number(target.measured_seconds ?? 0) + seconds;
-      if (valid) {
-        target.speed_valid_seconds = Number(target.speed_valid_seconds ?? 0) + seconds;
-        target.speed_sum = Number(target.speed_sum ?? 0) + kmh * seconds;
-        target.max_kmh = Math.max(Number(target.max_kmh ?? 0), kmh);
-        const bucket = kmh < 10 ? 'speed_0_10_seconds' : kmh < 40 ? 'speed_10_40_seconds' : kmh < 80 ? 'speed_40_80_seconds' : 'speed_80_plus_seconds';
-        target[bucket] = Number(target[bucket] ?? 0) + seconds;
-      }
+
     }
     this.intervalSeconds += seconds;
     if (this.intervalSeconds >= 60) {

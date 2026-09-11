@@ -107,9 +107,7 @@ public class NativeSpeechPlugin extends Plugin implements TextToSpeech.OnInitLis
         if (koreanVoice != null) {
             textToSpeech.setVoice(koreanVoice);
             voiceName = koreanVoice.getName();
-        } else if (textToSpeech.getVoice() != null) {
-            voiceName = textToSpeech.getVoice().getName();
-        }
+        } else { failInitialization("오프라인 한국어 음성 데이터가 필요합니다."); return; }
 
         textToSpeech.setAudioAttributes(
             new AudioAttributes.Builder()
@@ -151,13 +149,13 @@ public class NativeSpeechPlugin extends Plugin implements TextToSpeech.OnInitLis
 
     private Voice findKoreanVoice() {
         if (textToSpeech == null || textToSpeech.getVoices() == null) return null;
-        Voice networkVoice = null;
+
         for (Voice voice : textToSpeech.getVoices()) {
             if (!Locale.KOREAN.getLanguage().equals(voice.getLocale().getLanguage())) continue;
             if (!voice.isNetworkConnectionRequired()) return voice;
-            if (networkVoice == null) networkVoice = voice;
+
         }
-        return networkVoice;
+        return null;
     }
 
     private void speakNow(PluginCall call, String text, float rate, float pitch) {

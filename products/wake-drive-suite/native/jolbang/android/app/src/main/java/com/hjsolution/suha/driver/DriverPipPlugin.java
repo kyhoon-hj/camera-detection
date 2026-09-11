@@ -28,7 +28,7 @@ public class DriverPipPlugin extends Plugin {
     @PluginMethod public void enter(PluginCall call) {
         getActivity().runOnUiThread(() -> {
             if (activity().enterDriverPip()) call.resolve(activity().pipState());
-            else call.reject("작은 화면을 열지 못했습니다. Android 설정에서 Wake Drive의 ‘화면 속 화면’ 허용 여부를 확인해 주세요.");
+            else call.reject(activity().localized("작은 화면을 열지 못했습니다. Android 설정에서 Wake Drive의 ‘화면 속 화면’ 허용 여부를 확인해 주세요.","Could not open the small window. Check picture-in-picture permission for Wake Drive in Android settings."));
         });
     }
 

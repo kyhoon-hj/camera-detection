@@ -1,0 +1,33 @@
+/* Stitch brand reference + supplied glasses mascot; shared rounded stroke language. */
+.wake-icon { display:inline-block; width:24px; height:24px; flex:0 0 auto; vertical-align:middle; }
+.wake-mascot { display:block; width:100%; height:auto; object-fit:contain; }
+.variant-jolbang .header-icon { display:grid; place-items:center; min-width:44px; min-height:44px; }
+.variant-jolbang .header-icon .wake-icon { width:23px; height:23px; fill:none; stroke-width:2; }
+.variant-jolbang .brand>img { width:44px; height:44px; border-radius:13px; }
+.variant-jolbang .topbar>.header-icon:last-child { border:1px solid #62566f; background:#292333; color:#d2f000; }
+.variant-jolbang .topbar>.header-icon:last-child:hover { transform:none; background:#352e40; }
+.variant-jolbang .wake-comic-hero { background:#292333; border:1px solid #645770; box-shadow:none; animation:none; }
+.variant-jolbang .wake-comic-hero::before { display:none; }
+.variant-jolbang .wake-bolt-sticker { flex-basis:64px; width:64px; height:64px; padding:0; border:0; background:transparent; box-shadow:none; transform:none; animation:wake-mascot-sway 5s ease-in-out infinite; }
+.variant-jolbang .wake-comic-hero h1 { margin-left:74px; text-shadow:none; }
+.variant-jolbang .wake-comic-hero h1 em { text-decoration:none; }
+.variant-jolbang .wake-comic-kicker { background:#393141; }
+.variant-jolbang .wake-sound-pill { display:inline-flex; align-items:center; gap:5px; border:0; box-shadow:none; transform:none; min-height:44px; }
+.variant-jolbang .wake-sound-pill .wake-icon { width:18px; height:18px; }
+.variant-jolbang .wake-sound-bubble { background:#211c2a; border:1px solid #51465f; }
+.variant-jolbang .wake-megaphone { display:flex; color:#ff9cc5; animation:none; }
+.variant-jolbang .pop-play .wake-icon { width:32px; height:32px; }
+.variant-jolbang .pop-dock button { display:flex; align-items:center; justify-content:center; gap:12px; }
+.variant-jolbang .pop-dock button>.wake-icon:last-child { margin-left:auto; }
+.variant-jolbang .pop-section-heading h2,.variant-jolbang .drowsy-quick-metrics article>span { display:flex; align-items:center; gap:7px; }
+.variant-jolbang .drowsy-quick-metrics .wake-icon { width:19px; height:19px; }
+.variant-jolbang .driver-lens-guide>.wake-mascot { width:138px; height:110px; max-width:100%; }
+.variant-jolbang .driver-hud .wake-icon { width:12px; height:12px; }
+.variant-jolbang .pop-thumbnail>span { display:grid; place-items:center; }
+.variant-jolbang .pop-intro-spark { font-size:0; }
+.variant-jolbang .pop-intro-spark .wake-icon { width:28px; height:28px; }
+.variant-jolbang .driver-lens-guide { gap:0; }
+@keyframes wake-mascot-sway { 0%,100% { transform:rotate(-3deg); } 50% { transform:rotate(3deg); } }
+.variant-jolbang .motion-paused .wake-bolt-sticker { animation-play-state:paused; }
+@media (prefers-reduced-motion:reduce) { .variant-jolbang .wake-bolt-sticker { animation:none; } }
+@media(max-width:370px) { .variant-jolbang .wake-comic-kicker { font-size:9px; padding:5px; }.variant-jolbang .wake-comic-top { gap:6px; }.variant-jolbang .wake-comic-hero h1 { margin-left:0; margin-top:14px; } }

@@ -1,4 +1,14 @@
 /* Driving surfaces share the supplied library's purple, lime and pink palette. */
+.offline-privacy { width:min(92vw,480px); max-height:85dvh; padding:24px; border:1px solid #756482; border-radius:22px; background:#292333; color:#f7f4fd; overflow:auto; }
+.offline-privacy::backdrop { background:#08060ecc; }
+.offline-privacy h2 { margin:0 0 16px; font-size:20px; }
+.offline-privacy p { font-size:13px; line-height:1.75; color:#ded5e8; }
+.offline-privacy-contact { margin:20px 0 0; padding-top:16px; border-top:1px solid #756482; font-size:13px; line-height:1.75; }
+.offline-privacy-contact dt { color:#ded5e8; font-weight:700; }
+.offline-privacy-contact dd { margin:3px 0 14px; overflow-wrap:anywhere; }
+.offline-privacy-contact a { color:#d2f000; text-underline-offset:3px; }
+.offline-privacy button { width:100%; min-height:44px; margin-top:12px; border:0; border-radius:12px; background:#d2f000; color:#222800; font-weight:700; }
+.driver-camera-device { display:block; margin-top:3px; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; }
 .driver-start-feedback { margin:10px 0 16px; padding:12px; border:1px solid #655774; border-radius:12px; color:#ece4f4; background:#292232; font-size:12px; line-height:1.6; }
 .driver-start-feedback.is-error { border-color:#ed81ad; color:#ffdce9; }
 .driver-start-feedback p { margin:0; }
@@ -172,7 +182,7 @@ body:has(.variant-jolbang) .first-run-notice>button { background:#d2f000; color:
 }
 
 /* Camera preview and reference information. */
-.app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:4/5; max-height:none; border-color:#514557; box-shadow:0 12px 34px #08061155; }
+.app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:6/5; max-height:48dvh; border-color:#514557; box-shadow:0 12px 34px #08061155; }
 .app.variant-jolbang.module-drowsiness .camera-placeholder { padding:45px 22px 159px; background:radial-gradient(ellipse at 50% 32%,#322c42,#181521 75%); }
 .app.variant-jolbang.module-drowsiness .camera-placeholder strong { font-size:18px; font-weight:650; }
 .app.variant-jolbang.module-drowsiness .camera-placeholder p { font-size:11px; }
@@ -190,7 +200,7 @@ body:has(.variant-jolbang) .first-run-notice>button { background:#d2f000; color:
 .app.variant-jolbang.module-drowsiness .timeline-legend span { font-size:10px; font-weight:400; }
 .driver-chart-time { display:flex; justify-content:space-between; padding-left:32px; margin:7px 0 14px; color:#9689a6; font-size:9px; }
 @media (orientation:landscape) and (max-height:650px) {
-  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:auto; }
+  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:auto; max-height:none; }
   .app.variant-jolbang.module-drowsiness .camera-placeholder { justify-content:flex-start; padding:45px 18px 120px; }
   .app.variant-jolbang.module-drowsiness .camera-placeholder .face-guide,
   .app.variant-jolbang.module-drowsiness .camera-placeholder p { display:none; }
@@ -214,3 +224,24 @@ body:has(.variant-jolbang) .first-run-notice>button { background:#d2f000; color:
   .driver-hud-session strong { font-size:17px; }
 }
 
+
+/* English copy wraps without covering the camera controls. */
+html[lang="en"] .variant-jolbang .wake-comic-hero h1 { font-size:clamp(25px,7vw,40px); line-height:1.08; }
+html[lang="en"] .variant-jolbang .wake-comic-kicker { font-size:10px; white-space:normal; }
+html[lang="en"] .variant-jolbang .setting-row { gap:12px; }
+html[lang="en"] .variant-jolbang .setting-row > span { min-width:0; }
+html[lang="en"] .variant-jolbang .setting-row i { flex-shrink:0; }
+.driver-warning-popup { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:18px; text-align:center; color:#fff; background:radial-gradient(circle,#79213b,#230f20); overflow:auto; }
+.driver-warning-popup > span { color:#e3ff43; font-size:42px; }
+.driver-warning-popup h2 { margin:0; font-size:clamp(24px,7vw,38px); }
+.driver-warning-popup p { margin:0; max-width:34ch; font-size:16px; line-height:1.4; }
+.driver-warning-popup small { font-size:11px; color:#f1d5df; }
+.driver-warning-popup button { min-height:44px; padding:10px 20px; border:0; border-radius:12px; background:#e3ff43; color:#20250a; font-weight:800; }
+.driver-pip-window .driver-warning-popup { gap:3px; padding:6px; }
+.driver-pip-window .driver-warning-popup > span, .driver-pip-window .driver-warning-popup small { display:none; }
+.driver-pip-window .driver-warning-popup h2 { font-size:18px; }
+.driver-pip-window .driver-warning-popup p { font-size:11px; }
+.driver-pip-window .driver-warning-popup button { font-size:11px; min-height:32px; padding:4px 10px; }
+
+.driver-warning-preview { position:fixed; inset:0; z-index:10000; background:#100919cc; display:grid; place-items:center; padding:20px; }
+.driver-warning-preview .driver-warning-popup { position:relative; inset:auto; min-height:300px; width:min(100%,420px); border:2px solid #d2f000; border-radius:24px; }

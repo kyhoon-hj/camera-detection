@@ -1,0 +1,13 @@
+/* Compact live preview; the warning video has its own fullscreen portal. */
+@media (orientation:portrait), (min-height:651px) {
+  .app.variant-jolbang.module-drowsiness:not(.is-driver-pip) .camera-placeholder {
+    justify-content:center;
+    padding:42px 16px 40px;
+  }
+  .app.variant-jolbang.module-drowsiness .driver-lens-guide > .wake-mascot { width:76px; height:48px; }
+  .app.variant-jolbang.module-drowsiness .driver-lens-guide { width:76px; }
+  .app.variant-jolbang.module-drowsiness .driver-guide-label,
+  .app.variant-jolbang.module-drowsiness .driver-guide-note { display:none; }
+  .app.variant-jolbang.module-drowsiness .camera-placeholder strong { margin-top:6px; }
+  .app.variant-jolbang.module-drowsiness .driver-viewfinder { inset:44px 14px 64px; }
+}

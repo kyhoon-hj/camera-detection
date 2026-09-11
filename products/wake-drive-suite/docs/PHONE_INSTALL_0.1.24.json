@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-09-11T13:13:18.5812548+09:00",
+  "device": "R5CR716C0TP",
+  "model": "SM_F711N",
+  "package": "com.hjsolution.jolbang",
+  "installMode": "adb install -r",
+  "installResult": "Success",
+  "installedVersion": "0.1.24",
+  "installedVersionCode": 25,
+  "deviceLastUpdateTime": "2026-09-11 13:12:56",
+  "dataPreserved": true,
+  "launchStatus": "ok",
+  "launchActivity": "com.hjsolution.jolbang/com.hjsolution.suha.driver.MainActivity",
+  "cameraAndDetectionTested": false
+}

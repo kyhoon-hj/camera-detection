@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-09-11T13:49:09.8779366+09:00",
+  "source": "C:\\Users\\김영화\\Documents\\Codex\\2026-09-09\\new-chat\\outputs\\camera-detection-handoff\\products\\wake-drive-suite",
+  "sourceFilesChecked": 326,
+  "sourceFileChanges": [],
+  "sourceGitStatusUnchanged": true,
+  "apkSha256": "50C21D95382B3FDA5DFD657C6E659C336BB98FC4B527A9DD49872C9AF3368376",
+  "apkWebAssetsChecked": 111,
+  "apkAssetMismatches": [],
+  "rockStarMatchesSuppliedVideo": true,
+  "serverPid": 32312,
+  "serverCommandLine": "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\김영화\\Documents\\Codex\\2026-09-11\\c-users-documents-codex-2026-09\\outputs\\WakeDrive-Latest\\node_modules\\vite\\bin\\vite.js\" preview --mode jolbang --host 127.0.0.1 --port 5220 --strictPort",
+  "serverUsesLatestProject": true,
+  "http": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/brand/wake-drive-mascot.svg",
+      "status": 200
+    },
+    {
+      "path": "/brand/driver-placement-ko.png",
+      "status": 200
+    },
+    {
+      "path": "/brand/driver-placement-en.png",
+      "status": 200
+    },
+    {
+      "path": "/media/rock-star.mp4",
+      "status": 200
+    },
+    {
+      "path": "/posters/rock-star.webp",
+      "status": 200
+    }
+  ]
+}

@@ -1,23 +1,21 @@
 {
-  "name": "hj-separated-mobile-apps",
+  "name": "wake-drive-latest",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "dev": "vite --mode jolbang",
+    "preview": "vite preview --mode jolbang",
+    "test": "vitest run --maxWorkers=2",
     "typecheck": "tsc --noEmit",
+    "branding": "node scripts/branding.mjs jolbang",
+    "build:web": "vite build --mode jolbang",
+    "build": "node scripts/app.mjs build jolbang",
     "build:jolbang": "node scripts/app.mjs build jolbang",
-    "build:yeolgong": "node scripts/app.mjs build yeolgong",
-    "build": "node scripts/app.mjs build all",
-    "dev:jolbang": "vite --mode jolbang",
-    "dev:yeolgong": "vite --mode yeolgong",
-    "preview:jolbang": "vite preview --mode jolbang",
-    "preview:yeolgong": "vite preview --mode yeolgong",
-    "android:jolbang": "node scripts/app.mjs android jolbang",
-    "android:yeolgong": "node scripts/app.mjs android yeolgong"
+    "android:sync": "node scripts/sync-android.mjs",
+    "android:jolbang": "node scripts/app.mjs android jolbang"
   },
   "dependencies": {
-    "@capacitor-community/admob": "8.0.0",
     "@capacitor/android": "8.4.2",
     "@capacitor/app": "8.0.0",
     "@capacitor/core": "8.4.2",

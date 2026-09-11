@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wake Drive Brand Asset Reference Sheet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #1a1622;
+      color: #e5e1ee;
+    }
+    .code-font {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .plum-bg {
+      background-color: #292333;
+    }
+    .plum-card {
+      background-color: #231e2c;
+      border: 1px solid rgba(210, 240, 0, 0.08);
+    }
+    .lime-accent {
+      color: #d2f000;
+    }
+    .pink-accent {
+      color: #ff9cc5;
+    }
+    /* Subtle dot grid for precision feel */
+    .blueprint-grid {
+      background-image: radial-gradient(rgba(210, 240, 0, 0.07) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+<body class="p-8 lg:p-12 min-h-screen">
+
+  <div class="max-w-[1200px] mx-auto space-y-12">
+
+    <!-- HEADER -->
+    <header class="border-b border-[#362f44] pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#322a3e] text-[#d2f000] text-xs font-semibold tracking-wider uppercase mb-3 border border-[#d2f000]/20">
+          <span class="w-2 h-2 rounded-full bg-[#d2f000] animate-pulse"></span> Brand Identity System
+        </div>
+        <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
+          Wake Drive <span class="text-xs px-2.5 py-1 rounded bg-[#d2f000] text-[#1a1622] font-bold">V2 GUIDELINE</span>
+        </h1>
+        <p class="text-[#a59eb2] mt-2 text-sm max-w-xl leading-relaxed">
+          초경량 큐트 &amp; 미니멀 모노라인 마스코트와 24px 직관적 시스템 아이콘 규격서. 복잡한 그래디언트와 만화적 과장을 배제하고 정갈한 원형 안경과 소프트 핑크 스마일로 시각적 친근함을 전달합니다.
+        </p>
+      </div>
+
+      <!-- Color Palette Quick Swatches -->
+      <div class="flex items-center gap-3 bg-[#231e2c] p-3 rounded-2xl border border-[#362f44]">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-[#292333] border border-white/20 shadow-inner" title="#292333 Deep Plum"></div>
+          <div class="text-xs">
+            <div class="font-bold text-white">#292333</div>
+            <div class="text-[10px] text-[#8e879c]">Base Plum</div>
+          </div>
+        </div>
+        <div class="h-6 w-px bg-white/10"></div>
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-[#d2f000] shadow-inner" title="#d2f000 Lime"></div>
+          <div class="text-xs">
+            <div class="font-bold text-[#d2f000]">#d2f000</div>
+            <div class="text-[10px] text-[#8e879c]">Key Lime</div>
+          </div>
+        </div>
+        <div class="h-6 w-px bg-white/10"></div>
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-[#ff9cc5] shadow-inner" title="#ff9cc5 Pink Smile"></div>
+          <div class="text-xs">
+            <div class="font-bold text-[#ff9cc5]">#ff9cc5</div>
+            <div class="text-[10px] text-[#8e879c]">Smile Pink</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- SECTION 1: MASCOT GEOMETRY & LAUNCHER ICON PREVIEWS -->
+    <section class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="text-[#d2f000]">01.</span> Core Mascot &amp; Launcher Icon
+        </h2>
+        <span class="text-xs text-[#8e879c] code-font">Rounded 2.5px-3px monoline vector / Zero text in app icon</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Large Primary App Icon Canvas -->
+        <div class="lg:col-span-5 plum-card rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden blueprint-grid border border-[#d2f000]/15 shadow-2xl">
+          <div class="absolute top-4 left-4 text-[11px] font-semibold tracking-wider text-[#a59eb2] uppercase">
+            Master 512px Asset
+          </div>
+          <div class="absolute top-4 right-4 text-[11px] font-mono text-[#d2f000]/70">
+            1:1 Square
+          </div>
+
+          <!-- THE MASCOT ICON (Pure SVG matching exact specs) -->
+          <div class="w-64 h-64 my-6 rounded-[52px] plum-bg border border-white/10 flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 relative group transition-transform hover:scale-[1.02]">
+            <svg class="w-48 h-48" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Airy Dotted Face Contour (above and beside the glasses) -->
+              <path d="M 28 82 C 28 42, 48 24, 80 24 C 112 24, 132 42, 132 82 C 132 108, 122 134, 80 134 C 38 134, 28 108, 28 82 Z"
+                    stroke="#d2f000" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round" opacity="0.32" />
+
+              <!-- Lime Round Glasses - Left Rim -->
+              <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" fill="none" />
+              <!-- Lime Round Glasses - Right Rim -->
+              <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" fill="none" />
+              <!-- Glasses Bridge (Short curved bridge) -->
+              <path d="M 80 72 Q 80 66, 80 66" stroke="#d2f000" stroke-width="4" stroke-linecap="round" fill="none" />
+              <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="4" stroke-linecap="round" fill="none" />
+
+              <!-- Left Eye (Vertical pill) -->
+              <rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+              <!-- Right Eye (Vertical pill) -->
+              <rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+
+              <!-- Pink Curved Smile below glasses -->
+              <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="3.5" stroke-linecap="round" fill="none" />
+            </svg>
+          </div>
+
+          <div class="text-center">
+            <div class="text-sm font-bold text-white tracking-wide">Wake Drive Launcher Symbol</div>
+            <div class="text-xs text-[#a59eb2] mt-0.5">Deep Plum background (#292333) with Lime &amp; Pink Mascot</div>
+          </div>
+        </div>
+
+        <!-- Adaptive Shapes & Mobile Context Previews -->
+        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <!-- Squircle (iOS) Mask -->
+          <div class="plum-card rounded-2xl p-6 flex flex-col items-center justify-between text-center">
+            <div class="w-full flex justify-between items-center text-xs text-[#8e879c]">
+              <span class="font-medium text-white">iOS Squircle Mask</span>
+              <span class="code-font text-[10px]">r = 22.5%</span>
+            </div>
+            <div class="my-6">
+              <div class="w-28 h-28 rounded-[26px] plum-bg border border-white/10 flex items-center justify-center shadow-lg">
+                <svg class="w-20 h-20" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 32 82 C 32 44, 48 28, 80 28 C 112 28, 128 44, 128 82 C 128 106, 118 130, 80 130 C 42 130, 32 106, 32 82 Z" stroke="#d2f000" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round" opacity="0.35" />
+                  <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" />
+                  <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" />
+                  <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="4" stroke-linecap="round" />
+                  <rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+                  <rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+                  <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="3.5" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="text-[11px] text-[#e5e1ee] font-semibold mt-3">Wake Drive</div>
+            </div>
+            <div class="text-[11px] text-[#8e879c]">Apple App Store / iOS Home</div>
+          </div>
+
+          <!-- Circular (Android Adaptive) Mask -->
+          <div class="plum-card rounded-2xl p-6 flex flex-col items-center justify-between text-center">
+            <div class="w-full flex justify-between items-center text-xs text-[#8e879c]">
+              <span class="font-medium text-white">Android Adaptive Round</span>
+              <span class="code-font text-[10px]">circle mask</span>
+            </div>
+            <div class="my-6">
+              <div class="w-28 h-28 rounded-full plum-bg border border-white/10 flex items-center justify-center shadow-lg ring-4 ring-[#231e2c]">
+                <svg class="w-20 h-20" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 32 82 C 32 44, 48 28, 80 28 C 112 28, 128 44, 128 82 C 128 106, 118 130, 80 130 C 42 130, 32 106, 32 82 Z" stroke="#d2f000" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round" opacity="0.35" />
+                  <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" />
+                  <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" />
+                  <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="4" stroke-linecap="round" />
+                  <rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+                  <rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+                  <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="3.5" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="text-[11px] text-[#e5e1ee] font-semibold mt-3">Wake Drive</div>
+            </div>
+            <div class="text-[11px] text-[#8e879c]">Google Play / One UI Round</div>
+          </div>
+
+          <!-- Micro favicon / Notification Tray -->
+          <div class="plum-card rounded-2xl p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl plum-bg border border-white/10 flex items-center justify-center flex-shrink-0">
+              <svg class="w-8 h-8" viewBox="0 0 160 160" fill="none">
+                <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="6" />
+                <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="6" />
+                <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="6" stroke-linecap="round" />
+                <rect x="55" y="66" width="6" height="16" rx="3" fill="#d2f000" />
+                <rect x="99" y="66" width="6" height="16" rx="3" fill="#d2f000" />
+                <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white">Favicon / Status Bar (32px)</div>
+              <div class="text-[11px] text-[#8e879c] mt-0.5">Dotted contour drops at small scales for crisp visibility.</div>
+            </div>
+          </div>
+
+          <!-- Monochromatic Dark Theme Variant -->
+          <div class="plum-card rounded-2xl p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-[#14101b] border border-[#d2f000]/20 flex items-center justify-center flex-shrink-0">
+              <svg class="w-8 h-8" viewBox="0 0 160 160" fill="none">
+                <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="6" />
+                <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="6" />
+                <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="6" stroke-linecap="round" />
+                <rect x="55" y="66" width="6" height="16" rx="3" fill="#d2f000" />
+                <rect x="99" y="66" width="6" height="16" rx="3" fill="#d2f000" />
+                <path d="M 72 108 Q 80 116, 88 108" stroke="#ffffff" stroke-width="5" stroke-linecap="round" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white">OLED Dark / Tinted</div>
+              <div class="text-[11px] text-[#8e879c] mt-0.5">Supports high-contrast iOS tinted icon modes.</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- SECTION 2: PORTRAIT SPLASH SCREEN & IN-APP TOP BAR -->
+    <section class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="text-[#d2f000]">02.</span> Portrait Splash &amp; In-App Header
+        </h2>
+        <span class="text-xs text-[#8e879c] code-font">Ample whitespace / Pure calm focus</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Mobile Splash Mockup (390 x 680 ratio) -->
+        <div class="lg:col-span-5 flex justify-center">
+          <div class="w-[320px] h-[560px] plum-bg rounded-[40px] border-[6px] border-[#362f44] p-6 flex flex-col justify-between items-center relative shadow-2xl overflow-hidden">
+            <!-- Subtle top pill / sensor -->
+            <div class="w-20 h-3.5 bg-[#1f1a26] rounded-full mx-auto"></div>
+
+            <!-- Central Splash Content -->
+            <div class="flex flex-col items-center justify-center my-auto space-y-7">
+
+              <!-- Subtle tiny badge as in reference context -->
+              <div class="text-[10px] tracking-[0.2em] uppercase font-bold text-[#a59eb2]/60">
+                READY TO DRIVE
+              </div>
+
+              <!-- Mascot Vector -->
+              <div class="relative">
+                <svg class="w-36 h-36" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Airy Dotted Outline -->
+                  <path d="M 28 82 C 28 42, 48 24, 80 24 C 112 24, 132 42, 132 82 C 132 108, 122 134, 80 134 C 38 134, 28 108, 28 82 Z"
+                        stroke="#d2f000" stroke-width="2.2" stroke-dasharray="4 6" stroke-linecap="round" opacity="0.35" />
+                  <!-- Glasses -->
+                  <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" />
+                  <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="4.5" />
+                  <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="4" stroke-linecap="round" />
+                  <!-- Eyes -->
+                  <rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+                  <rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+                  <!-- Smile -->
+                  <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="3.5" stroke-linecap="round" />
+                </svg>
+              </div>
+
+              <!-- Wordmark -->
+              <div class="text-center space-y-1">
+                <div class="text-2xl font-bold tracking-tight text-white">
+                  Wake Drive
+                </div>
+                <div class="text-xs text-[#9d95ab] tracking-wide">
+                  안전한 주행을 위한 다정한 친구
+                </div>
+              </div>
+            </div>
+
+            <!-- Subtle Three Loading Dots -->
+            <div class="pb-6 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#d2f000] animate-bounce" style="animation-delay: 0s;"></span>
+              <span class="w-2 h-2 rounded-full bg-[#d2f000] animate-bounce" style="animation-delay: 0.15s;"></span>
+              <span class="w-2 h-2 rounded-full bg-[#d2f000] animate-bounce" style="animation-delay: 0.3s;"></span>
+            </div>
+
+            <!-- Home indicator bar -->
+            <div class="w-28 h-1 bg-white/20 rounded-full mb-1"></div>
+          </div>
+        </div>
+
+        <!-- In-App Top Bar & Screen Integration Spec -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <div class="plum-card rounded-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+              <span class="text-xs font-bold text-white uppercase tracking-wider">In-App Compact Top Bar Component</span>
+              <span class="text-[11px] code-font text-[#d2f000]">Height: 56px / Padding: 16px</span>
+            </div>
+
+            <!-- The Live Top Bar Preview (State A: Normal Monitoring) -->
+            <div class="p-3 bg-[#1e1925] rounded-xl border border-white/5 space-y-2">
+              <div class="text-[10px] text-[#8e879c] uppercase tracking-wider font-semibold">Preview: Active Driving View</div>
+              <div class="w-full plum-bg rounded-xl px-4 py-3 flex items-center justify-between border border-[#362f44]">
+                <!-- Leading: Back / Menu -->
+                <button class="w-9 h-9 rounded-lg hover:bg-white/5 flex items-center justify-center text-[#e5e1ee] transition">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+
+                <!-- Center: Mini Mascot + Title -->
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 flex items-center justify-center">
+                    <svg viewBox="0 0 160 160" class="w-full h-full" fill="none">
+                      <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="7" />
+                      <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="7" />
+                      <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="7" stroke-linecap="round" />
+                      <rect x="55" y="66" width="6" height="16" rx="3" fill="#d2f000" />
+                      <rect x="99" y="66" width="6" height="16" rx="3" fill="#d2f000" />
+                      <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="6" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-bold text-white tracking-wide">Wake Drive</span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#d2f000] ml-0.5"></span>
+                </div>
+
+                <!-- Trailing: Audio & Settings -->
+                <div class="flex items-center gap-1">
+                  <button class="w-8 h-8 rounded-lg flex items-center justify-center text-[#d2f000] bg-[#d2f000]/10">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                  </button>
+                  <button class="w-8 h-8 rounded-lg flex items-center justify-center text-[#a59eb2] hover:text-white">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Bar Design Rules -->
+            <div class="grid grid-cols-2 gap-3 text-xs pt-1">
+              <div class="bg-[#292333]/80 p-3 rounded-xl border border-white/5">
+                <span class="text-[#d2f000] font-bold block mb-1">Ample Empty Space</span>
+                <span class="text-[#a59eb2] text-[11px] leading-relaxed">복잡한 HUD 텍스트나 과도한 상태 칩을 걷어내고 드라이버의 전방 시야를 방해하지 않도록 여백을 60% 이상 확보.</span>
+              </div>
+              <div class="bg-[#292333]/80 p-3 rounded-xl border border-white/5">
+                <span class="text-[#ff9cc5] font-bold block mb-1">Gentle Micro-Feedback</span>
+                <span class="text-[#a59eb2] text-[11px] leading-relaxed">경고 상태가 아닐 때는 부드러운 라벤더 화이트(#e5e1ee)와 은은한 라임 인디케이터로 평온한 주행 환경 유지.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Implementation snippet -->
+          <div class="plum-card rounded-2xl p-5 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-white">SVG Monoline Mascot Snippet</span>
+              <span class="text-[10px] text-[#8e879c] code-font">Inline SVG</span>
+            </div>
+            <pre class="bg-[#18141f] p-3.5 rounded-xl text-[11px] text-[#d2f000] code-font overflow-x-auto leading-relaxed border border-white/5"><code>&lt;!-- Wake Drive Mascot (Monoline 2.5px) --&gt;
+&lt;svg viewBox="0 0 160 160" width="48" height="48" fill="none"&gt;
+  &lt;path d="M 28 82 C 28 42, 48 24, 80 24 C 112 24, 132 42, 132 82 C 132 108, 122 134, 80 134 C 38 134, 28 108, 28 82 Z" stroke="#d2f000" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round" opacity="0.32"/&gt;
+  &lt;circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="4.5"/&gt;
+  &lt;circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="4.5"/&gt;
+  &lt;path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="4" stroke-linecap="round"/&gt;
+  &lt;rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000"/&gt;
+  &lt;rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000"/&gt;
+  &lt;path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="3.5" stroke-linecap="round"/&gt;
+&lt;/svg&gt;</code></pre>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- SECTION 3: 24PX MONOLINE SYSTEM ICONS (CUTE & INTUITIVE) -->
+    <section class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span class="text-[#d2f000]">03.</span> 24px Rounded Monoline Icon System
+          </h2>
+          <p class="text-xs text-[#a59eb2] mt-1">2px rounded stroke &amp; round caps · Unified visual weight · High contrast on #292333</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] px-2.5 py-1 rounded bg-[#322a3e] text-[#d2f000] border border-[#d2f000]/20 font-mono">24 x 24 Grid</span>
+          <span class="text-[11px] px-2.5 py-1 rounded bg-[#322a3e] text-[#ff9cc5] border border-[#ff9cc5]/20 font-mono">Stroke: 2.0px</span>
+        </div>
+      </div>
+
+      <!-- Icon Cards Grid (10 Required Core Icons) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+
+        <!-- 1. Settings -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Settings</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">환경설정 &amp; 감도</div>
+        </div>
+
+        <!-- 2. Camera / Start -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+              <!-- Cute tiny lens reflection dot -->
+              <circle cx="13.5" cy="11.5" r="0.8" fill="#d2f000"></circle>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Camera / Start</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">감지 카메라 시작</div>
+        </div>
+
+        <!-- 3. Video Play -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="18" rx="5"></rect>
+              <polygon points="10 8 16 12 10 16 10 8" fill="#d2f000" stroke="#d2f000" stroke-width="1.5" stroke-linejoin="round"></polygon>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Video Play</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">잠깨우기 영상 재생</div>
+        </div>
+
+        <!-- 4. Lock / Unlock -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="3" ry="3"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              <circle cx="12" cy="16" r="1.5" fill="#d2f000"></circle>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Lock / Unlock</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">화면 터치 잠금</div>
+        </div>
+
+        <!-- 5. Sound On / Off -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Sound Alert</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">경보 볼륨 / 음소거</div>
+        </div>
+
+        <!-- 6. Location -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s-7-6.5-7-11.5a7 7 0 0 1 14 0c0 5-7 11.5-7 11.5z"></path>
+              <circle cx="12" cy="9.5" r="2.5"></circle>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Location</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">가까운 졸음쉼터</div>
+        </div>
+
+        <!-- 7. Clock / Time -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <polyline points="12 7 12 12 15 14"></polyline>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Clock / Driving Time</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">연속 주행 시간</div>
+        </div>
+
+        <!-- 8. Back Arrow -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Back Arrow</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">이전 화면 복귀</div>
+        </div>
+
+        <!-- 9. Stop / Emergency -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#d2f000"></rect>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Stop / Disarm</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">주행 종료 &amp; 알람 해제</div>
+        </div>
+
+        <!-- 10. Library -->
+        <div class="plum-card rounded-2xl p-4 flex flex-col items-center text-center group hover:border-[#d2f000]/40 transition">
+          <div class="w-14 h-14 rounded-2xl plum-bg border border-white/5 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d2f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              <line x1="9" y1="7" x2="16" y2="7"></line>
+              <line x1="9" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </div>
+          <div class="text-xs font-bold text-white">Video Library</div>
+          <div class="text-[10px] text-[#8e879c] mt-0.5">잠깨우기 보관함</div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- SECTION 4: DESIGN TOKENS & ATOMIC SPECIFICATIONS -->
+    <footer class="plum-card rounded-3xl p-6 lg:p-8 space-y-6 border border-white/5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-4">
+        <div>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Design System Replacement Matrix</h3>
+          <p class="text-xs text-[#8e879c] mt-0.5">Supersedes HUD styling with clean, peaceful, human-centric tokens</p>
+        </div>
+        <span class="text-xs text-[#d2f000] font-mono">v2.0 Minimal Cute Spec</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+        <div class="space-y-2">
+          <div class="font-bold text-white flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#d2f000]"></span> Visual Discipline
+          </div>
+          <p class="text-[#a59eb2] leading-relaxed">
+            코믹/팝아트의 거친 말풍선, 굵은 외곽선, 불필요한 장식(차량 외형, 로봇, 레이더 스파크)을 완전 제거하고, 순수 기하학적 원형 안경과 세로 알약형 눈, 부드러운 호(Arc)로 구성된 페이스 라인만 유지합니다.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-white flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#ff9cc5]"></span> Color Hierarchy
+          </div>
+          <p class="text-[#a59eb2] leading-relaxed">
+            <strong>#292333 Deep Plum</strong>을 배경으로 사용하여 야간 주행 시 눈부심을 원천 차단하며, <strong>#d2f000 Lime</strong>은 2px 모노라인 구조체에만 사용하고, <strong>#ff9cc5 Pink</strong>는 미소와 최소한의 긍정 하이라이트에만 엄격히 제한합니다.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-white flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-white"></span> Icon Stroke Consistency
+          </div>
+          <p class="text-[#a59eb2] leading-relaxed">
+            모든 시스템 아이콘은 24×24px 뷰박스, 2px 균일 선 두께(stroke-width: 2), 라운드 캡(stroke-linecap: round) 및 라운드 조인(stroke-linejoin: round)을 엄수하여 시각적 노이즈 없이 명확한 의미를 전달합니다.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

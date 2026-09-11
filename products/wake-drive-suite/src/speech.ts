@@ -41,7 +41,7 @@ export async function getKoreanSpeechStatus(): Promise<NativeSpeechStatus> {
   const voices = window.speechSynthesis.getVoices();
   return {
     ready: true,
-    languageAvailable: voices.length === 0 || voices.some((voice) => voice.lang.toLowerCase().startsWith("ko")),
+    languageAvailable: voices.some((voice) => voice.localService && voice.lang.toLowerCase().startsWith("ko")),
   };
 }
 
@@ -56,8 +56,9 @@ function speakWithBrowser(text: string): Promise<void> {
     const profile = DEFAULT_VOICE_PROFILE;
     synthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const koreanVoice = chooseKoreanVoice(synthesis.getVoices());
-    if (koreanVoice) utterance.voice = koreanVoice;
+    const koreanVoice = chooseKoreanVoice(synthesis.getVoices().filter(voice => voice.localService));
+    if (!koreanVoice) { reject(new Error("오프라인 한국어 음성 데이터가 필요합니다.")); return; }
+    utterance.voice = koreanVoice;
     utterance.lang = "ko-KR";
     utterance.rate = profile.rate;
     utterance.pitch = profile.pitch;

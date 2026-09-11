@@ -8,3 +8,9 @@ native/**/local.properties
 native/**/src/main/assets/
 *.keystore
 *.jks
+.env
+.env.*
+key.properties
+**/key.properties
+
+.runtime/

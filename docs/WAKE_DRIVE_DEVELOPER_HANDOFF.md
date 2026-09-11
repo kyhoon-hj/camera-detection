@@ -1,5 +1,7 @@
 # Wake Drive · 열공 개발자 인수인계
 
+> **2026-09-11 최신 기준:** Wake Drive는 1.0.0 / versionCode 27로 갱신되었습니다. 위치·GPS·광고·통계 SDK와 인터넷 권한을 제거했습니다. 최신 실행·권한·검증 범위는 [제품 README](../products/wake-drive-suite/README.md), 스토어 준비는 [출시 인계](../products/wake-drive-suite/store/google-play/출시-인계.md)를 확인하세요. 아래 0.1.12의 실행 명령·포트·Firebase 내용은 과거 기록입니다. 이번 변경에서 열공 및 코어 앱을 갱신하거나 검증하지 않았습니다.
+
 작성일: 2026-09-10. Wake Drive Android **0.1.12 / versionCode 13**.
 
 ## 소스 기준과 저장소 구조

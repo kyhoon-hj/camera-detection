@@ -1,0 +1,1415 @@
+{
+  "commit": "0cd3c191c8f50a0aa592155546dc92f9cde61a5c",
+  "source": "C:\\Users\\김영화\\Documents\\Codex\\2026-09-09\\new-chat\\outputs\\camera-detection-handoff\\products\\wake-drive-suite",
+  "status": [
+    " M products/wake-drive-suite/README.md",
+    " M products/wake-drive-suite/branding/jolbang/apple-touch-icon.png",
+    " M products/wake-drive-suite/branding/jolbang/icon-192.png",
+    " M products/wake-drive-suite/branding/jolbang/icon-512.png",
+    " M products/wake-drive-suite/branding/jolbang/icon.svg",
+    " M products/wake-drive-suite/branding/jolbang/manifest.webmanifest",
+    " M products/wake-drive-suite/branding/jolbang/sw.js",
+    " M products/wake-drive-suite/capacitor.config.ts",
+    " M products/wake-drive-suite/docs/FIREBASE_HANDOFF.md",
+    " M products/wake-drive-suite/native/jolbang/android/app/build.gradle",
+    " M products/wake-drive-suite/native/jolbang/android/app/capacitor.build.gradle",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/DriverPermissionsPlugin.java",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/DriverPipPlugin.java",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/MainActivity.java",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-hdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-ldpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-mdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-night-hdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-night-ldpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-night-mdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-night-xhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-night-xxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-night-xxxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-xhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-xxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-land-xxxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-night/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-hdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-ldpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-mdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-night-hdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-night-ldpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-night-mdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-night-xhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-night-xxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-night-xxxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-xhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-xxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable-port-xxxhdpi/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable/splash.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher_background.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher_foreground.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher_round.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    " M products/wake-drive-suite/native/jolbang/android/app/src/main/res/values/styles.xml",
+    " M products/wake-drive-suite/native/jolbang/android/capacitor.settings.gradle",
+    " M products/wake-drive-suite/scripts/branding.mjs",
+    " M products/wake-drive-suite/src/AnalyticsSettings.tsx",
+    " M products/wake-drive-suite/src/DriverHud.tsx",
+    " M products/wake-drive-suite/src/DriverLibrary.tsx",
+    " M products/wake-drive-suite/src/VideoPoster.tsx",
+    " M products/wake-drive-suite/src/driver-monitor.css",
+    " M products/wake-drive-suite/src/driverPermissions.ts",
+    " M products/wake-drive-suite/src/main.tsx",
+    " M products/wake-drive-suite/vite.config.ts",
+    "?? products/wake-drive-suite/branding/jolbang/splash.png",
+    "?? products/wake-drive-suite/branding/jolbang/splash.svg",
+    "?? products/wake-drive-suite/docs/BRAND_IDENTITY.md",
+    "?? products/wake-drive-suite/docs/CAMERA_PLAYBACK.md",
+    "?? products/wake-drive-suite/docs/DRIVER_PLACEMENT_GUIDE.md",
+    "?? products/wake-drive-suite/docs/LANGUAGE_AND_ENGLISH_ALERTS.md",
+    "?? products/wake-drive-suite/docs/design/",
+    "?? products/wake-drive-suite/native/jolbang/android/app/src/main/res/drawable/ic_wake_stop.xml",
+    "?? products/wake-drive-suite/native/jolbang/android/app/src/main/res/values/wake_brand.xml",
+    "?? products/wake-drive-suite/public/brand/driver-placement-en.png",
+    "?? products/wake-drive-suite/public/brand/driver-placement-guide.svg",
+    "?? products/wake-drive-suite/public/brand/driver-placement-ko.png",
+    "?? products/wake-drive-suite/public/brand/wake-drive-mascot.svg",
+    "?? products/wake-drive-suite/src/DriverPlacementGuide.tsx",
+    "?? products/wake-drive-suite/src/DriverWarningPopup.tsx",
+    "?? products/wake-drive-suite/src/WakeIcon.tsx",
+    "?? products/wake-drive-suite/src/cameraPlayback.ts",
+    "?? products/wake-drive-suite/src/driver-placement-guide.css",
+    "?? products/wake-drive-suite/src/driverPlacementPreference.ts",
+    "?? products/wake-drive-suite/src/driverWarning.ts",
+    "?? products/wake-drive-suite/src/english.ts",
+    "?? products/wake-drive-suite/src/language.ts",
+    "?? products/wake-drive-suite/src/wake-brand.css",
+    "?? products/wake-drive-suite/tests/cameraPlayback.test.ts",
+    "?? products/wake-drive-suite/tests/driverPlacementGuide.test.ts",
+    "?? products/wake-drive-suite/tests/language.test.ts"
+  ],
+  "files": [
+    {
+      "sha256": "042132D1CAFF81BADC4DCBC5C0B4845373190699A9EDAD92773C97B636A81FB4",
+      "path": ".gitattributes"
+    },
+    {
+      "sha256": "96D01DC93DCDE2CB13C663C0F3A76AE2A96252E099E57BC92A3A733A5722444E",
+      "path": ".gitignore"
+    },
+    {
+      "sha256": "687AA51C4BE979316FFBD7058458BAB99E667963BD08D9A653359AB6EFAC2AED",
+      "path": "branding/jolbang/apple-touch-icon.png"
+    },
+    {
+      "sha256": "7111A888938BEE5F9EC1703A52FD13B653B93E388A967883A6375542B25DA911",
+      "path": "branding/jolbang/icon-192.png"
+    },
+    {
+      "sha256": "68136B78039D89A1F659A0CA2E515891E74937E6A87D89D7337BDE758434837E",
+      "path": "branding/jolbang/icon-512.png"
+    },
+    {
+      "sha256": "879BA27497442FCE33CE3F82C0A01F1A2EA0AAE3B162378689A6EF0CAF0E382A",
+      "path": "branding/jolbang/icon.svg"
+    },
+    {
+      "sha256": "451C475B1BE51404E6F3E8167CE74AE2D2232D46612FDBFD186F3F67C05E982C",
+      "path": "branding/jolbang/manifest.webmanifest"
+    },
+    {
+      "sha256": "EDFE20571F1A7DF6F22217ABADA35D76D921571195B6C9750FA2C277FC96FF3A",
+      "path": "branding/jolbang/splash.png"
+    },
+    {
+      "sha256": "C6EBD6B64DB12D8F89B9B3934B200DDD80BA93B66F780D152FF9BAE0C214CC14",
+      "path": "branding/jolbang/splash.svg"
+    },
+    {
+      "sha256": "57209F2D814E0DC28A800A37AC0350B1D3256ED5E49F6A48037760FBA82DD0B5",
+      "path": "branding/jolbang/sw.js"
+    },
+    {
+      "sha256": "943E92C86B1C636FC041D45842A158360905AFC07DC47C545C6A4296A1F9A9B4",
+      "path": "capacitor.config.ts"
+    },
+    {
+      "sha256": "C14B320D6E09327BAB116AB26D42544D088A004168EB83F5D252D34AF26AEF5B",
+      "path": "docs/ACTIVE_USERS_AND_ADS.md"
+    },
+    {
+      "sha256": "AF4BC3B312068371C498CF313725DDE781DAAD2A9FB95E8F96C7543A68B25F28",
+      "path": "docs/AD_LAYOUT.md"
+    },
+    {
+      "sha256": "23815B7185FC329294C4031C4768A8CEE5C7F3C36C2486BF11192B24EA3D3235",
+      "path": "docs/ANDROID_PIP.md"
+    },
+    {
+      "sha256": "AFD4310054EC377769DCF1B4A2E9C58159E9F9401B91414CEED1A76C02951A7F",
+      "path": "docs/banner-layout-landscape.png"
+    },
+    {
+      "sha256": "3E2A8451E1577540610772786FBDF580E471F9DB11CC951FAF5DF7E36F86F086",
+      "path": "docs/banner-layout-portrait.png"
+    },
+    {
+      "sha256": "5BC84771DA0EC4C4CC26608C981CC6A3FFB4FDE82FD0BC80F63A625593E22466",
+      "path": "docs/BRAND_IDENTITY.md"
+    },
+    {
+      "sha256": "5B1DF56F2405C1DB00C2F39F6FAE3FCCAF695FF805E5E1C2258EEB76A7047D12",
+      "path": "docs/CAMERA_PLAYBACK.md"
+    },
+    {
+      "sha256": "5BA1804B9F15C6EE88FDEFE33F996CA1356E846624F8260E56DEF734C18462A4",
+      "path": "docs/COMPACT_CAMERA_HUD.md"
+    },
+    {
+      "sha256": "A90CBF91EADF6009B6A7C721469F5DC1EF0A648531EAB54DB92D80238FFBB0E0",
+      "path": "docs/design/driver-placement-diagram.png"
+    },
+    {
+      "sha256": "B5C24376EF68CD6BC2059E73681D16A556A66F0EDB0D64381D638662CD9E260B",
+      "path": "docs/design/stitch-brand-reference.html"
+    },
+    {
+      "sha256": "2BF6B83CECAF91D8FFA659BFA44109E64CCFAD54DB10F46BB8FD15911083DBE9",
+      "path": "docs/design/stitch-brand-reference.png"
+    },
+    {
+      "sha256": "1D49EDCFCA4897B22241F0288295A5D9B3506DDDBB82EB5ADB0D5FFFE626D3DF",
+      "path": "docs/design/stitch-placement-guide-v2.html"
+    },
+    {
+      "sha256": "D2DD449D53B2075F2141D3CA3AE7E06A234533382F651DEFF0E35B48827C0F6C",
+      "path": "docs/design/stitch-placement-guide-v2.png"
+    },
+    {
+      "sha256": "67BFAF76C22D3D496812B0F1031EEAA13F8597F1F3956889C99167E1E654C3E5",
+      "path": "docs/design/stitch-placement-guide.html"
+    },
+    {
+      "sha256": "DF51557563A90024536559A5C4B33BE16B07D6181C1498CD903FC213CA9ECCCF",
+      "path": "docs/design/stitch-placement-guide.png"
+    },
+    {
+      "sha256": "DCDAD93BA59557C981F155F0BCC71CB48780619E8E7FC805E770DF9B6B4B07EB",
+      "path": "docs/DRIVER_HUD.md"
+    },
+    {
+      "sha256": "879C1E8F303B31E5002500BDBF241DCF27772C9AF0506D549C687A67F6A4433B",
+      "path": "docs/DRIVER_PLACEMENT_GUIDE.md"
+    },
+    {
+      "sha256": "026B931052A8137C7182FF9CDAC40A1F3CF8533046DB4FFE5A16A3AD5EAFF168",
+      "path": "docs/FIREBASE_ANALYTICS.md"
+    },
+    {
+      "sha256": "6960B1D4B8CC9C9C75E755094D99EBB8C5B4E9CC0AE20A3B3B257FCBA38EC5C1",
+      "path": "docs/FIREBASE_CONNECTION.md"
+    },
+    {
+      "sha256": "9F63637657DAA7637E4FBC3EABC44C6F84266D39408FA3D4C460904C399EF2B1",
+      "path": "docs/FIREBASE_HANDOFF.md"
+    },
+    {
+      "sha256": "C0F94EFEF2F9C5BAA7D07B70D940F2F728A7599ADB60DA75FF6FE231E9EFD631",
+      "path": "docs/HEAD_DOWN_TUNING.md"
+    },
+    {
+      "sha256": "B6C4CDD8FFC258EC49B6AEF3CC604CB6032BFC9CADD7FC0E10F0EAAFA2768D20",
+      "path": "docs/HOME_SETTINGS.md"
+    },
+    {
+      "sha256": "58BC5C5EA2ECF17E09C00E65F7D67836EB505D23874669691883AB16BDC94F54",
+      "path": "docs/LANGUAGE_AND_ENGLISH_ALERTS.md"
+    },
+    {
+      "sha256": "D856259396D8D4C2FE19B3EB7FCFF7D1A575A5389CBB91E5B007399E7FB9F5EE",
+      "path": "docs/PERMISSIONS_START.md"
+    },
+    {
+      "sha256": "FE1BBB02DBD6841BFC084103C48DA0802520D01AB68178EF2D311B05E264400C",
+      "path": "docs/PLAYBACK_SETTINGS.md"
+    },
+    {
+      "sha256": "0B6CBE1416CD4B291BA66BCBBC4038025670FF85974528BF9E08D6C2E2BACCEA",
+      "path": "docs/POP_DESIGN.md"
+    },
+    {
+      "sha256": "9A948A8DA6664F2900897725660694B015099FC78DD47565531D6B84F2579568",
+      "path": "docs/runtime-evidence.json"
+    },
+    {
+      "sha256": "92C52660B9AA5F79D6ABE61D2B0D4717F45BEA626B32B741089BDD03E1499D5D",
+      "path": "docs/SPLIT_PLAN.md"
+    },
+    {
+      "sha256": "F4D6A7C652C723F361D5FA2CDC3A08B9B4AA00EFA8185BFDD58BE0268EB5A37D",
+      "path": "docs/STITCH_EFFECTS.md"
+    },
+    {
+      "sha256": "BABC72030521343EDC2B4EC122554C4F012490E04C12FA4B59E9BC120489AA06",
+      "path": "docs/USER_PREFERENCE_ANALYTICS.md"
+    },
+    {
+      "sha256": "8FC78A2BBE6D6176AFA4F92FE9AB0462A110BF4E1124DA7708A1CD0F6F2465D2",
+      "path": "docs/VALIDATION.md"
+    },
+    {
+      "sha256": "48E13CB28C636E1F3114427007A9CBC9D0ECC5D920EC6A28A2C167E1513C7352",
+      "path": "docs/VIDEO_LOCK.md"
+    },
+    {
+      "sha256": "68F97046BC0523BC3CF8F2E2D67C6B11BCE82187FB9AE2FF31F753902FD8C05E",
+      "path": "docs/VIDEO_PLAYBACK_CHECK.md"
+    },
+    {
+      "sha256": "B7B365F4C81A22D163F28787D4D541718A32D0ED4A4D4DE6DD917273BFF1550F",
+      "path": "docs/WAKE_DRIVE_REFRESH.md"
+    },
+    {
+      "sha256": "2FB586A2E745F194911EEF5DBB1366A9CA88EF4524C66FD87FE00D01CA85A52A",
+      "path": "index.html"
+    },
+    {
+      "sha256": "E1E2389E85E0216D031E1D50FB05F1C1818C1B093BB615BBA5E51E5D79A23076",
+      "path": "native/jolbang/android/.gitignore"
+    },
+    {
+      "sha256": "93BFE8EDB44BFA558FB5E58590C1EFD7CD8A5C3293EB69E1B762FAC908F39B59",
+      "path": "native/jolbang/android/app/.gitignore"
+    },
+    {
+      "sha256": "091D0759594E9D28779E6EEA6D2124EF392E04371BEABA7EB4551BD90B191727",
+      "path": "native/jolbang/android/app/build.gradle"
+    },
+    {
+      "sha256": "DCABF4FC6A54B67C751E68BE93706D84252D77DC167602929FCF8D6CDEBECA2C",
+      "path": "native/jolbang/android/app/capacitor.build.gradle"
+    },
+    {
+      "sha256": "45CC85DA2918D120CF83083062CB100B5D6A5CDBCC090699E609C78F359C4E07",
+      "path": "native/jolbang/android/app/google-services.json"
+    },
+    {
+      "sha256": "A62624D7B48278452544F45D30648F7CC0DAFC24561BD2E95074D4F5DAB4313A",
+      "path": "native/jolbang/android/app/proguard-rules.pro"
+    },
+    {
+      "sha256": "193628CE9B518861D7D7908114F84422C415AD5A00AC61B0797697DACC694209",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/BannerLayoutIntegrationTest.java"
+    },
+    {
+      "sha256": "2CF8AD0A0FE734F50F37DC8284BB4794FBE0316F938A5DEDDBA447B327E67F03",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/BundledVideoDecodeTest.java"
+    },
+    {
+      "sha256": "1883075499462592A16CE90E3A0EC726B0A38BD6F1DD1FBE6B2EFF1378AA9CA2",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/DriverPipIntegrationTest.java"
+    },
+    {
+      "sha256": "CD9B844DFCC02723D296791F10B72F323BB03557CA296E50E18B7EEACB7ADE58",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/ExampleInstrumentedTest.java"
+    },
+    {
+      "sha256": "3CF3B27292D153F4FD7B31AA9B30C7EFF259AA4C7E61243FBB68F4952BCA39E7",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/FirebaseConnectionTest.java"
+    },
+    {
+      "sha256": "7E9EEB432E0A78CD04F5009798F173FD2AAE704D8F1303B3F4651D75CAD22153",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/PreferenceAnalyticsIntegrationTest.java"
+    },
+    {
+      "sha256": "5EAA7569BB9536A313011E2D927F34363357CBCA7EC153459FD0F0A4E594277D",
+      "path": "native/jolbang/android/app/src/androidTest/java/com/hjsolution/suha/driver/StartupPermissionsIntegrationTest.java"
+    },
+    {
+      "sha256": "7CB8FB238333E20F86695C45F0F897E3996AF9E6C34C50762007EBC22800CD01",
+      "path": "native/jolbang/android/app/src/main/AndroidManifest.xml"
+    },
+    {
+      "sha256": "9022419198C9CF63D957DA35BC14AEA0498CA337E198C5E62EFDD4490EB9E5C1",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/BannerLayoutController.java"
+    },
+    {
+      "sha256": "5EBFBDBCA6E93F031403061C387B6ACFC8BF870067381FBE5616133A7CBD9AFD",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/DisplayControlPlugin.java"
+    },
+    {
+      "sha256": "2AA2307CC7501992FB8C639506E44E0C8256BC5CE2793965F9C64E07E7F2D0D5",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/DriverAnalyticsPlugin.java"
+    },
+    {
+      "sha256": "C2F304BA99AF3E80D306E8BE231CA6A55A9CD1437EBEEE820BB01B39EEF23C10",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/DriverPermissionsPlugin.java"
+    },
+    {
+      "sha256": "6E1AC0498236BD9EBD99BCDBE15C544F759C7290103F4E88D58C72CC6B8837B1",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/DriverPipPlugin.java"
+    },
+    {
+      "sha256": "B77E3FBDBE688C71E6B28452D17F9EA164189FF397C9DC555299A4074D67B313",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/MainActivity.java"
+    },
+    {
+      "sha256": "D85252A132D85D75009A37EA8972B3B4D94F31BB83C5451B545C34CD74802F96",
+      "path": "native/jolbang/android/app/src/main/java/com/hjsolution/suha/driver/NativeSpeechPlugin.java"
+    },
+    {
+      "sha256": "07BDCD6FF672C18DDA2135645966B4C5225458D8829E194710E68EE8AC4F4F38",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-hdpi/splash.png"
+    },
+    {
+      "sha256": "2F8936EDBD29B15E137C17CC72CB87C677F0D5766DD2055FF88B2736AF4F9224",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-ldpi/splash.png"
+    },
+    {
+      "sha256": "05EFDDA84F7DA218F4E97C3CB3C7AD9D7958A37218EC7B7AAE1F005FF72F98DD",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-mdpi/splash.png"
+    },
+    {
+      "sha256": "07BDCD6FF672C18DDA2135645966B4C5225458D8829E194710E68EE8AC4F4F38",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-night-hdpi/splash.png"
+    },
+    {
+      "sha256": "2F8936EDBD29B15E137C17CC72CB87C677F0D5766DD2055FF88B2736AF4F9224",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-night-ldpi/splash.png"
+    },
+    {
+      "sha256": "05EFDDA84F7DA218F4E97C3CB3C7AD9D7958A37218EC7B7AAE1F005FF72F98DD",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-night-mdpi/splash.png"
+    },
+    {
+      "sha256": "C0056C7638F7369D43A4048D15BC89DC7E2C75DB2AEF259F6C0EC5C075C3A1FE",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-night-xhdpi/splash.png"
+    },
+    {
+      "sha256": "7007E9FE842FF4CF5F373DFE50BE6313FF2B41088E5945D03EA8861E7ED5A0EB",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-night-xxhdpi/splash.png"
+    },
+    {
+      "sha256": "90A283BB7EABA4038C965CFDC1CE04066EBA3481AB7DDE595D33D7E8143738A8",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-night-xxxhdpi/splash.png"
+    },
+    {
+      "sha256": "C0056C7638F7369D43A4048D15BC89DC7E2C75DB2AEF259F6C0EC5C075C3A1FE",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-xhdpi/splash.png"
+    },
+    {
+      "sha256": "7007E9FE842FF4CF5F373DFE50BE6313FF2B41088E5945D03EA8861E7ED5A0EB",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-xxhdpi/splash.png"
+    },
+    {
+      "sha256": "90A283BB7EABA4038C965CFDC1CE04066EBA3481AB7DDE595D33D7E8143738A8",
+      "path": "native/jolbang/android/app/src/main/res/drawable-land-xxxhdpi/splash.png"
+    },
+    {
+      "sha256": "2F8936EDBD29B15E137C17CC72CB87C677F0D5766DD2055FF88B2736AF4F9224",
+      "path": "native/jolbang/android/app/src/main/res/drawable-night/splash.png"
+    },
+    {
+      "sha256": "3D23CCCA467404F2A69B648A0E29FA6716FAAB50813BBF46B30ECC3A54C42077",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-hdpi/splash.png"
+    },
+    {
+      "sha256": "6F9ADE06E0970ADD5426A71B28964085C65F6DF9243DCF358FDA219685BDAB2E",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-ldpi/splash.png"
+    },
+    {
+      "sha256": "2614C3612FCA0D24B170A3775A7FE24BB7D88134A334790B4001CD9AD7052DFF",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-mdpi/splash.png"
+    },
+    {
+      "sha256": "3D23CCCA467404F2A69B648A0E29FA6716FAAB50813BBF46B30ECC3A54C42077",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-night-hdpi/splash.png"
+    },
+    {
+      "sha256": "6F9ADE06E0970ADD5426A71B28964085C65F6DF9243DCF358FDA219685BDAB2E",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-night-ldpi/splash.png"
+    },
+    {
+      "sha256": "2614C3612FCA0D24B170A3775A7FE24BB7D88134A334790B4001CD9AD7052DFF",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-night-mdpi/splash.png"
+    },
+    {
+      "sha256": "A6A06FE7384934A50821FE6C18A5E72CBE5559D07876861931BF97169C64712C",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-night-xhdpi/splash.png"
+    },
+    {
+      "sha256": "76E3255C451BF5429FBA850E50C39FD90296EB39E67EC839209AF497D867137A",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-night-xxhdpi/splash.png"
+    },
+    {
+      "sha256": "D5C124FFFC15D6C0E55B47821EE86B45B4B658BE73EAF3D1E3B593F371491F57",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-night-xxxhdpi/splash.png"
+    },
+    {
+      "sha256": "A6A06FE7384934A50821FE6C18A5E72CBE5559D07876861931BF97169C64712C",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-xhdpi/splash.png"
+    },
+    {
+      "sha256": "76E3255C451BF5429FBA850E50C39FD90296EB39E67EC839209AF497D867137A",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-xxhdpi/splash.png"
+    },
+    {
+      "sha256": "D5C124FFFC15D6C0E55B47821EE86B45B4B658BE73EAF3D1E3B593F371491F57",
+      "path": "native/jolbang/android/app/src/main/res/drawable-port-xxxhdpi/splash.png"
+    },
+    {
+      "sha256": "FE3C9A470D9DFC34DFEFA1CBBAF67F16174CDD3D242A1D4F6BD09483EA38C29B",
+      "path": "native/jolbang/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml"
+    },
+    {
+      "sha256": "61ACABDEC7880108A9850FDC6CEA1A6FC974114BAE875BDCADC70078BF4E615F",
+      "path": "native/jolbang/android/app/src/main/res/drawable/ic_launcher_background.xml"
+    },
+    {
+      "sha256": "5603A4372EB877A71239F30699166DB23246E038BF46A2368C1940796466F501",
+      "path": "native/jolbang/android/app/src/main/res/drawable/ic_wake_stop.xml"
+    },
+    {
+      "sha256": "2614C3612FCA0D24B170A3775A7FE24BB7D88134A334790B4001CD9AD7052DFF",
+      "path": "native/jolbang/android/app/src/main/res/drawable/splash.png"
+    },
+    {
+      "sha256": "61E5B7029215A836ABE562B61D037BD5E59E68E28CBAAB42B9F503BA5BF3CA57",
+      "path": "native/jolbang/android/app/src/main/res/layout/activity_main.xml"
+    },
+    {
+      "sha256": "B00010E748D2B7292731D8ED03D5277359B89E8262D0A4296E3ED8B8FDAD4F4C",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+      "sha256": "B00010E748D2B7292731D8ED03D5277359B89E8262D0A4296E3ED8B8FDAD4F4C",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+      "sha256": "661ACFAC23820806CF2AB0CE94D148C153209AAD047402563BC7C67EF7718284",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png"
+    },
+    {
+      "sha256": "F8D5E36867AE36E0B141C28669BC121DA6B93558BCA4412EAA931C129C55FE88",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png"
+    },
+    {
+      "sha256": "60BE527522F88462C89088569F92E5351B86FC7C3D21B48E045622409DE6D376",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+      "sha256": "766A34094587CB551F788A1484208F4EBDA71EE51762BE9FCDFF250538EE4E63",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+      "sha256": "CB15F674204589297ABC3199CA93C7F4B3FFC31B8F87F960FD1CBB540BFF527E",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher_background.png"
+    },
+    {
+      "sha256": "B0B3DB5D1A64A2A983326BF3F24F597B7A5D9088E5B28A3E041B8ACD094B64C3",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher_foreground.png"
+    },
+    {
+      "sha256": "533D218C268DA485AD7860F46DF5AF7798E62DC6D7AED210C3C72C96A78C7E7F",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher_round.png"
+    },
+    {
+      "sha256": "7535FDDAA0D82C19F03B3CE53F896EE1705FFAB9531470D3220F71DD7C4CBBC5",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-ldpi/ic_launcher.png"
+    },
+    {
+      "sha256": "B1DE6F756F39B616D420B6B20894A8AB0A5B39A43392524DAFB1991CDE2C3D98",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png"
+    },
+    {
+      "sha256": "C5A583F4BD1B2CBF02FF824B9E37108B0CAAADD3BF72EABA42AFFC1E865FDB5A",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png"
+    },
+    {
+      "sha256": "DA683463D4388AF89EDB379F13F90DA23863CCD46B29DE7D86BAF3BB95A11EC7",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+      "sha256": "334DD1554900F2E9FFCB1D5089059204D45FB2188DB848FDB135D3C43DE7C63A",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+      "sha256": "ECC59BF53BE60535D18E9EEEF74EE1E028D64B100D22E9EC91CF2AD572CA2E2D",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png"
+    },
+    {
+      "sha256": "CFB13DA1F9AC9470AB93107A79D2708CC7BA33A0184B1AF31365E53E99912578",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png"
+    },
+    {
+      "sha256": "41CE19317E1CE2332F4D213E705430A2297CDAA44D04DD9BA6866FF3ABBB8677",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+      "sha256": "54D2E1D06C9AF36DA741E4B0AC104C2CAE9DB2D319D520D2EED92BD4EABCC032",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+      "sha256": "375F03397794FFE2125E8EEE6649E0573C57E7B4C025401C94D6031E7CC9C3EE",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png"
+    },
+    {
+      "sha256": "34F86900E656D35CB5DED1E7E8E9CE92A456AA9CC75604D6F19E2CB83180BAF3",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png"
+    },
+    {
+      "sha256": "D4191C9B681A532059C4B6A77A454DA7B632B6E907075E0D38B0D58825C2EA0C",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+      "sha256": "96BBAC506BA9BEAFCAEACB5653A771CE3891B56708C3F2C88F62B7F1863868FD",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+      "sha256": "B1147F914984521B85C0AC7B4155E863CA488B0154B55D55F5C1434E22134A4F",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png"
+    },
+    {
+      "sha256": "9A01946A0FD2F98ABC74994FE343BCB2132A0CDC7D74C1F6634ABE5DF61461C7",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png"
+    },
+    {
+      "sha256": "FFD4D43523159002E177D58B1069A6B82712B9170C390901C36714A25846B3CC",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+      "sha256": "7111A888938BEE5F9EC1703A52FD13B653B93E388A967883A6375542B25DA911",
+      "path": "native/jolbang/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+      "sha256": "1CAB1AA686B81505433A474A3408F56D39A3DFF8F1FF66C16D866A8FA4B806BE",
+      "path": "native/jolbang/android/app/src/main/res/values/ic_launcher_background.xml"
+    },
+    {
+      "sha256": "8DBAEEC784BC89574A979A7EB35D01468F9A9354EF356084B1E776EEDA255AF0",
+      "path": "native/jolbang/android/app/src/main/res/values/strings.xml"
+    },
+    {
+      "sha256": "8ED66B35313DA016BDF928AD53555BF70AD4850EF3D5746CA9AC04AE28229DAC",
+      "path": "native/jolbang/android/app/src/main/res/values/styles.xml"
+    },
+    {
+      "sha256": "0FDC2FED01ACFD417BCD9E0B2312E28E843A102D24FE74038EE32D15E10C8D88",
+      "path": "native/jolbang/android/app/src/main/res/values/wake_brand.xml"
+    },
+    {
+      "sha256": "A290266DA65E30675E410CD8E1C17CDE04DE40170C9C3B900504E7A24CA79626",
+      "path": "native/jolbang/android/app/src/main/res/xml/file_paths.xml"
+    },
+    {
+      "sha256": "D1C852CC40E01F2253930FACB69F56BAACB6E86E6C4386467E010CFFB3E8E3FD",
+      "path": "native/jolbang/android/app/src/test/java/com/hjsolution/suha/driver/ExampleUnitTest.java"
+    },
+    {
+      "sha256": "735DAFEC431688F5202B4F4BB40E0EF9A78E3A3DCCB98FCDB5B2725195564BFE",
+      "path": "native/jolbang/android/build.gradle"
+    },
+    {
+      "sha256": "A09A9DAE7BDB062154A1BFB741288E47366A26E51522A789D6EDF14510DCB3CD",
+      "path": "native/jolbang/android/capacitor.settings.gradle"
+    },
+    {
+      "sha256": "94934FE2FCD96BF8D8B9A29383041E5AC80FF2655A033707B02494F0971023A2",
+      "path": "native/jolbang/android/gradle.properties"
+    },
+    {
+      "sha256": "7D3A4AC4DE1C32B59BC6A4EB8ECB8E612CCD0CF1AE1E99F66902DA64DF296172",
+      "path": "native/jolbang/android/gradle/wrapper/gradle-wrapper.jar"
+    },
+    {
+      "sha256": "1ADF3CAEEDAD6AE5B3A0A410E1DD94CA552D6E6F02EE68CBAF849CD5E7877D17",
+      "path": "native/jolbang/android/gradle/wrapper/gradle-wrapper.properties"
+    },
+    {
+      "sha256": "B187B4C52E749F5760AFDD6FADC31B2A98AD35FB249BF0DFF03B72650F320409",
+      "path": "native/jolbang/android/gradlew"
+    },
+    {
+      "sha256": "1D297E00BD21DE3ACE22B4D7F2DE1F9DFA858883D66BBF7C1CCBECCCEC8F4F3B",
+      "path": "native/jolbang/android/gradlew.bat"
+    },
+    {
+      "sha256": "9C6C826E55D5CD4FEB1F18F49CE3AB7D19F33BF30893D8750AFB2C3B45872934",
+      "path": "native/jolbang/android/settings.gradle"
+    },
+    {
+      "sha256": "80CA02724FF4A95D1192481C68B00474CB1F8C5767EABBCEA00DEB28049D06DD",
+      "path": "native/jolbang/android/variables.gradle"
+    },
+    {
+      "sha256": "66CF53BEF6001CF3489D50562351B652726BD5FCC829F2E8AFDE1A446B9BFF7B",
+      "path": "package-lock.json"
+    },
+    {
+      "sha256": "462746B229D2CA9CF3554942EE4AFD90013D03EAF0B1985B6383D7EF1489D554",
+      "path": "package.json"
+    },
+    {
+      "sha256": "D05DA8C8D6B2B88ADDBE1D088E07E4D110CC40EED490BE5C40B612A714759D7C",
+      "path": "public/app-ads.txt"
+    },
+    {
+      "sha256": "9CAC980F0C2B831F167C79B36DBE1BD2C064C1F99C7063638FAD468F0E705E10",
+      "path": "public/apple-touch-icon.png"
+    },
+    {
+      "sha256": "0B2170B858F2944FFC4DED6A1E85F1CAE90F011D028044380005AF4C429896AC",
+      "path": "public/brand/driver-placement-en.png"
+    },
+    {
+      "sha256": "62E900C23F5E74BC4F562CD6CC55579D64A9D2BD554DB6877D928DF21089B736",
+      "path": "public/brand/driver-placement-guide.svg"
+    },
+    {
+      "sha256": "45EEB66A3160959171DAB2C6CB31BEFAD207C73960FFEF88E542E55C2F3BD6A5",
+      "path": "public/brand/driver-placement-ko.png"
+    },
+    {
+      "sha256": "BF6602B876C7836881D01D3C6D38A25481B4642E190640BFE5F891F8CAF82D2D",
+      "path": "public/brand/wake-drive-mascot.svg"
+    },
+    {
+      "sha256": "3641DDE7C56DF1DD70FE854C351807A434D1BD1D2591C35CD2E7C6676DAC76FE",
+      "path": "public/brand/wake-drive-source.png"
+    },
+    {
+      "sha256": "E35FFDEBB2225B49814C31889CBB3CE69CB3509E6A9F431EDABA5E1A6DE8CD15",
+      "path": "public/fonts/NotoSansKR-OFL.txt"
+    },
+    {
+      "sha256": "194018E6B2B293A7964F037B25C0249CE1418BC9AB3C971060A03AA57861E252",
+      "path": "public/fonts/NotoSansKR.ttf"
+    },
+    {
+      "sha256": "564CE565C371C5E5BBF286006565A7C9AA55A9F56E7CA58D56E05D649DD61A72",
+      "path": "public/fonts/SpaceGrotesk-OFL.txt"
+    },
+    {
+      "sha256": "ACAD6DE1FC93436F5C0F1F4137751EF04F1AEA3063E7036535970FFCFBD79F72",
+      "path": "public/fonts/SpaceGrotesk.ttf"
+    },
+    {
+      "sha256": "398E0E9245FC9B22379193D28C2564C6896540D6B519AC5291BF7E52D40F3F8A",
+      "path": "public/icon-192.png"
+    },
+    {
+      "sha256": "1BC8EAA1D49863A6E7C852194F968556B8E9A952B68D596807D492E14E70D8D4",
+      "path": "public/icon-512.png"
+    },
+    {
+      "sha256": "D40DDF04A4B2377CAC66EBB24E02C6975D3516D2163CD9CE5F1154B6F8C5E4AE",
+      "path": "public/icon-maskable.svg"
+    },
+    {
+      "sha256": "D25A715831A46F9455F16EE209C6CF754BB9298246B70DD02A36E6F801AF3A7D",
+      "path": "public/icon.svg"
+    },
+    {
+      "sha256": "F7FBC33427DCCE2378D9DD8D77E4E0EB703E4509353A90CC6186FF98C693A0EA",
+      "path": "public/manifest.webmanifest"
+    },
+    {
+      "sha256": "1603C0B3FDB5635AFC8FCCAB9B82D2E5BE157532D15174D043C0F1C56A122651",
+      "path": "public/media/drowsy-video-0.mp4"
+    },
+    {
+      "sha256": "4CFCC04F1EA0913002F6F79CAC7F7CA44DA0F2F2037F23D61114E90DD6E8F3B6",
+      "path": "public/media/drowsy-video-1.mp4"
+    },
+    {
+      "sha256": "B85D58A5AF2124F850550F0FA520AE2FFBAE4FCBB5663BB1A58DE880C6D0CB29",
+      "path": "public/media/drowsy-video-10.mp4"
+    },
+    {
+      "sha256": "3A8E9832592C7404C80DDEFA0BA1C6002ABB43CB7F0CCD9FB5625ADB9FEB4CDD",
+      "path": "public/media/drowsy-video-2.mp4"
+    },
+    {
+      "sha256": "005EC8DDED951A68EF4D328BAE15734D947297C8B5ED3393D13627D464B48E71",
+      "path": "public/media/drowsy-video-3.mp4"
+    },
+    {
+      "sha256": "CA1D7A07396B2825ED6AB5E744485E64A6142DA9927143B7F1806F32B6683F1F",
+      "path": "public/media/drowsy-video-4.mp4"
+    },
+    {
+      "sha256": "B69BB8FE2634821F2C1F074185ACE14DA2BBFCC7A7B9ED5602E78A8FC86E25AD",
+      "path": "public/media/drowsy-video-5.mp4"
+    },
+    {
+      "sha256": "74D27569957EA5B1F004BD6911B9D8956A0777583817CA781C9AE4D157441E2D",
+      "path": "public/media/drowsy-video-6.mp4"
+    },
+    {
+      "sha256": "C41F6AB6985ABE71363A0D71050D3B984E3B06414BC93A21229EC1E20AF4DF84",
+      "path": "public/media/drowsy-video-7.mp4"
+    },
+    {
+      "sha256": "3E50B22AD31BDC1E854D1E03691A0C6E1CBDB7EC1177E609E9ECB917712328BE",
+      "path": "public/media/drowsy-video-8.mp4"
+    },
+    {
+      "sha256": "E4158C563EDBA9B3CFA0D4DDFEE0050A8976205B8CE2F24CB9115D039D8F51F8",
+      "path": "public/media/drowsy-video-9.mp4"
+    },
+    {
+      "sha256": "C7D6CA7DC05804A273BE83FCFCBC99D0EC0E12BA173B426C7582CC95880E09F9",
+      "path": "public/media/sleepy-driver.png"
+    },
+    {
+      "sha256": "1F27F450A6CB0649CDB81B4DD5A36810B127FEE388396DC063E31307DBC2FFFB",
+      "path": "public/media/study-ending/e0.mp4"
+    },
+    {
+      "sha256": "135D1834F33368FC2EAB57E6F54ACC79745244435590C9675143FBE229A722A5",
+      "path": "public/media/study-ending/e1.mp4"
+    },
+    {
+      "sha256": "AE7FC9305AEE3D87A0484807D8F7B782D6E152E78501BF9DF932CB5E46F0224B",
+      "path": "public/media/study-ending/e10.mp4"
+    },
+    {
+      "sha256": "9D93C40E88D2E596AA824F0B8DFB8B42AD81B231330A06C75ED379AA37497ED7",
+      "path": "public/media/study-ending/e2.mp4"
+    },
+    {
+      "sha256": "E65C4D806FD37E6B306EEF508ED38DABDCDBB078035ABA8C2FC9019BAD181D6B",
+      "path": "public/media/study-ending/e3.mp4"
+    },
+    {
+      "sha256": "4C702CD970C1E652506122FDABAA7AAE83209EA57658E2840DBFFAC3F9AFB2A0",
+      "path": "public/media/study-ending/e4.mp4"
+    },
+    {
+      "sha256": "4349831F8A1673A4DADA209571C44084B153EBA32CBE119C97E01BB6CB7DCCA2",
+      "path": "public/media/study-ending/e5.mp4"
+    },
+    {
+      "sha256": "FAB3AC963A0E7961D77735BA27A687F99B30FE46C8899DEC35C5C1727ED30CFE",
+      "path": "public/media/study-ending/e6.mp4"
+    },
+    {
+      "sha256": "A386FD11036AD91300A495D3A7FB47377CCEA8723A15F49AA03B172802F330C7",
+      "path": "public/media/study-ending/e7.mp4"
+    },
+    {
+      "sha256": "14AEDD5BED921694F4480F316B2044DCEBFBB50000322E9AFF78F244C34220F6",
+      "path": "public/media/study-ending/e8.mp4"
+    },
+    {
+      "sha256": "E46BA0ADCE05D276FBBCCE81755107E6C622AD64D4FC3118A30EF594FEC478EC",
+      "path": "public/media/study-ending/e9.mp4"
+    },
+    {
+      "sha256": "03B3B2209C6C6E34150A0F32E57A61824FB28D13AA900408BA69CB8D2953AFA5",
+      "path": "public/media/study-focus/default-0.png"
+    },
+    {
+      "sha256": "9A8B342F41206D75A3C2E269BB5CFD6CEA53F7DF3592E8815A00E491D036EB6B",
+      "path": "public/media/study-focus/rewards/0_books_notebook.png"
+    },
+    {
+      "sha256": "68CE5B72EF4E40FE94928153A2F4F953E29DE9FAB31DEFB3E0282B5CE938E2D2",
+      "path": "public/media/study-focus/rewards/01_gold_pig.png"
+    },
+    {
+      "sha256": "FB67EFB37C4DC8C61CF0B53B45D9C9F66F350FC34B9F55CD826FF04C76CC6028",
+      "path": "public/media/study-focus/rewards/02_lucky_pig.png"
+    },
+    {
+      "sha256": "FDE0D54821CB1E6AC0569BFF4C9F4BDF3D082B7ADA383D40B8A39C8A59D58178",
+      "path": "public/media/study-focus/rewards/03_lucky_charm.png"
+    },
+    {
+      "sha256": "A01F2C673FC65A2C13B48F9B283EE3FAC99F4B907FA64BF189C5FEDBD9617EFB",
+      "path": "public/media/study-focus/rewards/04_four_leaf_clover.png"
+    },
+    {
+      "sha256": "9BAFA18D16CC9A6AE601177BEBDFAB001AE26BA3C743018AD2861EF2702365A6",
+      "path": "public/media/study-focus/rewards/05_flower_bouquet.png"
+    },
+    {
+      "sha256": "089A61BC3E7F830F4D5DBD448CE9CA49F40B5744716E63BF1DFD75C4CD49B0FE",
+      "path": "public/media/study-focus/rewards/06_flower_vase.png"
+    },
+    {
+      "sha256": "5172E47DF7154A38EE3A84DC4DE6495BB880B4CABDC6262DB2BE9E0019BF3AB4",
+      "path": "public/media/study-focus/rewards/07_teddy_bear_study.png"
+    },
+    {
+      "sha256": "4204545C8A66BEDB2686F64ACB3DE6D78992F470EC470667F52DD6E9E25AA0C5",
+      "path": "public/media/study-focus/rewards/08_dinosaur_study_fixed.png"
+    },
+    {
+      "sha256": "44B16ABDB4A2673CC5EF54172A82A081A3E1E5604F075FCBF46AD371405BC565",
+      "path": "public/media/study-focus/rewards/09_hanging_stars.png"
+    },
+    {
+      "sha256": "B18087F5BE73BF9F617F2CF5AEAA588B8D5C9EC7F503CE1E990E0507E5993FE4",
+      "path": "public/media/study-focus/rewards/10_stationery_set.png"
+    },
+    {
+      "sha256": "2ED0C2E1B519058A15F89D088E882ADFBC6DD352F7D40D8E55005226573C0C74",
+      "path": "public/media/study-focus/rewards/11_cloud_stars.png"
+    },
+    {
+      "sha256": "3F134CBB60AFA1F364D78368420F991C3B4F9F4C2821E4C3E414DBA1B08751EF",
+      "path": "public/media/study-focus/rewards/12_star_bottle.png"
+    },
+    {
+      "sha256": "E78D5494EA76B3CBA003022EBE4E5703137D280A1A36BE4719045848CB860234",
+      "path": "public/media/study-focus/rewards/14_laptop_tablet_drink.png"
+    },
+    {
+      "sha256": "3B2A840262F28E7C51D5480B2E6D40CE8159E3BD7CA91BE321BB3E0D143D132E",
+      "path": "public/media/study-focus/rewards/15_alarm_clock.png"
+    },
+    {
+      "sha256": "40684076CA1EB44158087D72900DE472B32D5F33139780C26F45CB62E72CEADF",
+      "path": "public/media/study-focus/rewards/16_glowing_plant.png"
+    },
+    {
+      "sha256": "10FC99864240342936467A9A52883DBF10008767E2371E82F859254DBE64919E",
+      "path": "public/media/study-focus/rewards/17_headphones_books.png"
+    },
+    {
+      "sha256": "20F5CFAF6FAB3B675724B0B4ACE4C0CD91D5F9F0C88AF0C597653F4C19F30362",
+      "path": "public/media/study-focus/rewards/18_gaming_desk.png"
+    },
+    {
+      "sha256": "2E8A38133811F3848E7B11916C35C162BD39A75C2D896AC61B1C162F1ACC1396",
+      "path": "public/media/study-focus/rewards/19_watch_wallet_tools.png"
+    },
+    {
+      "sha256": "E30F37F423D710B8839D8E0D046792D5E20D1CC909B1D778EDC3725A64074EC7",
+      "path": "public/media/study-focus/rewards/20_timer_candle.png"
+    },
+    {
+      "sha256": "2A369E4D9ECE71FB64F5FC4DFFABD42E8358C187EB268C81BF67CB88B9961791",
+      "path": "public/media/study-focus/rewards/21_sports_gear.png"
+    },
+    {
+      "sha256": "4A586C6DCBBBBE7C9D535BBC71123F8B8993206D020516841334C1F345C09651",
+      "path": "public/media/study-focus/rewards/22_study_woman_white_full.png"
+    },
+    {
+      "sha256": "602916C988DA1D72DA9522A1588DDF9D09B1FC355CB92B03E087313604AD5FC0",
+      "path": "public/media/study-focus/rewards/23_study_woman_pink_full.png"
+    },
+    {
+      "sha256": "987245B6CE7399A6518872F079B090F2444EBD126EEEC1F65154F139DA589748",
+      "path": "public/media/study-focus/rewards/24_study_woman_coffee_full.png"
+    },
+    {
+      "sha256": "C734D8B721833D0085716149F05C0092BBBEEFF67A651228A98AE9BC86923639",
+      "path": "public/media/study-focus/rewards/25_study_woman_laptop_full.png"
+    },
+    {
+      "sha256": "129BD0DA8ACF94AF909F94ECAC1BDA69E4270EBD7C51F92791C52713D2C81296",
+      "path": "public/media/study-focus/rewards/26_study_woman_navy_full.png"
+    },
+    {
+      "sha256": "7EA7EDB76B756AC41CC24C553505F410BBDFEDED94D542B51966D30A5DC4CA53",
+      "path": "public/media/study-focus/rewards/27_study_woman_lavender_full.png"
+    },
+    {
+      "sha256": "6936F05FB8EC8F44DD6699FA0D0CE70514397039B7FB66F2AA80A4510B53E46F",
+      "path": "public/media/study-focus/rewards/28_study_boy_earphones.png"
+    },
+    {
+      "sha256": "BEDD21B830154461BBC74A81B4F65DD0C71A3301697E61750BCEE5A2A2B78852",
+      "path": "public/media/study-warning/s0.mp4"
+    },
+    {
+      "sha256": "DDD214080AB5D01FA36289DF89FD403E37832B859A2AC3E76EE4DD8321E21578",
+      "path": "public/media/study-warning/s1.mp4"
+    },
+    {
+      "sha256": "1566FC4967BB919F90F857F5DB08127AD4D642E550F0199499B58C4E9C82A57A",
+      "path": "public/media/study-warning/s10.mp4"
+    },
+    {
+      "sha256": "49FCAEDEFC5336722F830359E6CC319404EDACEE6ACA296655909C9F70F7A85A",
+      "path": "public/media/study-warning/s11.mp4"
+    },
+    {
+      "sha256": "F2A7C56B0E02B5AA506732A330AEEA5A85AC4D16174C57EF5CF3B64155D9C3A9",
+      "path": "public/media/study-warning/s2.mp4"
+    },
+    {
+      "sha256": "54A1CF270390548A98B17402D53EB9F45D1B53F316A32DDCDDCBB4A0A60697BD",
+      "path": "public/media/study-warning/s3.mp4"
+    },
+    {
+      "sha256": "826A1153B1B78840846F0FC6F3EBADE00225F5D59D9C94DFAE0E2AE73B0CB66B",
+      "path": "public/media/study-warning/s4.mp4"
+    },
+    {
+      "sha256": "C4E2545E9275A84E2B2975323C6A847094CFDCBAF11D2D06313C1F77CAD3EC4E",
+      "path": "public/media/study-warning/s5.mp4"
+    },
+    {
+      "sha256": "6DE9C6714F12C6FEFCB70A56BC40B6848872551703E24686DF585DE61FA8F730",
+      "path": "public/media/study-warning/s6.mp4"
+    },
+    {
+      "sha256": "CA94C7BFEBA9790D3188B64B15FC56D7695B27738F8969A64ADDE7D3958CE642",
+      "path": "public/media/study-warning/s7.mp4"
+    },
+    {
+      "sha256": "1128FC6129F4C1FBFCB8970DE2D1430447F11C29EDB31E9D103C98222F390E3C",
+      "path": "public/media/study-warning/s8.mp4"
+    },
+    {
+      "sha256": "4E8FE7587AD35E0C54639CA6F78258E2F44AACEDFFAE052C25F0A0F843551931",
+      "path": "public/media/study-warning/s9.mp4"
+    },
+    {
+      "sha256": "7C048065B7C1DF30F79D8CE857ABF11643C3E9147471374EDE958C32CAA7B33C",
+      "path": "public/media/wake-up-face.png"
+    },
+    {
+      "sha256": "64184E229B263107BC2B804C6625DB1341FF2BB731874B0BCC2FE6544E0BC9FF",
+      "path": "public/models/face_landmarker.task"
+    },
+    {
+      "sha256": "59929E1D1EE95287735DDD833B19CF4AC46D29BC7AFDDBBF6753C459690D574A",
+      "path": "public/models/pose_landmarker_lite.task"
+    },
+    {
+      "sha256": "9368569193FB277BDE3974880A5E1ABCED1726CA272ACD6AD3C421F47602428B",
+      "path": "public/og-social.png"
+    },
+    {
+      "sha256": "C7AAAAF7088B4233EE498D0417B57E3006B0D8541331C0C606A91B8C70B52919",
+      "path": "public/og.png"
+    },
+    {
+      "sha256": "59DF098CBEFB3047853B89635CE6BB8AB2203D9E72FF281F90E782138F5DE103",
+      "path": "public/posters/video-0.webp"
+    },
+    {
+      "sha256": "F34698446B1B51B6B4E1F0667F56D32A5EEEE1E13B40C1AE671FCB248B4EFDF2",
+      "path": "public/posters/video-1.webp"
+    },
+    {
+      "sha256": "3E01C79172959AF96B7D2A4FDDC84D7FEFD745F1D7C50D6776D11DD53541E553",
+      "path": "public/posters/video-10.webp"
+    },
+    {
+      "sha256": "F9DA13C56ED1C64745333EDA02F022A86976F33FE88CC0ACB290A51272F3DB97",
+      "path": "public/posters/video-2.webp"
+    },
+    {
+      "sha256": "C8B28AB5A383EC938AC6D100C71F665E8A467B1ED2CF4B76CB771E02B8ECFDD0",
+      "path": "public/posters/video-3.webp"
+    },
+    {
+      "sha256": "71D5F0795FDD295FAAB5EAFDACAA629BF634139D3BC09322B6FBB4E83793999B",
+      "path": "public/posters/video-4.webp"
+    },
+    {
+      "sha256": "64069DF97CF676DA1918F9AFF151A3F3771087CFD37484BE6CDF05CF50BD6657",
+      "path": "public/posters/video-5.webp"
+    },
+    {
+      "sha256": "2272ECBB54681F47B89AE333EB776DF7DFF70019C8AA0AAB216EADAD0C7AC299",
+      "path": "public/posters/video-6.webp"
+    },
+    {
+      "sha256": "5C23558E03DF4984D059405981BB7A011CCB12AB35FD228AA7029E8B14C7B278",
+      "path": "public/posters/video-7.webp"
+    },
+    {
+      "sha256": "5A85EBA7C01D576A0DA22AE917D472C481DDC6A7766BD3BC04063A948E0AA331",
+      "path": "public/posters/video-8.webp"
+    },
+    {
+      "sha256": "C00043DF9B0B953B7D924DFCDA8F149DB0A5C0A5894B59F5D53A1320DD32DA7B",
+      "path": "public/posters/video-9.webp"
+    },
+    {
+      "sha256": "901657CB02C43C4D3A9632EDBFA5090957664BC6B617040FE55946B656CC9890",
+      "path": "public/sw.js"
+    },
+    {
+      "sha256": "CB02B4055399393ACB242851E241477497B3B862D565AB6DAEB40B24FE8B7712",
+      "path": "public/wasm/vision_wasm_internal.js"
+    },
+    {
+      "sha256": "6A5C64584C2AB61C763B6E204AFBDBC7CE1CAF7F5216187322BCA8DF94F646BC",
+      "path": "public/wasm/vision_wasm_internal.wasm"
+    },
+    {
+      "sha256": "B03642E858F88A02F628BA808EA0F7C6C0036AA282164D06C3071B77239F986C",
+      "path": "public/wasm/vision_wasm_module_internal.js"
+    },
+    {
+      "sha256": "617B8E0248DBD27E9D7ECE4218004EAE4CEFB499196D1BB4FA0E3FEF21708756",
+      "path": "public/wasm/vision_wasm_module_internal.wasm"
+    },
+    {
+      "sha256": "A3CAAD71ACCE4A3ABC4451935A33D9834B2C90DBA9FD4B6F95BDB621A4DB41A9",
+      "path": "public/wasm/vision_wasm_nosimd_internal.js"
+    },
+    {
+      "sha256": "8A3092D34C79D3F57E6BA8592105E8A90F6B07C27891FFECD14CCA428BFD3E31",
+      "path": "public/wasm/vision_wasm_nosimd_internal.wasm"
+    },
+    {
+      "sha256": "DD9C9C5424A82DB46A3D6B133E2A98D885C2AA2679C386B18B333E77EF150948",
+      "path": "README.md"
+    },
+    {
+      "sha256": "97FEDC3954722F5AEA162CADB085B92A0546F74D4829C81821618D9FC944F50D",
+      "path": "scripts/app.mjs"
+    },
+    {
+      "sha256": "D9985E9313E3CBA4B8EF1E7363DE2268F4E2A7E46B14F362D08A0AF5B54F87C9",
+      "path": "scripts/branding.mjs"
+    },
+    {
+      "sha256": "3A07994239D3D376FBB6B267D85744E041B0018B73ECA3C8E3B1B846E661179D",
+      "path": "src/adAnalytics.ts"
+    },
+    {
+      "sha256": "9F98C12CC2DBBCF52393FB52A5857964F06F493D78612BDE0CF2B13BE8A45A0A",
+      "path": "src/ads.ts"
+    },
+    {
+      "sha256": "900B87916E0B28EA1B87AEE25A28DC3D3C5E8AE3FA3C3785A8AA481DB5819832",
+      "path": "src/analytics.ts"
+    },
+    {
+      "sha256": "B537FE42B88E77832AC22D6DEE2FD4C1D4D034D6B4EE53FEB4954CD4C1318F60",
+      "path": "src/analyticsCore.ts"
+    },
+    {
+      "sha256": "F62CAA26C2680EAE3AF3463A731090E828B47F8166F57BEA02959C5ABDD3A247",
+      "path": "src/AnalyticsSettings.tsx"
+    },
+    {
+      "sha256": "0477179E7D268B0FAF697722458E677BF516CAF46DE03BB45552A76744B1C11A",
+      "path": "src/appProfile.ts"
+    },
+    {
+      "sha256": "F4354E9CE9C721142CD7BFEC09A0FE014EF72C1CA0B9C3A80EDFAAD564EF8B3B",
+      "path": "src/appStorage.ts"
+    },
+    {
+      "sha256": "ABDA8A71DA5A221D0DA6945E5479640CFEA3DD180E277CB4385356DD0BD32848",
+      "path": "src/cameraAccess.ts"
+    },
+    {
+      "sha256": "14BE81F558FECF921CC7A0D4368D14DE715228F81F41690D7312EB417AFF127E",
+      "path": "src/cameraPlayback.ts"
+    },
+    {
+      "sha256": "9772FDC648F7DE952372492617718CFE00888A775E3B27B15FD16C33651DA2FD",
+      "path": "src/displayControl.ts"
+    },
+    {
+      "sha256": "877E71C6D5F671898B262EBFF6BBC9B4C1E6A473713C605696C6FF682E51CB27",
+      "path": "src/driver-effects.css"
+    },
+    {
+      "sha256": "A6F41E3752FB8432DF6B26AADAA0A0B1F6C5E5A369353C0CA79C1542F3D4B9EA",
+      "path": "src/driver-library.css"
+    },
+    {
+      "sha256": "C7313AA8860FF76FCBC87257DE95F6517C96E3D86CB7E1EC41482D97A52920FF",
+      "path": "src/driver-monitor.css"
+    },
+    {
+      "sha256": "AC7F8754D622AE15EA48E3D77149343DF7BD8240F4B874E7BD2A78978D94D749",
+      "path": "src/driver-pip.css"
+    },
+    {
+      "sha256": "8E7EB60F792B2529E3BE980DC2A3638E57B0C60BC1E08C2C3A32FFA869C16B77",
+      "path": "src/driver-placement-guide.css"
+    },
+    {
+      "sha256": "ED16D96D88230E9CB46E2C3A063208F531BA25A9284409FA85CA870B3CDA29D6",
+      "path": "src/DriverHud.tsx"
+    },
+    {
+      "sha256": "61C3F8FE7B69030E8497253533D5ADF5A92B233AFA2660FA66F7F5633AF34DA6",
+      "path": "src/DriverLibrary.tsx"
+    },
+    {
+      "sha256": "46860E16C31DF0FB2654F7B08568EB10B07C7BAF8058BC0E2A0F778BC6294A62",
+      "path": "src/driverPermissions.ts"
+    },
+    {
+      "sha256": "26AB6BDF4D0848C8FD345B4D95C520671F54CA9F7F591BF8B87ED0C2D06D034D",
+      "path": "src/driverPip.ts"
+    },
+    {
+      "sha256": "A4E1D35B4F9B86712C9923831C30DA53FFC8D1CB5671A933C80BA674EF7DB341",
+      "path": "src/DriverPlacementGuide.tsx"
+    },
+    {
+      "sha256": "C7C19BACA244B42480446600AB2C8F377CFCBF1EA4AC2697E70BC3CCC1FAE5CA",
+      "path": "src/driverPlacementPreference.ts"
+    },
+    {
+      "sha256": "19AE273447096AE62257D2EE810B639525911671103489A651740D184F9CBEFD",
+      "path": "src/driverSpeed.ts"
+    },
+    {
+      "sha256": "FDED260A28BF0430661997B0B61FAA2A1EF3CACA9E736DC5A853DC826927BEB1",
+      "path": "src/driverWarning.ts"
+    },
+    {
+      "sha256": "163BBD6D2C5009BD2BE16C50249EDC1D4E17C8614AF2EC98F58533AB04919917",
+      "path": "src/DriverWarningPopup.tsx"
+    },
+    {
+      "sha256": "223D4B309AF18C93AFF2562A5638223CE4EF841074C2321DE0FD4D09800BD468",
+      "path": "src/english.ts"
+    },
+    {
+      "sha256": "5E77B435C3EF33A77326E64880083BE419EF8A898EEAF928629DCFE03AFD8B84",
+      "path": "src/firstRunNotice.ts"
+    },
+    {
+      "sha256": "2CC6D5D308920F7B1AC4E76082D6AF19F1FB2EA262F40FC3210133DFA47CDDB0",
+      "path": "src/language.ts"
+    },
+    {
+      "sha256": "83C50324217A7BB478B3BC25EC3387AE9C87351CAE4D38AF763DB10B0F3DD401",
+      "path": "src/main.tsx"
+    },
+    {
+      "sha256": "09B8C662251EC82C372B72F8034F4CFC824858F46DE4F6B609C05A8D3C50ECCC",
+      "path": "src/meditation.ts"
+    },
+    {
+      "sha256": "03806A1EE2BE31C70F385BCF14233E32167EC42570AD00CEBB20E40480178F12",
+      "path": "src/monitor.ts"
+    },
+    {
+      "sha256": "5C9606606CFC9C4CA23B656715AB6F20DB1D20F962EC1535C6B7926D0115DF02",
+      "path": "src/personalSign.ts"
+    },
+    {
+      "sha256": "9DBFD0304887064C090297F431A022922E0B93FCA3208B220302DA4BA84A1063",
+      "path": "src/preferenceAnalytics.ts"
+    },
+    {
+      "sha256": "9B564231FC2404E2F869AAC920485B9AACA117F9CEE1B2B0C0A33A722355F865",
+      "path": "src/purchases.ts"
+    },
+    {
+      "sha256": "CD3701F6E7490952DA6351A9DEF9F0F768A09D67E712998DEBCC941CC841DFC1",
+      "path": "src/SignInterpreterScreen.tsx"
+    },
+    {
+      "sha256": "C5D39D28F0E2445447E88189530D429FCD46CE8533F96E9C063AAB9BDF31B56F",
+      "path": "src/signVision.ts"
+    },
+    {
+      "sha256": "5918A0247E107B17A58DEC0BCC590BA8C9E357E91F6B00E7754C05FBDB095A99",
+      "path": "src/speech.ts"
+    },
+    {
+      "sha256": "F7C929280CD10C12B383DF624204D441450E5225E41453279C4F86E10ECDD657",
+      "path": "src/studyMode.ts"
+    },
+    {
+      "sha256": "29B810C6458D1DFAE74F82773AF9A1E7E9FCFE7487A963B52124931C8B69DA11",
+      "path": "src/StudyModeScreen.tsx"
+    },
+    {
+      "sha256": "E0051F271136F3C799D55192B7F8A1764C29AB5E7517B780FCA9AD38C9C350B6",
+      "path": "src/studyRewards.ts"
+    },
+    {
+      "sha256": "499A6D2F83F67854DABBBCD68D25011362F17033A9C766F4679F7E8D42747829",
+      "path": "src/studyVideoProfiles.ts"
+    },
+    {
+      "sha256": "1F37EDCCB04637C02F4E41E1100F785774B50EB3E572F87585CDEFD4450A83A2",
+      "path": "src/styles.css"
+    },
+    {
+      "sha256": "2A829D6A4178084F79CFA167D6773686686C506D4ED61103063856403F61F432",
+      "path": "src/unlockWakeUpVideo.ts"
+    },
+    {
+      "sha256": "A41D715A14A811DBCE07E5295A46D8CCD73E3D79E2AE5EEEB7380BD14F8400AC",
+      "path": "src/VideoPoster.tsx"
+    },
+    {
+      "sha256": "9A829AF351D9DD4DFE16285AB6227577026E37E70ADD790ED3939FBAEE593F16",
+      "path": "src/vision.ts"
+    },
+    {
+      "sha256": "81B29763D1F35066D6E8371F1030EE3103B347D3B8F402D0A0D680D9EF9E1D3D",
+      "path": "src/voiceProfiles.ts"
+    },
+    {
+      "sha256": "98B8708571B493C56F1E30C239025DC648F9B4DE355F8C00BAD1881B063A4042",
+      "path": "src/wake-brand.css"
+    },
+    {
+      "sha256": "924B7E56FB4ADFC027F222F20F3444214551B402EDB46706D5DE4536A4A1592B",
+      "path": "src/wake-drive.css"
+    },
+    {
+      "sha256": "4D4A6DBAD54617D46D742FC746F7F2B6B077BDD0EE813423B21533F293060E01",
+      "path": "src/WakeIcon.tsx"
+    },
+    {
+      "sha256": "9B72232BDD2D8C547269893FD0206019EA4F3D724A15CEEEBB3BF8CD5A6EE0A8",
+      "path": "src/wakeUpPlayback.ts"
+    },
+    {
+      "sha256": "CB268B05A1292F1E3DB4DC968522FB447F062D5DC4D5C9C7D9B42F80C5C94D08",
+      "path": "src/wakeUpVideos.ts"
+    },
+    {
+      "sha256": "725B041BEC57B18492E9D832ECF59589C3AD491E530BFA8F73A4BBBBAE536319",
+      "path": "src/widgetSettings.ts"
+    },
+    {
+      "sha256": "AF5B8C00BD7F4B0F6CEE28EC6BA8AB38974D269BF83A1DA0B22D3FAF4F794398",
+      "path": "Start-App.ps1"
+    },
+    {
+      "sha256": "09C4CF63AA66743785D32B77F6983653B04A8B0D2ECF26D261A39BF46069385A",
+      "path": "tests/adAnalytics.test.ts"
+    },
+    {
+      "sha256": "4B72A59E9121FDDC99825B6451FF2C8412F603EAD4CE38FD2E4B9585EBF30C14",
+      "path": "tests/analytics.test.ts"
+    },
+    {
+      "sha256": "5B1ACB44D093792901E8CE064D3E5DCD8802D483670EA0D14C8981C8AF929E2F",
+      "path": "tests/analyticsCore.test.ts"
+    },
+    {
+      "sha256": "0EB242D650CE0534E0D1351FE8AFE70F7CE58EC537E470E7C1B4521472C96803",
+      "path": "tests/appSeparation.test.ts"
+    },
+    {
+      "sha256": "E32819D92856E8728E348ED3BCC8205B5C9A7EADA18A910E20BD4B96F6527231",
+      "path": "tests/cameraAccess.test.ts"
+    },
+    {
+      "sha256": "7CDF2895C507E3465D60BCCF495AA9D62629E23150C3989B5ACDFFBB92481B28",
+      "path": "tests/cameraPlayback.test.ts"
+    },
+    {
+      "sha256": "338254727A2E5FA1B2F47DCCD35574B579AD8D2362CC83BB8C410B03E0ED3750",
+      "path": "tests/driverPip.test.ts"
+    },
+    {
+      "sha256": "8C70F4901105FFE5EA8A31DB89C8B7D6406F4AC4866A18D6FBC4F50860092494",
+      "path": "tests/driverPlacementGuide.test.ts"
+    },
+    {
+      "sha256": "30BEC59B7FC544F772F66C33D59134EFB709F23FE2D86A9A8D1D751F55109E33",
+      "path": "tests/driverSpeed.test.ts"
+    },
+    {
+      "sha256": "6973EEA8CBD7E5E07FF3DF4507935055455063E56DA08271B8361CE3B2B51416",
+      "path": "tests/firstRunNotice.test.ts"
+    },
+    {
+      "sha256": "1343E978B8E2087A2B7B3E3756496DFBFC204C581CF4265D205B986CD3DB32B1",
+      "path": "tests/language.test.ts"
+    },
+    {
+      "sha256": "79C289C00ED5AE6D070E37483950399F5165FA42B8DD544E286259D9A6BD95F5",
+      "path": "tests/meditation.test.ts"
+    },
+    {
+      "sha256": "FFA16EDFA79FAC4F4E603653EFE3A059D4B4C4718EED0B4888B4CA3771429043",
+      "path": "tests/monitor.test.ts"
+    },
+    {
+      "sha256": "1E3A070747CD983D91CE2ECCB2C25C392DC2C475ACDA2784DE24AE9841B5DC34",
+      "path": "tests/personalSign.test.ts"
+    },
+    {
+      "sha256": "F9F96E6E804FCBD90E449A1AFAEC48395A7CCB27B1B3A39051E965B465E1CD37",
+      "path": "tests/preferenceAnalytics.test.ts"
+    },
+    {
+      "sha256": "D57DED5AFC630C145F393C440E3B38379AF4D80A9A5BB50DAB1B1BF2A5F3823F",
+      "path": "tests/signVision.test.ts"
+    },
+    {
+      "sha256": "F64B9161D845C5623FFD27F7CAE8BB7211943EE8327E2572432EDBD877E71A99",
+      "path": "tests/studyMode.test.ts"
+    },
+    {
+      "sha256": "D09BAEEEDAE2470E3D81AA0C51F7BCC93A4658823A9E12CDB425ED76F5546358",
+      "path": "tests/studyRewards.test.ts"
+    },
+    {
+      "sha256": "594FE17C47C87886BC3AA7492A5B6E8FDD86673BDA575BE806CC0FBB50838CDF",
+      "path": "tests/studyVideoProfiles.test.ts"
+    },
+    {
+      "sha256": "95D1FA23D7D8689DE00A7B218022094DFEBABC80D65E5E5E8ABABE8BD1E345D8",
+      "path": "tests/unlockWakeUpVideo.test.ts"
+    },
+    {
+      "sha256": "482A98F514C2EFA9C412BCBE5027AB433F6513E2EEC5D99FDF56D771AE62E95B",
+      "path": "tests/vision.test.ts"
+    },
+    {
+      "sha256": "C9F3735613A11AF150FEBD0998F429A9D0A3167EE3BA98A7585A40DBC8DE7D43",
+      "path": "tests/voiceProfiles.test.ts"
+    },
+    {
+      "sha256": "135A200834B675A953A8BCB36D12727CCEB98758382C132DA2070B7A791B0DFA",
+      "path": "tests/wakeUpLibrary.test.ts"
+    },
+    {
+      "sha256": "677977546AF4BDAF1DED031C0B99689397C32BDC5118AFE48A05793B9FD20CC9",
+      "path": "tests/wakeUpPlayback.test.ts"
+    },
+    {
+      "sha256": "273AA1233142C20A915D9768CDD2AA01584F475CADA001F9C1C3182B5E56E135",
+      "path": "tests/wakeUpVideos.test.ts"
+    },
+    {
+      "sha256": "8377A7BEB88BB8F3A849D408A72FEC7EFFE19299360F1355E35234614DAC687A",
+      "path": "tsconfig.json"
+    },
+    {
+      "sha256": "6C107D5BB7522B0A94DD73DCC5BE1AA32FB2C4E5450EC6257CE8C1A4FD580BC5",
+      "path": "vite.config.ts"
+    },
+    {
+      "sha256": "CBEE1A43E2AD20A55CEFB7D345686BB06231CBE746238F7B3B4913DC9E5B0133",
+      "path": "vitest.config.ts"
+    }
+  ]
+}

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wake Drive 휴대폰 설치 안내 팝업</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="bg-[#1a1721] text-[#f2eef8] flex items-center justify-center min-h-screen p-0 m-0 overflow-hidden select-none">
+
+  <!-- Mobile Device Container (390px layout) -->
+  <div class="relative w-[390px] h-[844px] bg-[#211c2a] flex flex-col justify-between overflow-hidden shadow-2xl">
+
+    <!-- Background: Dimmed Wake Drive camera-ready screen preview -->
+    <div class="absolute inset-0 z-0 flex flex-col justify-between p-5 opacity-35 filter blur-[1px] pointer-events-none">
+      <!-- Background Header -->
+      <div class="flex items-center justify-between pt-8 pb-3">
+        <div class="flex items-center gap-2">
+          <!-- Mini Mascot -->
+          <svg class="w-7 h-7" viewBox="0 0 160 160" fill="none">
+            <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="6"/>
+            <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="6"/>
+            <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="5" stroke-linecap="round"/>
+            <rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000"/>
+            <rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000"/>
+            <path d="M 72 108 Q 80 116, 88 108" stroke="#ff9cc5" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+          <span class="font-semibold tracking-tight text-white/80 text-sm">Wake Drive</span>
+        </div>
+        <div class="px-2.5 py-1 rounded-full bg-black/40 border border-white/10 text-xs text-[#d2f000] font-medium flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-[#d2f000] animate-pulse"></span>
+          카메라 대기 중
+        </div>
+      </div>
+
+      <!-- Center placeholder camera preview box -->
+      <div class="my-auto w-full aspect-[4/3] rounded-2xl border border-dashed border-white/20 bg-black/30 flex flex-col items-center justify-center text-white/40">
+        <svg class="w-10 h-10 mb-2 stroke-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span class="text-xs">운전자 인식 준비 중</span>
+      </div>
+
+      <!-- Background Bottom Bar -->
+      <div class="pb-6 pt-2 flex justify-around text-xs text-white/40 border-t border-white/10">
+        <span class="text-[#d2f000]">주행 HUD</span>
+        <span>알람</span>
+        <span>보관함</span>
+        <span>리포트</span>
+      </div>
+    </div>
+
+    <!-- Modal Backdrop Overlay (Darker dimming) -->
+    <div class="absolute inset-0 bg-[#16121dc4] backdrop-blur-[6px] z-10"></div>
+
+    <!-- Modal Card (Centered dialog, calm, minimal aesthetic) -->
+    <div class="relative z-20 mx-4 my-auto bg-[#292333] border border-[#d2f000]/25 rounded-3xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col">
+
+      <!-- Mascot & Modal Title Header -->
+      <div class="flex items-center gap-3 pb-3 border-b border-white/10">
+        <!-- Cute Mascot Icon (2.5px monoline vector, cute pill eyes + pink smile) -->
+        <div class="w-11 h-11 rounded-2xl bg-[#1e1927] border border-white/10 flex items-center justify-center flex-shrink-0">
+          <svg class="w-8 h-8" viewBox="0 0 160 160" fill="none">
+            <!-- Left & Right Round Glasses Eye -->
+            <circle cx="58" cy="74" r="22" stroke="#d2f000" stroke-width="6" />
+            <circle cx="102" cy="74" r="22" stroke="#d2f000" stroke-width="6" />
+            <!-- Bridge -->
+            <path d="M 77 71 Q 80 67, 83 71" stroke="#d2f000" stroke-width="5.5" stroke-linecap="round" />
+            <!-- Pill pupils -->
+            <rect x="55.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+            <rect x="99.5" y="66" width="5" height="15" rx="2.5" fill="#d2f000" />
+            <!-- Soft Pink Smile -->
+            <path d="M 71 108 Q 80 117, 89 108" stroke="#ff9cc5" stroke-width="5" stroke-linecap="round" />
+          </svg>
+        </div>
+
+        <div>
+          <span class="inline-block text-[11px] font-semibold text-[#d2f000] tracking-wide uppercase">안전 주행 가이드</span>
+          <h2 class="text-[17px] font-bold text-white tracking-tight leading-snug">휴대폰, 이렇게 놓아 주세요</h2>
+        </div>
+      </div>
+
+      <!-- Unified Inline SVG Diagram (Side view + Dashboard mount + Camera cone + Inset preview) -->
+      <div class="mt-3.5 mb-2 bg-[#1f1a28] rounded-2xl p-3 border border-white/5 relative overflow-hidden">
+        <svg viewBox="0 0 320 180" class="w-full h-auto block select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <!-- Soft gradient for camera field of vision cone -->
+            <linearGradient id="cameraBeam" x1="175" y1="110" x2="65" y2="70" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#d2f000" stop-opacity="0.32" />
+              <stop offset="100%" stop-color="#d2f000" stop-opacity="0.04" />
+            </linearGradient>
+            <!-- Inset glow -->
+            <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
+            </filter>
+          </defs>
+
+          <!-- Windshield & Road sightline background hint (Forward view) -->
+          <path d="M 120 145 L 210 50 L 305 50" stroke="#484156" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3"/>
+          <text x="250" y="44" fill="#8c829e" font-size="9" font-weight="500">전방 도로 시야선</text>
+
+          <!-- Dashboard contour (below forward sightline) -->
+          <path d="M 115 155 Q 165 145 220 148 L 305 152" stroke="#5d546e" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- Driver Profile (Side view, sitting upright, calm, looking FORWARD) -->
+          <!-- Head / Face -->
+          <path d="M 38 78 C 38 52, 60 48, 72 48 C 84 48, 90 56, 90 68 C 90 74, 88 77, 85 80 L 88 84 L 84 86 C 81 92, 74 96, 68 96 L 62 96"
+                stroke="#d6d0e2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="#2d2539"/>
+          <!-- Driver's Eye (Looking straight forward at the road) -->
+          <circle cx="80" cy="68" r="2.5" fill="#d2f000" />
+          <path d="M 83 67 L 98 67" stroke="#d2f000" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="2 2"/>
+
+          <!-- Driver Body / Seat -->
+          <path d="M 44 96 L 36 160" stroke="#716785" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M 64 96 L 76 160" stroke="#d6d0e2" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Car Seat Backrest -->
+          <path d="M 28 85 L 26 162" stroke="#4a4258" stroke-width="7" stroke-linecap="round"/>
+
+          <!-- Camera Cone (Dashed beam angled upward toward driver's entire face) -->
+          <polygon points="172,110 92,52 86,94" fill="url(#cameraBeam)" />
+          <path d="M 172 110 L 92 52" stroke="#d2f000" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3"/>
+          <path d="M 172 110 L 86 94" stroke="#d2f000" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 3"/>
+
+          <!-- Dashboard Cradle / Mount (Firm mount on dashboard) -->
+          <!-- Cradle Base -->
+          <rect x="166" y="142" width="22" height="6" rx="3" fill="#ff9cc5" />
+          <!-- Cradle Arm -->
+          <path d="M 177 142 L 180 126" stroke="#ff9cc5" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="180" cy="125" r="3.5" fill="#d2f000" />
+          <!-- Cradle Back Clamp -->
+          <rect x="176" y="106" width="6" height="30" rx="3" fill="#433b52" transform="rotate(-18 179 121)" />
+
+          <!-- Smartphone in Cradle (Tilted toward driver's face, below windshield) -->
+          <!-- Phone Body -->
+          <g transform="rotate(-18 175 116)">
+            <rect x="170" y="98" width="8" height="38" rx="3" fill="#14111c" stroke="#d2f000" stroke-width="1.8"/>
+            <!-- Front Camera Dot (facing driver) -->
+            <circle cx="174" cy="103" r="1.5" fill="#d2f000"/>
+          </g>
+
+          <!-- Label marker #1 on Cradle -->
+          <g transform="translate(196, 136)">
+            <circle cx="0" cy="0" r="7" fill="#d2f000"/>
+            <text x="0" y="3" text-anchor="middle" font-size="8.5" font-weight="700" fill="#292333">1</text>
+          </g>
+
+          <!-- Label marker #2 on Front Camera -->
+          <g transform="translate(178, 86)">
+            <circle cx="0" cy="0" r="7" fill="#d2f000"/>
+            <text x="0" y="3" text-anchor="middle" font-size="8.5" font-weight="700" fill="#292333">2</text>
+          </g>
+
+          <!-- Inset Display: Small phone screen showing full centered face & eyes with lime guides -->
+          <g transform="translate(222, 62)" filter="url(#softGlow)">
+            <!-- Inset phone card container -->
+            <rect x="0" y="0" width="86" height="64" rx="10" fill="#171320" stroke="#d2f000" stroke-width="1.8"/>
+
+            <!-- Inset Header Notch / Title -->
+            <rect x="29" y="3" width="28" height="3" rx="1.5" fill="#383046"/>
+
+            <!-- Face centered in guide -->
+            <!-- Guide corners (Lime viewfinder brackets) -->
+            <path d="M 12 16 L 8 16 L 8 20" stroke="#d2f000" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M 74 16 L 78 16 L 78 20" stroke="#d2f000" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M 8 46 L 8 50 L 12 50" stroke="#d2f000" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M 78 46 L 78 50 L 74 50" stroke="#d2f000" stroke-width="1.4" stroke-linecap="round"/>
+
+            <!-- Centered Face Outline -->
+            <circle cx="43" cy="33" r="14" fill="#282234" stroke="#e8e2f4" stroke-width="1.4"/>
+            <!-- Both Eyes clearly visible -->
+            <circle cx="38" cy="31" r="2.2" fill="#d2f000"/>
+            <circle cx="48" cy="31" r="2.2" fill="#d2f000"/>
+            <!-- Cute Smile -->
+            <path d="M 40 38 Q 43 41, 46 38" stroke="#ff9cc5" stroke-width="1.3" stroke-linecap="round"/>
+
+            <!-- Lime Checkmark Badge (Status: Face & Eyes Detected) -->
+            <circle cx="72" cy="14" r="6" fill="#d2f000"/>
+            <path d="M 69.5 14 L 71.5 16 L 75 12" stroke="#292333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+
+          <!-- Label marker #3 pointing to Inset Display Face Detection -->
+          <g transform="translate(296, 54)">
+            <circle cx="0" cy="0" r="7" fill="#d2f000"/>
+            <text x="0" y="3" text-anchor="middle" font-size="8.5" font-weight="700" fill="#292333">3</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 3 Short Numbered Labels (Within / Below Diagram) -->
+      <div class="space-y-1.5 my-2">
+        <div class="flex items-center gap-2.5 bg-[#211b2b] px-3 py-2 rounded-xl border border-white/5">
+          <span class="w-5 h-5 rounded-full bg-[#d2f000] text-[#292333] font-bold text-[11px] flex items-center justify-center flex-shrink-0">1</span>
+          <p class="text-[13px] font-medium text-white/90">거치대에 단단히 고정</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 bg-[#211b2b] px-3 py-2 rounded-xl border border-white/5">
+          <span class="w-5 h-5 rounded-full bg-[#d2f000] text-[#292333] font-bold text-[11px] flex items-center justify-center flex-shrink-0">2</span>
+          <p class="text-[13px] font-medium text-white/90">전면 카메라를 얼굴 쪽으로</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 bg-[#211b2b] px-3 py-2 rounded-xl border border-white/5">
+          <span class="w-5 h-5 rounded-full bg-[#d2f000] text-[#292333] font-bold text-[11px] flex items-center justify-center flex-shrink-0">3</span>
+          <p class="text-[13px] font-medium text-white/90">두 눈과 얼굴 전체가 보이게</p>
+        </div>
+      </div>
+
+      <!-- Safety Notice (Legal & Driver Safety constraint) -->
+      <div class="flex items-start gap-1.5 px-2 py-1.5 mt-1 text-center justify-center">
+        <span class="text-[#ff9cc5] text-xs">⚠️</span>
+        <p class="text-[11.5px] text-[#ff9cc5]/90 font-medium">정차 중에 설정하고, 주행 중에는 조작하지 마세요.</p>
+      </div>
+
+      <!-- Exactly Two Bottom Action Buttons -->
+      <div class="grid grid-cols-2 gap-2.5 mt-3 pt-2">
+        <!-- Secondary Button: '그만 보기' -->
+        <button type="button" class="w-full py-3 px-3 rounded-2xl bg-[#1e1927] hover:bg-[#181420] active:scale-[0.98] transition border border-white/10 text-white/70 font-semibold text-[14px]">
+          그만 보기
+        </button>
+        <!-- Primary Lime Button: '확인' -->
+        <button type="button" class="w-full py-3 px-3 rounded-2xl bg-[#d2f000] hover:bg-[#c4e000] active:scale-[0.98] transition text-[#292333] font-bold text-[14px] shadow-[0_4px_14px_rgba(210,240,0,0.3)]">
+          확인
+        </button>
+      </div>
+
+      <!-- Tiny Helper Description -->
+      <p class="text-center text-[10.5px] text-white/40 mt-2.5">
+        그만 보기를 누르면 다음부터 안내를 숨겨요.
+      </p>
+
+    </div>
+
+  </div>
+
+</body>
+</html>

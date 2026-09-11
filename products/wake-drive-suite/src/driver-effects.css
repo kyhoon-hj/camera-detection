@@ -56,7 +56,7 @@
 
 /* 실제 촬영 위의 고정 모서리와 계기판. */
 .app.variant-jolbang.module-drowsiness .camera-stage { border-color:#827a4b; background:#15101e; }
-.app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:485px; }
+.app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:0; }
 .driver-viewfinder { position:absolute; z-index:3; inset:52px 16px 204px; pointer-events:none; opacity:.5; }
 .driver-viewfinder i { position:absolute; width:20px; height:20px; border:2px solid #d2f000; border-radius:3px; }
 .driver-viewfinder i:nth-child(1) { top:0; left:0; border-right:0; border-bottom:0; }
@@ -99,8 +99,8 @@
   .pop-intro-spark { font-size:39px; right:0; top:40px; }
   .pop-thumbnail { width:88px; height:96px; }
   .driver-lens-guide { width:130px; }.driver-lens-guide svg { height:78px; }
-  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:4/5; }
-  .app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:500px; }
+  .app.variant-jolbang.module-drowsiness .camera-stage { aspect-ratio:6/5; }
+  .app.variant-jolbang.module-drowsiness .camera-stage:not([data-run-state=running]) { min-height:0; }
   .app.variant-jolbang.module-drowsiness .camera-placeholder { padding:51px 15px 204px; }
 }
 @media (orientation:landscape) and (max-height:650px) {

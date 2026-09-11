@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-09-11T13:48:09.7897730+09:00",
+  "version": "1.0.0",
+  "versionCode": 27,
+  "artifacts": [
+    {
+      "file": "wake-drive-debug.apk",
+      "bytes": 162202039,
+      "sha256": "50C21D95382B3FDA5DFD657C6E659C336BB98FC4B527A9DD49872C9AF3368376",
+      "cameraPermission": true,
+      "forbiddenPermissions": [],
+      "advertisingAnalyticsSdkClasses": [],
+      "uploadReady": false,
+      "signing": "debug"
+    },
+    {
+      "file": "wake-drive-1.0.0-release-unsigned.apk",
+      "bytes": 158848323,
+      "sha256": "9B04B6B0AA7373102F96ABCD7D549675CF2067CC4DFBB22C7F922895DB0ACF45",
+      "cameraPermission": true,
+      "forbiddenPermissions": [],
+      "advertisingAnalyticsSdkClasses": [],
+      "uploadReady": false,
+      "signing": "unsigned"
+    },
+    {
+      "file": "wake-drive-1.0.0-release-unsigned.aab",
+      "bytes": 158221875,
+      "sha256": "9E80348C80EEAE0E11B0A0D0FB6F86D59FF85AD82AD6B9632B64329A84032F26",
+      "cameraPermission": true,
+      "forbiddenPermissions": [],
+      "advertisingAnalyticsSdkClasses": [],
+      "uploadReady": false,
+      "signing": "unsigned"
+    }
+  ],
+  "remaining": [
+    "Upload signing key",
+    "Public privacy policy must be aligned with Wake Drive offline behavior",
+    "Play Console declarations and device acceptance tests"
+  ]
+}

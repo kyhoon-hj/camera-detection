@@ -21,6 +21,27 @@ export function cameraErrorMessage(cause: unknown, native = false): string {
 }
 
 export async function requestUserCamera(constraints: MediaStreamConstraints): Promise<MediaStream> {
+  const stream = await requestCameraOnce(constraints);
+  const track = stream.getVideoTracks?.()[0];
+  // Desktop defaults may point to a disabled virtual feed or an IR/depth sensor.
+  // Keep a working front camera and any explicitly selected device unchanged.
+  if (!track || !isAuxiliaryCamera(track.label) || (typeof constraints.video === 'object' && constraints.video.deviceId)) return stream;
+  let devices: MediaDeviceInfo[];
+  try { devices = await navigator.mediaDevices.enumerateDevices(); }
+  catch { return stream; }
+  const camera = devices.find(device => device.kind === 'videoinput' && device.deviceId && device.label && !isAuxiliaryCamera(device.label));
+  if (!camera) return stream;
+  stream.getTracks().forEach(track => track.stop());
+  const video = typeof constraints.video === 'object' ? {...constraints.video} : {};
+  delete video.facingMode;
+  return requestCameraOnce({...constraints, video:{...video, deviceId:{exact:camera.deviceId}}});
+}
+
+function isAuxiliaryCamera(label: string): boolean {
+  return /virtual|mirametrix|obs|broadcast|manycam|snap camera|\bIR\b|infrared|depth|가상|적외선/i.test(label);
+}
+
+async function requestCameraOnce(constraints: MediaStreamConstraints): Promise<MediaStream> {
   let timedOut = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const request = navigator.mediaDevices.getUserMedia(constraints);

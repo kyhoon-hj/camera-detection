@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" fill="none"><rect width="100%" height="100%" fill="#292333"/><g transform="translate(313.20000000000005 662.4) scale(2.52)">
+  <path d="M31 124C13 103 17 59 37 37C62 10 111 9 138 35C161 57 167 100 149 124" stroke="#d2f000" stroke-width="2.4" stroke-dasharray="1 7" stroke-linecap="round" opacity=".7"/>
+  <g stroke="#d2f000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="14" y="62" width="65" height="47" rx="23.5"/>
+    <rect x="101" y="62" width="65" height="47" rx="23.5"/>
+    <path d="M79 79Q90 71 101 79"/>
+    <path d="M46.5 79V92M133.5 79V92" stroke-width="6"/>
+  </g>
+  <path d="M76 124Q90 137 104 124" stroke="#ff9cc5" stroke-width="3.5" stroke-linecap="round"/>
+</g><text x="540" y="1157.3999999999999" text-anchor="middle" font-family="sans-serif" font-size="69.12" font-weight="600" fill="#f5f0fa">Wake Drive</text><g fill="#d2f000"><circle cx="509.76" cy="1459.2" r="5.4"/><circle cx="540" cy="1459.2" r="5.4"/><circle cx="570.24" cy="1459.2" r="5.4"/></g></svg>

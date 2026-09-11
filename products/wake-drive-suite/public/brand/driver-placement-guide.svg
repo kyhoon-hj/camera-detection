@@ -1,0 +1,202 @@
+<svg width="640" height="420" fill="none" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient gradientUnits="userSpaceOnUse" id="beamGrad" x1="220" x2="100" y1="283" y2="287">
+<stop offset="0%" stop-color="#d2f000" stop-opacity="0.35">
+</stop>
+<stop offset="100%" stop-color="#d2f000" stop-opacity="0.03">
+</stop>
+</linearGradient>
+<filter height="120%" id="subtleGlow" width="120%" x="-10%" y="-10%">
+<feDropShadow dx="0" dy="2" flood-color="#000000" flood-opacity="0.4" stdDeviation="3">
+</feDropShadow>
+</filter>
+</defs>
+<!-- Top/Main Scene: Driver Cockpit View -->
+<g id="cockpit-scene">
+<!-- Windshield road & horizon strip -->
+<path d="M 40 55 Q 320 25 600 55" stroke="#484156" stroke-dasharray="6 4" stroke-linecap="round" stroke-width="2">
+</path>
+<path d="M 320 37 L 320 70" stroke="#5d546e" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2">
+</path>
+<!-- Dashboard upper contour line -->
+<path d="M 30 148 C 120 142, 220 142, 330 145 C 440 148, 540 146, 610 150" stroke="#5d546e" stroke-linecap="round" stroke-width="3">
+</path>
+<!-- Instrument Cluster visor hood behind steering wheel -->
+<path d="M 75 116 C 80 68, 190 68, 195 116" fill="none" stroke="#716785" stroke-linecap="round" stroke-width="2.5">
+</path>
+<!-- Digital meter glow hint -->
+<path d="M 102 100 Q 112 82 122 100 M 146 100 Q 156 82 166 100" stroke="#3b334a" stroke-linecap="round" stroke-width="2">
+</path>
+<!-- Steering wheel rim & column on left driver position -->
+<path d="M 135 148 L 135 170" stroke="#4a4258" stroke-linecap="round" stroke-width="8">
+</path>
+<ellipse cx="135" cy="152" fill="none" rx="54" ry="44" stroke="#d6d0e2" stroke-linecap="round" stroke-width="3.5">
+</ellipse>
+<ellipse cx="135" cy="153" fill="none" rx="43" ry="34" stroke="#383049" stroke-linecap="round" stroke-width="2">
+</ellipse>
+<circle cx="135" cy="153" fill="#2d2539" r="10" stroke="#716785" stroke-width="2">
+</circle>
+<path d="M 125 150 L 83 138 M 145 150 L 187 138 M 135 163 L 135 193" stroke="#a297b6" stroke-width="3" stroke-linecap="round"/>
+<!-- Connecting dashed arc between Phone 1A and 1B -->
+<path d="M 235 112 C 265 92, 335 92, 365 112" stroke="#d2f000" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2">
+</path>
+<!-- Left Arrowhead on arc -->
+<path d="M 242 108 L 235 112 L 239 119" stroke="#d2f000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+</path>
+<!-- Right Arrowhead on arc -->
+<path d="M 358 119 L 365 112 L 358 108" stroke="#d2f000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+</path>
+<!-- Primary Phone Position 1A (Just right of cluster, upper dash) -->
+<g transform="translate(210, 80)">
+<!-- Cradle Base on Dash -->
+<rect fill="#ff9cc5" height="6" rx="3" width="18" x="11" y="60">
+</rect>
+<path d="M 20 60 L 20 48" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5">
+</path>
+<!-- Phone silhouette -->
+<rect fill="#171320" height="46" rx="5" stroke="#d2f000" stroke-width="2.5" width="32" x="4" y="10">
+</rect>
+<circle cx="20" cy="16" fill="#d2f000" r="2">
+</circle>
+<!-- Screen mascot face mini hint -->
+<circle cx="16" cy="32" fill="#d2f000" r="2">
+</circle>
+<circle cx="24" cy="32" fill="#d2f000" r="2">
+</circle>
+<path d="M 17 38 Q 20 41 23 38" stroke="#ff9cc5" stroke-linecap="round" stroke-width="1.5">
+</path>
+<!-- Lime Badge 1 -->
+<g transform="translate(36, 10)">
+<circle cx="0" cy="0" fill="#d2f000" r="10">
+</circle>
+<text fill="#292333" font-family="sans-serif" font-size="12" font-weight="800" text-anchor="middle" x="0" y="4">1</text>
+</g>
+</g>
+<!-- Secondary Alternative Phone Position 1B (Center-right upper dash, dashed/ghost outline) -->
+<g transform="translate(360, 80)">
+<!-- Cradle Base -->
+<rect fill="#ff9cc5" height="6" opacity="0.75" rx="3" width="18" x="11" y="60">
+</rect>
+<path d="M 20 60 L 20 48" opacity="0.75" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5">
+</path>
+<!-- Ghost Phone body -->
+<rect fill="#171320" height="46" opacity="0.85" rx="5" stroke="#d2f000" stroke-dasharray="3 2" stroke-width="2" width="32" x="4" y="10">
+</rect>
+<circle cx="20" cy="16" fill="#d2f000" opacity="0.8" r="2">
+</circle>
+<!-- Screen mini eyes -->
+<circle cx="16" cy="32" fill="#d2f000" opacity="0.8" r="1.8">
+</circle>
+<circle cx="24" cy="32" fill="#d2f000" opacity="0.8" r="1.8">
+</circle>
+<!-- Lime Badge 1 (alt) -->
+<g transform="translate(36, 10)">
+<circle cx="0" cy="0" fill="#d2f000" r="10">
+</circle>
+<text fill="#292333" font-family="sans-serif" font-size="12" font-weight="800" text-anchor="middle" x="0" y="4">1</text>
+</g>
+</g>
+</g>
+<!-- Horizontal Divider between main scene & bottom mini-scenes -->
+<line stroke="#3b334a" stroke-dasharray="4 4" stroke-width="1.5" x1="40" x2="600" y1="200" y2="200">
+</line>
+<!-- Bottom Left Mini-Scene (Badge 2: Driver Side Profile & Camera Angle) -->
+<g id="mini-scene-camera-angle">
+<!-- Driver Head Profile -->
+<path d="M 65 292 C 65 264, 88 260, 100 260 C 112 260, 118 268, 118 280 C 118 286, 116 289, 113 292 L 116 296 L 112 298 C 109 304, 102 308, 96 308 L 90 308" fill="#2d2539" stroke="#d6d0e2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5">
+</path>
+<!-- Driver Eye (looking ahead & in view) -->
+<circle cx="108" cy="280" fill="#d2f000" r="2.5">
+</circle>
+<!-- Seat Backrest & Driver body -->
+<path d="M 55 290 L 52 380" stroke="#4a4258" stroke-linecap="round" stroke-width="7">
+</path>
+<path d="M 72 308 L 65 380" stroke="#716785" stroke-linecap="round" stroke-width="2.5">
+</path>
+<path d="M 92 308 L 102 380" stroke="#d6d0e2" stroke-linecap="round" stroke-width="2.5">
+</path>
+<!-- Mini Steering wheel side profile -->
+<path d="M 148 340 L 160 380" stroke="#5d546e" stroke-linecap="round" stroke-width="4">
+</path>
+<ellipse cx="146" cy="336" fill="none" rx="6" ry="22" stroke="#a297b6" stroke-width="3" transform="rotate(-15 146 336)">
+</ellipse>
+<!-- Dashboard surface -->
+<path d="M 160 328 Q 210 324 260 326" stroke="#5d546e" stroke-linecap="round" stroke-width="3">
+</path>
+<!-- Cradle & Phone angled toward driver face -->
+<g transform="translate(0 -20)">
+<rect fill="#ff9cc5" height="5" rx="2.5" width="18" x="212" y="340">
+</rect>
+<path d="M 221 340 L 223 328" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5">
+</path>
+<g transform="rotate(8 220 318)">
+<rect fill="#171320" height="34" rx="3" stroke="#d2f000" stroke-width="2" width="8" x="216" y="298">
+</rect>
+<circle cx="220" cy="303" fill="#d2f000" r="1.8">
+</circle>
+</g>
+</g>
+<!-- Vision cone from camera to face -->
+<polygon fill="url(#beamGrad)" points="222,283 116,268 110,306">
+</polygon>
+<path d="M 222 283 L 116 268" stroke="#d2f000" stroke-dasharray="3 3" stroke-linecap="round" stroke-width="1.5">
+</path>
+<path d="M 222 283 L 110 306" stroke="#d2f000" stroke-dasharray="3 3" stroke-linecap="round" stroke-width="1.5">
+</path>
+<!-- Lime Badge 2 -->
+<g transform="translate(250, 252)">
+<circle cx="0" cy="0" fill="#d2f000" r="11">
+</circle>
+<text fill="#292333" font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle" x="0" y="4.5">2</text>
+</g>
+</g>
+<!-- Vertical Sub-divider between Mini-scenes -->
+<line stroke="#3b334a" stroke-dasharray="3 3" stroke-width="1.5" x1="320" x2="320" y1="216" y2="394">
+</line>
+<!-- Bottom Right Mini-Scene (Badge 3: Front Phone Screen Face Alignment Guide) -->
+<g id="mini-scene-face-alignment" transform="translate(350, 222)">
+<rect fill="#171320" filter="url(#subtleGlow)" height="145" rx="16" stroke="#d2f000" stroke-width="2" width="190" x="20" y="16">
+</rect>
+<!-- Notch / Speaker bar -->
+<rect fill="#383046" height="4" rx="2" width="46" x="92" y="22">
+</rect>
+<!-- Corner Crop Brackets (Viewfinder) -->
+<path d="M 46 48 L 38 48 L 38 56" stroke="#d2f000" stroke-linecap="round" stroke-width="2">
+</path>
+<path d="M 184 48 L 192 48 L 192 56" stroke="#d2f000" stroke-linecap="round" stroke-width="2">
+</path>
+<path d="M 38 120 L 38 128 L 46 128" stroke="#d2f000" stroke-linecap="round" stroke-width="2">
+</path>
+<path d="M 192 120 L 192 128 L 184 128" stroke="#d2f000" stroke-linecap="round" stroke-width="2">
+</path>
+<!-- Driver Head / Face -->
+<ellipse cx="115" cy="88" fill="#282234" rx="36" ry="38" stroke="#e8e2f4" stroke-width="2">
+</ellipse>
+<!-- Two cute lime round eyes (Brand style) -->
+<circle cx="102" cy="84" fill="none" r="5.5" stroke="#d2f000" stroke-width="2">
+</circle>
+<circle cx="102" cy="84" fill="#d2f000" r="2.5">
+</circle>
+<circle cx="128" cy="84" fill="none" r="5.5" stroke="#d2f000" stroke-width="2">
+</circle>
+<circle cx="128" cy="84" fill="#d2f000" r="2.5">
+</circle>
+<!-- Glasses bridge -->
+<path d="M 108 83 Q 115 80 122 83" stroke="#d2f000" stroke-linecap="round" stroke-width="1.5">
+</path>
+<!-- Sweet pink smile curve -->
+<path d="M 108 102 Q 115 110 122 102" stroke="#ff9cc5" stroke-linecap="round" stroke-width="2.5">
+</path>
+<!-- Green checkmark badge top-right of viewfinder -->
+<circle cx="182" cy="42" fill="#d2f000" r="10">
+</circle>
+<path d="M 178 42 L 181 45 L 186 39" stroke="#292333" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+</path>
+<!-- Lime Badge 3 -->
+<g transform="translate(216, 16)">
+<circle cx="0" cy="0" fill="#d2f000" r="11">
+</circle>
+<text fill="#292333" font-family="sans-serif" font-size="13" font-weight="800" text-anchor="middle" x="0" y="4.5">3</text>
+</g>
+</g>
+</svg>

@@ -10,12 +10,13 @@ export const WAKE_UP_VIDEO_PATHS = [
   "/media/drowsy-video-8.mp4",
   "/media/drowsy-video-9.mp4",
   "/media/drowsy-video-10.mp4",
+  "/media/rock-star.mp4",
 ] as const;
 
 // Study Mode uses a dedicated upbeat clip after a normally completed session.
 export const STUDY_PRAISE_VIDEO_PATH = WAKE_UP_VIDEO_PATHS[10];
 
-export type WakeUpVideoId = "video-0" | "video-1" | "video-2" | "video-3" | "video-4" | "video-5" | "video-6" | "video-7" | "video-8" | "video-9" | "video-10";
+export type WakeUpVideoId = "video-0" | "video-1" | "video-2" | "video-3" | "video-4" | "video-5" | "video-6" | "video-7" | "video-8" | "video-9" | "video-10" | "rock-star";
 
 export interface WakeUpVideoProfile {
   id: WakeUpVideoId;
@@ -35,6 +36,7 @@ export const WAKE_UP_VIDEO_PROFILES: readonly WakeUpVideoProfile[] = [
   { id: "video-8", name: "처녀귀신1편", path: WAKE_UP_VIDEO_PATHS[8] },
   { id: "video-9", name: "동무들~", path: WAKE_UP_VIDEO_PATHS[9] },
   { id: "video-10", name: "슈퍼걸", path: WAKE_UP_VIDEO_PATHS[10] },
+  { id: "rock-star", name: "락스타", path: WAKE_UP_VIDEO_PATHS[11] },
 ] as const;
 
 export const WAKE_UP_LIBRARY_STORAGE_KEY = "suha.wake-up-library.v2";

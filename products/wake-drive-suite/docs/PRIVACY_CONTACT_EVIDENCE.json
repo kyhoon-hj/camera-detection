@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-09-11T13:50:21.9379022+09:00",
+  "url": "https://www.hjshub.com/privacy",
+  "httpStatus": 200,
+  "browserTitle": "개인정보처리방침 | HJ Solution",
+  "loginRequired": false,
+  "operator": "에이치제이솔루션",
+  "email": "hjshub@jnmdisplay.com",
+  "appContactUpdated": true,
+  "websiteChanged": false,
+  "websiteScopeAligned": false,
+  "observedPolicy": [
+    "Account signup and social login",
+    "Payment records",
+    "IP address and advertising identifier",
+    "Location-based access",
+    "Camera for photo upload",
+    "No services for children under 14"
+  ],
+  "remaining": [
+    "Publish Wake Drive-specific processing scope",
+    "Confirm actual audience policy and amendment effective date",
+    "Upload signing key and Play Console validation"
+  ]
+}
